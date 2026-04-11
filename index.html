@@ -394,8 +394,7 @@
                 const statusCode = user.statusCode || "none";
                 const amount = Number(user.amount || 0);
                 
-                // 🟢 ดึงข้อมูลรูปภาพ ไลน์ และเบอร์โทร
-                const profilePic = user.profilePic || ""; // ไม่ต้อง escapeHTML เพราะเป็น URL ที่เราสร้างเองจาก .gs
+                const profilePic = user.profilePic || "";
                 const lineId = escapeHTML(user.lineId || "");
                 const phone = escapeHTML(user.phone || "");
 
@@ -415,46 +414,48 @@
                     sClass = "text-orange-500 font-bold"; sBg = "bg-orange-50"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}.-`;
                 }
 
-                // 🖼️ รูปโปรไฟล์: ถ้ามีรูปให้โชว์รูป ถ้าไม่มีโชว์ไอคอนสถานะ
+                // รูปโปรไฟล์เจ้าบ้าน (ปรับให้ขอบมนสวยงาม)
                 let avatarHtml = profilePic 
-                    ? `<img src="${profilePic}" alt="profile" class="w-full h-full object-cover">` 
+                    ? `<img src="${profilePic}" alt="profile" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<i class=\'fas fa-user text-slate-300\'></i>'">` 
                     : `<i class="fas ${sIcon} text-lg"></i>`;
 
-                // 🟢 ไอคอน LINE: ถ้าไม่มีข้อมูล ให้เป็นค่าว่าง (ไม่แสดง)
-                let lineIconHtml = lineId
-                    ? `<i class="fab fa-line text-green-500 text-xl drop-shadow-sm" title="LINE ID: ${lineId}"></i>`
-                    : ``;
-
-                // 📞 ไอคอนโทรศัพท์: ถ้าไม่มีข้อมูล ให้เป็นค่าว่าง (ไม่แสดง)
-                let phoneIconHtml = phone
-                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100 active:scale-90 transition-all shadow-sm" title="โทร: ${phone}">
-                           <i class="fas fa-phone-alt text-[13px]"></i>
+                // 📞 เบอร์โทรศัพท์: แสดงเป็นเลขพร้อมกดโทรออก (ซ่อนไอคอนโทรศัพท์ตามคำขอ)
+                let phoneDisplayHtml = phone
+                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 active:scale-95 transition-all">
+                           <i class="fas fa-phone-alt mr-1 text-[10px]"></i> ${phone}
                        </a>`
                     : ``;
 
+                // 🟢 ไอคอน LINE: แสดงเฉพาะเมื่อมีข้อมูล
+                let lineIconHtml = lineId
+                    ? `<i class="fab fa-line text-green-500 text-xl drop-shadow-sm"></i>`
+                    : ``;
+
                 htmlContent += `
-                    <div class="user-card bg-white rounded-2xl p-3 shadow-sm border border-slate-100 flex items-center justify-between active:scale-[0.98] cursor-pointer transition-colors hover:bg-slate-50" onclick="alert('เตรียมเปิดหน้ารายละเอียดบ้านเลขที่: ${houseNo}')">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-10 h-10 rounded-xl ${sBg} ${sClass} flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border border-white">
+                    <div class="user-card bg-white rounded-2xl p-3 shadow-sm border border-slate-100 flex items-center justify-between active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 hover:shadow-md w-full" onclick="alert('บ้านเลขที่: ${houseNo}')">
+                        <div class="flex items-center gap-4 min-w-0 w-full">
+                            <div class="w-12 h-12 rounded-2xl ${sBg} ${sClass} flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border border-white">
                                 ${avatarHtml}
                             </div>
-                            <div class="min-w-0">
-                                <h4 class="text-sm font-bold text-slate-700 truncate">${houseNo} <span class="font-normal text-slate-400 text-[10px]">${safeName ? `(${safeName})` : ''}</span></h4>
-                                <p class="text-[11px] ${sClass}">${sText}</p>
+                            
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="text-base font-bold text-slate-700 truncate">${houseNo}</h4>
+                                    ${lineIconHtml}
+                                </div>
+                                <p class="text-[12px] font-medium text-slate-500 truncate mb-1">${safeName}</p>
+                                <div class="flex items-center justify-between mt-1">
+                                    <p class="text-[11px] ${sClass}">${sText}</p>
+                                    ${phoneDisplayHtml}
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div class="flex items-center gap-2 pl-2 shrink-0">
-                            ${phoneIconHtml}
-                            ${lineIconHtml}
-                            <i class="fas fa-chevron-right text-slate-300 text-[10px] ml-1"></i>
                         </div>
                     </div>`;
             });
 
             listContainer.innerHTML = htmlContent;
 
-            // อัปเดตตัวเลข 4 กล่องด้านบน
+            // อัปเดตตัวเลขสถิติ 4 กล่อง
             document.getElementById('dash-count-todo').innerText = stats.todo;
             document.getElementById('dash-count-waiting').innerText = stats.waiting;
             document.getElementById('dash-count-paid').innerText = stats.paid;
