@@ -95,59 +95,80 @@
 
             <nav class="flex-1 px-2 py-3 space-y-1 overflow-y-auto hide-scrollbar relative z-10">
 
-            <button onclick="setActiveMenu(this); showPage('home')" class="menu-btn bg-white/10 w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
-                <div class="w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
-                <i class="fas fa-home text-base"></i>
-                </div>
-                <span class="text-base group-hover:translate-x-1 transition-transform">หน้าหลัก</span>
-            </button>
+                <button onclick="setActiveMenu(this); showPage('home')" class="menu-btn bg-white/10 w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
+                    <div class="w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-home text-base"></i>
+                    </div>
+                    <span class="text-base group-hover:translate-x-1 transition-transform">หน้าหลัก</span>
+                </button>
 
-            <button onclick="setActiveMenu(this); showPage('reports')" class="menu-btn w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
-                <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-colors duration-300">
-                <i class="fas fa-chart-pie text-base"></i>
-                </div>
-                <span class="text-base group-hover:translate-x-1 transition-transform">รายงาน -เดือน</span>
-            </button>
+                <button onclick="setActiveMenu(this); showPage('reports')" class="menu-btn w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
+                    <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-chart-pie text-base"></i>
+                    </div>
+                    <span class="text-base group-hover:translate-x-1 transition-transform">รายงาน -เดือน</span>
+                </button>
 
-            <button onclick="setActiveMenu(this); showPage('yearly')" class="menu-btn w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
-                <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300">
-                <i class="fas fa-calendar-alt text-base"></i>
-                </div>
-                <span class="text-base group-hover:translate-x-1 transition-transform">รายงาน -ปี</span>
-            </button>
+                <button onclick="setActiveMenu(this); showPage('yearly')" class="menu-btn w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-calendar-alt text-base"></i>
+                    </div>
+                    <span class="text-base group-hover:translate-x-1 transition-transform">รายงาน -ปี</span>
+                </button>
 
-            <div class="border-t border-white/10 my-1 mx-3"></div>
-            <p class="text-[10px] text-white/30 uppercase tracking-wider px-3 mb-0.5">ผู้ดูแลระบบ</p>
+                <div class="border-t border-white/10 my-1 mx-3"></div>
+                <p class="text-[10px] text-white/30 uppercase tracking-wider px-3 mb-0.5 mt-2">ผู้ดูแลระบบ</p>
 
-            <button onclick="setActiveMenu(this); showPage('finance')" class="menu-btn admin-only w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
-                <div class="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center group-hover:bg-teal-500 group-hover:text-white transition-colors duration-300">
-                <i class="fas fa-wallet text-base"></i>
-                </div>
-                <span class="text-base group-hover:translate-x-1 transition-transform">การเงิน-ธนาคาร</span>
-            </button>
+                <button onclick="setActiveMenu(this); showPage('finance')" class="menu-btn admin-only w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
+                    <div class="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center group-hover:bg-teal-500 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-wallet text-base"></i>
+                    </div>
+                    <span class="text-base group-hover:translate-x-1 transition-transform">การเงิน-ธนาคาร</span>
+                </button>
 
-            <button onclick="setActiveMenu(this); showPage('collector')" class="menu-btn admin-only w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
-                <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-white transition-colors duration-300">
-                <i class="fas fa-user-tag text-base"></i>
-                </div>
-                <span class="text-base group-hover:translate-x-1 transition-transform">รายงานคนจัดเก็บ</span>
-            </button>
+                <button onclick="setActiveMenu(this); showPage('collector')" class="menu-btn admin-only w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
+                    <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-user-tag text-base"></i>
+                    </div>
+                    <span class="text-base group-hover:translate-x-1 transition-transform">รายงานคนจัดเก็บ</span>
+                </button>
 
-            <button onclick="setActiveMenu(this); showPage('settings')" class="menu-btn admin-only w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
-                <div class="w-8 h-8 rounded-lg bg-slate-500/20 text-slate-300 flex items-center justify-center group-hover:bg-slate-500 group-hover:text-white transition-colors duration-300">
-                <i class="fas fa-cog text-base"></i>
-                </div>
-                <span class="text-base group-hover:translate-x-1 transition-transform">ตั้งค่าระบบ</span>
-            </button>
+                <button onclick="setActiveMenu(this); showPage('expenses')" class="menu-btn admin-only w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
+                    <div class="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-300 flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-file-invoice-dollar text-base"></i>
+                    </div>
+                    <span class="text-base group-hover:translate-x-1 transition-transform">บันทึกรายจ่าย</span>
+                </button>
 
-            <div class="border-t border-white/10 my-1 mx-3"></div>
+                <button onclick="setActiveMenu(this); showPage('settings')" class="menu-btn admin-only w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
+                    <div class="w-8 h-8 rounded-lg bg-slate-500/20 text-slate-300 flex items-center justify-center group-hover:bg-slate-500 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-cog text-base"></i>
+                    </div>
+                    <span class="text-base group-hover:translate-x-1 transition-transform">ตั้งค่าระบบ</span>
+                </button>
 
-            <button onclick="openAboutModal()" class="w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
-                <div class="w-8 h-8 rounded-lg bg-pink-500/20 text-pink-300 flex items-center justify-center group-hover:bg-pink-500 group-hover:text-white transition-colors duration-300">
-                <i class="fas fa-info-circle text-base"></i>
-                </div>
-                <span class="text-base group-hover:translate-x-1 transition-transform">เกี่ยวกับเรา</span>
-            </button>
+                <button onclick="openChangeMeterMenu(); setActiveMenu(this);" class="menu-btn admin-only w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
+                    <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-300 flex items-center justify-center group-hover:bg-rose-500 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-tools text-base"></i>
+                    </div>
+                    <span class="text-base group-hover:translate-x-1 transition-transform">เปลี่ยนมิเตอร์น้ำ</span>
+                </button>
+
+                <button onclick="openDirectorsModal(); setActiveMenu(this);" class="menu-btn admin-only w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-users-cog text-base"></i>
+                    </div>
+                    <span class="text-base group-hover:translate-x-1 transition-transform">คณะกรรมการ</span>
+                </button>
+
+                <div class="border-t border-white/10 my-1 mx-3"></div>
+
+                <button onclick="openAboutModal(); setActiveMenu(this);" class="menu-btn w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
+                    <div class="w-8 h-8 rounded-lg bg-pink-500/20 text-pink-300 flex items-center justify-center group-hover:bg-pink-500 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-info-circle text-base"></i>
+                    </div>
+                    <span class="text-base group-hover:translate-x-1 transition-transform">เกี่ยวกับเรา</span>
+                </button>
             </nav>
 
             <div class="p-3 bg-slate-900/50 backdrop-blur-md border-t border-white/5 shrink-0">
@@ -498,7 +519,18 @@
         function openAboutModal() {
             alert("ระบบบริหารจัดการน้ำประปาหมู่บ้าน\nพัฒนาโดย: รณรงค์ อินทร์คง\nเวอร์ชัน: 14.0.0");
         }
-        
+
+        function openChangeMeterMenu() {
+            console.log("ต้องการเปิดหน้า: เปลี่ยนมิเตอร์น้ำ");
+            toggleMenu(); // สั่งให้หุบเมนูเก็บทันทีหลังกด
+            // เดี๋ยวเราเอาโค้ดระบบเปลี่ยนมิเตอร์ที่คุณเคยเขียนไว้มาใส่ตรงนี้ทีหลังครับ
+        }
+
+        function openDirectorsModal() {
+            console.log("ต้องการเปิดหน้า: คณะกรรมการ");
+            toggleMenu(); // สั่งให้หุบเมนูเก็บทันทีหลังกด
+        }
+
     </script>
 </body>
 </html>
