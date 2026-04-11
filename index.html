@@ -414,19 +414,19 @@
                     sClass = "text-orange-500 font-bold"; sBg = "bg-orange-50"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}.-`;
                 }
 
-                // 🖼️ รูปโปรไฟล์: ใช้ object-cover เพื่อให้รูปไม่เสียสัดส่วน
+                // รูปโปรไฟล์เจ้าบ้าน (ปรับให้ขอบมนสวยงาม)
                 let avatarHtml = profilePic 
-                    ? `<img src="${profilePic}" alt="profile" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-user text-slate-300\\'></i>'">` 
+                    ? `<img src="${profilePic}" alt="profile" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<i class=\'fas fa-user text-slate-300\'></i>'">` 
                     : `<i class="fas ${sIcon} text-lg"></i>`;
 
-                // 📞 เบอร์โทรศัพท์
+                // 📞 เบอร์โทรศัพท์: แสดงเป็นเลขพร้อมกดโทรออก (ซ่อนไอคอนโทรศัพท์ตามคำขอ)
                 let phoneDisplayHtml = phone
                     ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 active:scale-95 transition-all">
                            <i class="fas fa-phone-alt mr-1 text-[10px]"></i> ${phone}
                        </a>`
                     : ``;
 
-                // 🟢 ไอคอน LINE
+                // 🟢 ไอคอน LINE: แสดงเฉพาะเมื่อมีข้อมูล
                 let lineIconHtml = lineId
                     ? `<i class="fab fa-line text-green-500 text-xl drop-shadow-sm"></i>`
                     : ``;
@@ -434,8 +434,7 @@
                 htmlContent += `
                     <div class="user-card bg-white rounded-2xl p-3 shadow-sm border border-slate-100 flex items-center justify-between active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 hover:shadow-md w-full" onclick="alert('บ้านเลขที่: ${houseNo}')">
                         <div class="flex items-center gap-4 min-w-0 w-full">
-                            
-                            <div class="w-12 h-12 rounded-full ${sBg} ${sClass} flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border border-white">
+                            <div class="w-12 h-12 rounded-2xl ${sBg} ${sClass} flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border border-white">
                                 ${avatarHtml}
                             </div>
                             
