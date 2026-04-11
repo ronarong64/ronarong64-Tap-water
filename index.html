@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ระบบประปาหมู่บ้าน v14</title>
-    
-    <script>
-        // 👇 นำ URL ที่ลงท้ายด้วย /exec จาก Google Apps Script มาใส่ตรงนี้ "แค่ที่เดียว"
-        const API_URL = "https://script.google.com/macros/s/AKfycbwwsuG8Mc1N9xbi3PYyZpqi1TL90J5MYfjR_I3IkhknGLQ6CoknmxjuFO2IIBhI_ug/exec";
-    </script>
 
+    <script>
+        // 👇 นำ URL ที่ลงท้ายด้วย /exec จาก Google Apps Script มาใส่ในเครื่องหมายคำพูดด้านล่าง
+        const API_URL = "https://script.google.com/macros/s/AKfycbyGBbXfnRNnJCYJ16r8puQZPcqEFxgY9mew9D9xFfIcLTUTm6qKgFxtwKmCmi17GhDSfw/exec";
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -17,53 +16,59 @@
     <style>
         body { 
             font-family: 'Kanit', sans-serif;
-            /* 🚫 ป้องกันการสไลด์เพื่อรีเฟรช (Pull-to-refresh) บนมือถือ */
+            /* 🚫 ป้องกันการสไลด์หน้าจอเพื่อรีเฟรช (Pull-to-refresh) บนมือถือ */
             overscroll-behavior-y: contain; 
         }
-        /* ซ่อนลูกศรในช่อง input แบบตัวเลข */
+        /* ซ่อนลูกศรขึ้น-ลง ในช่องกรอกตัวเลข */
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .anim-slide-up { animation: slideUp 0.4s ease-out forwards; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        /* ซ่อน Scrollbar แต่ยังเลื่อนได้ */
+        
+        /* แอนิเมชันตอนเปิดหน้าจอ */
+        .anim-slide-up { animation: slideUp 0.5s ease-out forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* ซ่อนแถบ Scrollbar แถบด้านข้างแต่ยังใช้นิ้วเลื่อนได้ปกติ */
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 h-screen w-screen overflow-hidden flex flex-col items-center justify-center">
 
-    <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-100 flex flex-col items-center justify-center p-6 transition-all duration-500">
-        <div class="absolute inset-0 pointer-events-none overflow-hidden">
-            <div class="absolute top-[-10%] right-[-10%] w-80 h-80 bg-blue-200/50 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-purple-200/50 rounded-full blur-3xl"></div>
+    <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-50 flex flex-col items-center justify-center p-6 transition-opacity duration-500">
+        <div class="absolute inset-0 pointer-events-none overflow-hidden opacity-70">
+            <div class="absolute top-[-10%] right-[-10%] w-80 h-80 bg-blue-200 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-purple-200 rounded-full blur-3xl"></div>
         </div>
 
-        <div class="relative z-10 w-full max-w-sm bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/50 p-8 flex flex-col items-center text-center anim-slide-up">
+        <div class="relative z-10 w-full max-w-sm bg-white/90 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white p-8 flex flex-col items-center text-center anim-slide-up">
+            
             <div class="w-32 h-32 -mt-20 mb-6 bg-white rounded-full p-2 shadow-xl border-4 border-slate-50 overflow-hidden">
                 <img src="https://raw.githubusercontent.com/ronarong64/IMG/refs/heads/main/%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%9E%E0%B8%B4%E0%B9%89%E0%B8%99%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%87.png" 
                      class="w-full h-full object-contain" alt="Logo">
             </div>
             
-            <h1 class="text-2xl font-bold mb-1 text-slate-800">ระบบจัดเก็บค่าน้ำประปา</h1>
-            <p class="text-xs text-slate-400 mb-8 font-medium bg-slate-100 px-3 py-1 rounded-full"><i class="fas fa-map-marker-alt text-blue-500 mr-1"></i> หมู่ที่ 2 บ้านหนองบัว</p>
+            <h1 class="text-2xl font-bold mb-1 text-slate-800">ระบบประปาหมู่บ้าน</h1>
+            <p class="text-[11px] text-slate-500 mb-8 font-medium bg-slate-100 px-4 py-1.5 rounded-full shadow-inner border border-slate-200">
+                <i class="fas fa-map-marker-alt text-blue-500 mr-1"></i> หมู่ที่ 2 บ้านหนองบัว
+            </p>
 
             <div class="w-full relative mb-6">
-                <input type="password" id="pin-input" placeholder="ป้อนรหัส PIN" maxlength="6" inputmode="numeric"
-                       class="w-full h-16 bg-slate-50 border border-slate-200 rounded-2xl text-center text-3xl font-bold tracking-[0.5em] focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:tracking-normal placeholder:font-normal placeholder:text-base">
+                <input type="password" id="pin-input" placeholder="ป้อนรหัส PIN" maxlength="6" inputmode="numeric" autofocus
+                       class="w-full h-16 bg-slate-50 border border-slate-200 rounded-2xl text-center text-3xl font-bold tracking-[0.5em] focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:tracking-normal placeholder:font-normal placeholder:text-base shadow-inner text-slate-700">
             </div>
 
             <button onclick="submitLogin()" id="btn-login"
-                    class="w-full h-16 bg-slate-900 text-white rounded-2xl font-bold text-lg shadow-xl shadow-slate-900/20 active:scale-95 transition-all flex items-center justify-center gap-2">
-                เข้าสู่ระบบ <i class="fas fa-arrow-right ml-1"></i>
+                    class="w-full h-16 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/30 active:scale-95 transition-all flex items-center justify-center gap-2">
+                เข้าสู่ระบบ <i class="fas fa-arrow-right ml-1 text-sm"></i>
             </button>
 
-            <p id="error-msg" class="hidden mt-5 bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-bold border border-red-100 animate-pulse w-full">
-                <i class="fas fa-times-circle mr-1"></i> รหัส PIN ไม่ถูกต้อง
+            <p id="error-msg" class="hidden mt-5 bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm font-bold border border-red-100 animate-pulse w-full shadow-sm">
+                <i class="fas fa-times-circle mr-1"></i> <span id="error-text">รหัส PIN ไม่ถูกต้อง</span>
             </p>
         </div>
         
         <div class="absolute bottom-6 text-center">
             <p class="text-[10px] text-slate-400 font-medium uppercase tracking-widest">ผู้พัฒนาระบบ รณรงค์ อินทร์คง</p>
-            <p class="text-[9px] text-slate-400 mt-1 font-mono">v14.0.0</p>
+            <p class="text-[9px] text-slate-400 mt-1 font-mono">v14.0.0 (Clean Start)</p>
         </div>
     </div>
 
@@ -82,10 +87,10 @@
             
             <div class="flex flex-col items-end text-right">
                 <div class="flex items-center gap-1.5">
-                    <span id="display-username" class="text-sm font-bold text-slate-700">Loading...</span>
-                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span id="display-username" class="text-sm font-bold text-slate-700">...</span>
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                 </div>
-                <span id="display-role" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold uppercase mt-0.5 border border-slate-200 shadow-sm">Role</span>
+                <span id="display-role" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold uppercase mt-0.5 border border-slate-200 shadow-sm">...</span>
             </div>
         </header>
 
@@ -129,6 +134,225 @@
                 </div>
             </div>
 
-            <div class="flex justify-between items-end mt-2 px-1">
+            <div class="flex justify-between items-end mt-4 px-1">
                 <h3 class="font-bold text-slate-700 text-sm">รายชื่อบ้านทั้งหมด</h3>
             </div>
+            
+            <div id="user-list" class="flex flex-col gap-2"></div>
+
+            <button onclick="logout()" class="w-full mt-6 py-4 rounded-xl border border-red-100 bg-red-50 text-red-500 text-sm font-bold hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2 active:scale-95 shadow-sm">
+                <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
+            </button>
+        </main>
+    </div>
+
+    <script>
+        // 1. จัดการตอนเปิดเว็บ (เช็คว่าเคยล๊อกอินไว้ไหม)
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedUser = localStorage.getItem('water_app_session');
+            if (savedUser) {
+                // ถ้าเคยล๊อกอินแล้ว ข้ามไปหน้าหลักเลย
+                const userData = JSON.parse(savedUser);
+                showMainScreen(userData);
+            } else {
+                // ถ้ายังไม่ล๊อกอิน บังคับคีย์บอร์ดเด้งขึ้นมา
+                setTimeout(() => {
+                    const pinInput = document.getElementById('pin-input');
+                    if(pinInput) pinInput.focus();
+                }, 300);
+            }
+        });
+
+        // 2. ฟังก์ชันตรวจสอบการล๊อกอิน (ส่ง PIN ไปเช็คกับ Google Sheets)
+        async function submitLogin() {
+            const pin = document.getElementById('pin-input').value.trim();
+            const btn = document.getElementById('btn-login');
+            const errorBox = document.getElementById('error-msg');
+            const errorText = document.getElementById('error-text');
+
+            if (!pin) return;
+
+            // เปลี่ยนสถานะปุ่มตอนกำลังโหลด
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังตรวจสอบ...';
+            errorBox.classList.add('hidden');
+
+            try {
+                // 🚀 ยิงคำขอไปที่ API_URL ที่ตั้งไว้บนสุด
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "login", pin: pin })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    // จำค่าไว้ในเครื่อง
+                    localStorage.setItem('water_app_session', JSON.stringify(result));
+                    showMainScreen(result);
+                } else {
+                    errorText.innerText = result.message || "รหัส PIN ไม่ถูกต้อง";
+                    errorBox.classList.remove('hidden');
+                }
+            } catch (e) {
+                errorText.innerText = "การเชื่อมต่อล้มเหลว ตรวจสอบอินเทอร์เน็ต";
+                errorBox.classList.remove('hidden');
+            } finally {
+                // คืนค่าปุ่มกลับมาเหมือนเดิม
+                btn.disabled = false;
+                btn.innerHTML = 'เข้าสู่ระบบ <i class="fas fa-arrow-right ml-1 text-sm"></i>';
+            }
+        }
+
+        // 3. ฟังก์ชันสลับจากหน้าล๊อกอินไปหน้าหลัก
+        function showMainScreen(data) {
+            document.getElementById('login-screen').classList.add('opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-screen').classList.remove('hidden');
+                
+                // อัปเดตข้อมูลผู้ใช้บนมุมขวาบน
+                document.getElementById('display-username').innerText = data.username;
+                
+                const roleEl = document.getElementById('display-role');
+                roleEl.innerText = data.role;
+                // เปลี่ยนสีป้ายให้แอดมินเด่นขึ้น
+                if(String(data.role).toLowerCase() === 'admin') {
+                    roleEl.className = "text-[10px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full font-bold uppercase mt-0.5 border border-purple-200 shadow-sm";
+                }
+
+                // 🚀 สั่งให้โหลดข้อมูลบ้านทั้ง 65 หลังทันที
+                loadDashboardData();
+            }, 400);
+        }
+
+        // 4. ฟังก์ชันออกจากระบบ
+        function logout() {
+            localStorage.removeItem('water_app_session');
+            location.reload(); // รีเฟรชหน้าเว็บ 1 รอบ
+        }
+
+        // ==========================================
+        // ระบบดึงข้อมูลและจัดการ Dashboard
+        // ==========================================
+        
+        function loadDashboardData() {
+            const listContainer = document.getElementById('user-list');
+            listContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-10 opacity-50">
+                    <i class="fas fa-circle-notch fa-spin text-2xl text-blue-500 mb-2"></i>
+                    <p class="text-xs font-medium">กำลังโหลดข้อมูลบ้าน...</p>
+                </div>`;
+
+            fetch(API_URL + "?action=getUsersData")
+                .then(res => res.json())
+                .then(result => {
+                    if (result.status === "error") throw new Error(result.message);
+                    if (!result.data || result.data.length === 0) throw new Error("ไม่พบข้อมูลบ้าน");
+                    renderRealData(result.data); // วาดกล่องใส่หน้าจอ
+                })
+                .catch(err => {
+                    listContainer.innerHTML = `<div class="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-bold border border-red-100 text-center shadow-sm"><i class="fas fa-exclamation-triangle mr-1"></i> ${err.message}</div>`;
+                });
+        }
+
+        // ระบบกรองคำ ป้องกันข้อมูลแปลกๆ ทำหน้าเว็บพัง
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"']/g, function(match) {
+                const escapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+                return escapeMap[match];
+            });
+        }
+
+        function renderRealData(users) {
+            const listContainer = document.getElementById('user-list');
+            let stats = { todo: 0, waiting: 0, paid: 0, overdue: 0 };
+            let totalOverdueUsers = 0;
+            let htmlContent = "";
+
+            users.forEach(user => {
+                const houseNo = escapeHTML(user.houseNo || "-");
+                const safeName = escapeHTML(user.name || "");
+                const statusCode = user.statusCode || "none";
+                const amount = Number(user.amount || 0);
+
+                // นับจำนวนเข้ากล่องสถิติ
+                if (statusCode === 'none') stats.todo++;
+                else if (statusCode === 'waiting') stats.waiting++;
+                else if (statusCode === 'paid' || statusCode === 'free') stats.paid++;
+                else if (statusCode === 'overdue') stats.overdue++;
+
+                if (user.isOverdue || statusCode === 'overdue') totalOverdueUsers++;
+
+                // กำหนดสีตามสถานะ
+                let sClass = "text-slate-400", sBg = "bg-slate-50", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
+                if (statusCode === 'paid' || statusCode === 'free') {
+                    sClass = "text-green-600"; sBg = "bg-green-50"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
+                } else if (statusCode === 'overdue') {
+                    sClass = "text-red-500 font-bold"; sBg = "bg-red-50"; sIcon = "fa-exclamation-circle"; sText = `ค้างชำระ ${amount.toLocaleString()}.-`;
+                } else if (statusCode === 'waiting') {
+                    sClass = "text-orange-500 font-bold"; sBg = "bg-orange-50"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}.-`;
+                }
+
+                // สร้างกล่องการ์ด HTML ทีละบ้าน
+                htmlContent += `
+                    <div class="user-card bg-white rounded-2xl p-3 shadow-sm border border-slate-100 flex items-center justify-between active:scale-[0.98] cursor-pointer transition-colors hover:bg-slate-50" onclick="alert('เตรียมเปิดหน้ารายละเอียดบ้านเลขที่: ${houseNo}')">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-xl ${sBg} ${sClass} flex items-center justify-center flex-shrink-0 shadow-inner">
+                                <i class="fas ${sIcon} text-lg"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-bold text-slate-700 truncate">${houseNo} <span class="font-normal text-slate-400 text-[10px]">${safeName ? `(${safeName})` : ''}</span></h4>
+                                <p class="text-[11px] ${sClass}">${sText}</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-slate-300 text-[10px]"></i>
+                    </div>`;
+            });
+
+            // เทกล่องทั้งหมดใส่หน้าจอ
+            listContainer.innerHTML = htmlContent;
+
+            // อัปเดตตัวเลข 4 กล่องด้านบน
+            document.getElementById('dash-count-todo').innerText = stats.todo;
+            document.getElementById('dash-count-waiting').innerText = stats.waiting;
+            document.getElementById('dash-count-paid').innerText = stats.paid;
+            document.getElementById('dash-count-overdue').innerText = stats.overdue;
+
+            // จัดการป้ายเตือนค้างชำระ
+            const banner = document.getElementById('overdue-warning-banner');
+            if (totalOverdueUsers > 0) {
+                document.getElementById('overdue-warning-count').innerText = totalOverdueUsers;
+                banner.classList.remove('hidden');
+            } else {
+                banner.classList.add('hidden');
+            }
+
+            // แสดงยอดรวมบนช่องค้นหา
+            document.getElementById('search-count').innerText = users.length + " หลัง";
+        }
+
+        // ==========================================
+        // ระบบค้นหา (กรองบ้าน) Real-time
+        // ==========================================
+        function handleSearch(keyword) {
+            const searchText = keyword.trim().toLowerCase();
+            const cards = document.getElementsByClassName('user-card');
+            let visibleCount = 0;
+
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i];
+                if (card.innerText.toLowerCase().includes(searchText)) {
+                    card.style.display = "flex";
+                    visibleCount++;
+                } else {
+                    card.style.display = "none";
+                }
+            }
+            document.getElementById('search-count').innerText = visibleCount + " หลัง";
+        }
+    </script>
+</body>
+</html>
