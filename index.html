@@ -149,7 +149,7 @@
     <script>
         // 1. จัดการตอนเปิดเว็บ (เช็คว่าเคยล๊อกอินไว้ไหม)
         document.addEventListener('DOMContentLoaded', () => {
-            const savedUser = localStorage.getItem('water_app_session');
+            const savedUser = sessionStorage.getItem('water_app_session');
             if (savedUser) {
                 // ถ้าเคยล๊อกอินแล้ว ข้ามไปหน้าหลักเลย
                 const userData = JSON.parse(savedUser);
@@ -188,7 +188,7 @@
 
                 if (result.success) {
                     // จำค่าไว้ในเครื่อง
-                    localStorage.setItem('water_app_session', JSON.stringify(result));
+                    sessionStorage.setItem('water_app_session', JSON.stringify(result));
                     showMainScreen(result);
                 } else {
                     errorText.innerText = result.message || "รหัส PIN ไม่ถูกต้อง";
@@ -229,9 +229,19 @@
 
         // 4. ฟังก์ชันออกจากระบบ
         function logout() {
-            localStorage.removeItem('water_app_session');
+            sessionStorage.removeItem('water_app_session');
             location.reload(); // รีเฟรชหน้าเว็บ 1 รอบ
         }
+
+        // 5. เพิ่มลูกเล่น: พิมพ์ครบ 6 ตัว ให้ล๊อกอินอัตโนมัติ
+        document.getElementById('pin-input').addEventListener('input', function(e) {
+            if (this.value.length === 6) {
+                // เบลอช่องพิมพ์เพื่อเอาคีย์บอร์ดลง
+                this.blur(); 
+                // สั่งล๊อกอิน
+                submitLogin();
+            }
+        });
 
         // ==========================================
         // ระบบดึงข้อมูลและจัดการ Dashboard
