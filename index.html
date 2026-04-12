@@ -583,21 +583,68 @@
             }
         }
 
-        // ฟังก์ชันจำลองการกดบันทึก (เดี๋ยวเรามาต่อ API ตรงนี้ทีหลัง)
+        // ==========================================
+        // ฟังก์ชันบันทึกข้อมูล (ส่งไป Google Sheets)
+        // ==========================================
         function saveUserData() {
-            const newHouse = document.getElementById('user-house').value;
+            const btn = document.getElementById('btn-save-user');
+            const oldHouseNo = document.getElementById('user-house-old').value;
+            const newHouseNo = document.getElementById('user-house').value;
             const newName = document.getElementById('user-name').value;
+            const newPhone = document.getElementById('user-phone').value;
+            const fileInput = document.getElementById('user-image-file');
             
-            if(!newHouse) {
-                showToast("กรุณาระบุบ้านเลขที่", "warning");
+            if (!newHouseNo || !newName) {
+                showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "warning");
                 return;
             }
 
-            // แสดง Toast แจ้งเตือนก่อน (เพื่อความสวยงามระหว่างรอเชื่อมฐานข้อมูล)
-            closeUserModal();
-            showToast("บันทึกข้อมูลของ " + newHouse + " สำเร็จ!", "success");
-            
-            // หมายเหตุ: โค้ดส่งไฟล์รูปภาพและข้อมูลไป Google Sheet จะถูกนำมาเขียนต่อในฟังก์ชันนี้ครับ
+            // เปลี่ยนสถานะปุ่มเป็นกำลังโหลด
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-circle-notch animate-spin"></i> กำลังบันทึก...`;
+
+            // ตรวจสอบว่ามีการเลือกรูปใหม่ไหม
+            let imageBlob = "";
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imageBlob = e.target.result;
+                    sendDataToGas(imageBlob); // ส่งข้อมูลพร้อมรูป
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                sendDataToGas(""); // ส่งข้อมูลแบบไม่มีรูปใหม่
+            }
+
+            function sendDataToGas(blob) {
+                const payload = {
+                    oldHouseNo: oldHouseNo,
+                    newHouseNo: newHouseNo,
+                    newName: newName,
+                    newPhone: newPhone,
+                    imageBlob: blob
+                };
+
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        btn.disabled = false;
+                        btn.innerHTML = "บันทึกข้อมูล";
+                        
+                        if (response.success) {
+                            closeUserModal();
+                            showToast(response.message, "success");
+                            loadDashboardData(); // รีโหลดข้อมูลหน้าจอใหม่เพื่อให้เห็นผลทันที
+                        } else {
+                            showToast(response.message, "error");
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        btn.disabled = false;
+                        btn.innerHTML = "บันทึกข้อมูล";
+                        showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+                    })
+                    .updateUserSettings(payload);
+            }
         }
 
         // ==========================================
