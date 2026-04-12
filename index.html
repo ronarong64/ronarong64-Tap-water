@@ -412,7 +412,19 @@
                 const statusCode = user.statusCode || "none";
                 const amount = Number(user.amount || 0);
                 
-                const profilePic = user.profilePic || "";
+                // 🛠️ ส่วนที่เพิ่มใหม่: จัดการและแปลงลิงก์รูปภาพ Google Drive
+                let profilePic = user.profilePic ? user.profilePic.trim() : "";
+                
+                if (profilePic.includes("drive.google.com/file/d/")) {
+                    // ดึง ID ออกมาจากลิงก์รูปแบบ file/d/ID/view
+                    const fileId = profilePic.split('/d/')[1].split('/')[0];
+                    profilePic = `https://drive.google.com/uc?export=view&id=${fileId}`;
+                } else if (profilePic.includes("drive.google.com/open?id=")) {
+                    // เผื่อไว้กรณีลิงก์เป็นรูปแบบ open?id=ID
+                    const fileId = profilePic.split('id=')[1].split('&')[0];
+                    profilePic = `https://drive.google.com/uc?export=view&id=${fileId}`;
+                }
+
                 const lineId = escapeHTML(user.lineId || "");
                 const phone = escapeHTML(user.phone || "");
 
