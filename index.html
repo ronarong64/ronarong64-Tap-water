@@ -412,20 +412,19 @@
                 const statusCode = user.statusCode || "none";
                 const amount = Number(user.amount || 0);
                 
-                // 🛠️ แก้ไขใหม่: ดึง ID ออกมาและแปลงเป็นลิงก์แบบ Thumbnail API
-                let profilePic = user.profilePic ? user.profilePic.trim() : "";
+                // 🌟 [แก้ไขใหม่] ดึงรหัส ID ไฟล์ และใช้เซิร์ฟเวอร์ lh3 เพื่อทะลุการบล็อก
+                let profilePic = user.profilePic ? String(user.profilePic).trim() : "";
                 let fileId = "";
 
-                // ตรวจจับและดึงรหัส ID ออกมาจากลิงก์ Google Drive ทุกรูปแบบ
                 if (profilePic.includes("/d/")) {
                     fileId = profilePic.split('/d/')[1].split('/')[0];
                 } else if (profilePic.includes("id=")) {
                     fileId = profilePic.split('id=')[1].split('&')[0];
                 }
 
-                // ถ้าพบรหัสไฟล์ ให้ใช้ลิงก์ Thumbnail API (sz=w400 คือปรับลดขนาดรูปให้โหลดเร็วขึ้น)
                 if (fileId) {
-                    profilePic = `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+                    // ใช้ lh3.googleusercontent.com ซึ่งเป็นช่องทางที่ Google ยอมให้รูปโชว์บนเว็บภายนอกได้ 100%
+                    profilePic = `https://lh3.googleusercontent.com/d/${fileId}`;
                 }
 
                 const lineId = escapeHTML(user.lineId || "");
@@ -453,9 +452,9 @@
                     borderColor = "border-orange-400 shadow-orange-500/10";
                 }
 
-                // 🖼️ รูปโปรไฟล์ 
+                // 🖼️ รูปโปรไฟล์ (ลบ onerror ออกชั่วคราวเพื่อตรวจสอบว่าเกิด Error อะไรขึ้นถ้าภาพไม่มา)
                 let avatarHtml = profilePic 
-                    ? `<img src="${profilePic}" alt="profile" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-user text-slate-300 text-sm\\'></i>'">` 
+                    ? `<img src="${profilePic}" alt="profile" class="w-full h-full object-cover rounded-full">` 
                     : `<i class="fas ${sIcon} text-sm"></i>`;
 
                 // 📞 เบอร์โทรศัพท์ 
@@ -509,7 +508,7 @@
 
             listContainer.innerHTML = htmlContent;
 
-            // อัปเดตตัวเลขสถิติ 4 กล่อง
+            // อัปเดตตัวเลขสถิติ
             document.getElementById('dash-count-todo').innerText = stats.todo;
             document.getElementById('dash-count-waiting').innerText = stats.waiting;
             document.getElementById('dash-count-paid').innerText = stats.paid;
