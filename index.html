@@ -421,61 +421,66 @@
 
                 if (user.isOverdue || statusCode === 'overdue') totalOverdueUsers++;
 
-                // กำหนดสีและข้อความสถานะ
+                // 🟢 กำหนดสี, ข้อความสถานะ และ "สีเส้นขอบการ์ด (borderColor)"
                 let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
+                let borderColor = "border-slate-200"; // สีขอบเริ่มต้น (สีเทา)
+
                 if (statusCode === 'paid' || statusCode === 'free') {
                     sClass = "text-green-600"; sBg = "bg-green-100"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
+                    borderColor = "border-green-400 shadow-green-500/10"; // สีขอบเขียว
                 } else if (statusCode === 'overdue') {
                     sClass = "text-red-600 font-bold"; sBg = "bg-red-100"; sIcon = "fa-exclamation-circle"; sText = `ค้างชำระ ${amount.toLocaleString()}.-`;
+                    borderColor = "border-red-400 shadow-red-500/10"; // สีขอบแดง
                 } else if (statusCode === 'waiting') {
                     sClass = "text-orange-600 font-bold"; sBg = "bg-orange-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}.-`;
+                    borderColor = "border-orange-400 shadow-orange-500/10"; // สีขอบส้ม
                 }
 
-                // รูปโปรไฟล์เจ้าบ้าน (วงกลม)
+                // รูปโปรไฟล์เจ้าบ้าน (ย่อขนาดลงนิดหน่อยเพื่อให้การ์ดบางลง)
                 let avatarHtml = profilePic 
                     ? `<img src="${profilePic}" alt="profile" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-user text-slate-300\\'></i>'">` 
                     : `<i class="fas ${sIcon} text-lg"></i>`;
 
-                // 📞 เบอร์โทรศัพท์ (ย้ายมาซ้ายมือและจัดดีไซน์ใหม่ให้คลีนขึ้น)
+                // 📞 เบอร์โทรศัพท์ (ปรับปุ่มให้แบนและกระชับขึ้น)
                 let phoneDisplayHtml = phone
-                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[12px] font-medium text-slate-500 flex items-center gap-1.5 hover:text-blue-600 active:scale-95 transition-all">
-                           <div class="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-phone-alt text-[9px]"></i></div>
+                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[11px] font-medium text-slate-500 flex items-center gap-1.5 hover:text-blue-600 active:scale-95 transition-all">
+                           <div class="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-phone-alt text-[8px]"></i></div>
                            ${phone}
                        </a>`
-                    : `<span class="text-[11px] text-slate-300 italic">ไม่มีเบอร์โทร</span>`;
+                    : `<span class="text-[10px] text-slate-300 italic">ไม่มีเบอร์โทร</span>`;
 
-                // 🟢 ไอคอน LINE
+                // ไอคอน LINE
                 let lineIconHtml = lineId
                     ? `<i class="fab fa-line text-green-500 text-lg drop-shadow-sm"></i>`
                     : ``;
 
-                // 📦 โครงสร้างการ์ดใหม่
+                // 📦 โครงสร้างการ์ด (ลด padding เป็น p-3, ใช้ขอบ borderColor)
                 htmlContent += `
-                    <div class="user-card bg-white rounded-2xl p-4 shadow-sm border border-slate-100 active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 hover:shadow-md w-full" onclick="alert('บ้านเลขที่: ${houseNo}')">
-                        <div class="flex items-start gap-4 min-w-0 w-full">
+                    <div class="user-card bg-white rounded-xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full" onclick="alert('บ้านเลขที่: ${houseNo}')">
+                        <div class="flex items-start gap-3 min-w-0 w-full">
                             
-                            <div class="w-12 h-12 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border border-white mt-0.5">
+                            <div class="w-11 h-11 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border border-white mt-0.5">
                                 ${avatarHtml}
                             </div>
                             
                             <div class="min-w-0 flex-1">
-                                <div class="flex items-center justify-between mb-0.5">
-                                    <div class="flex items-center gap-2">
-                                        <h4 class="text-base font-bold text-slate-800">${houseNo}</h4>
+                                <div class="flex items-center justify-between mb-0">
+                                    <div class="flex items-center gap-1.5">
+                                        <h4 class="text-[15px] font-bold text-slate-800 leading-tight">${houseNo}</h4>
                                         ${lineIconHtml}
                                     </div>
-                                    <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-300 hover:text-amber-500 active:scale-90 px-2 py-1 transition-all rounded-lg hover:bg-amber-50" title="แก้ไขข้อมูล">
-                                        <i class="fas fa-edit text-[14px]"></i>
+                                    <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-400 hover:text-blue-500 active:scale-90 px-2 py-1 transition-all rounded-lg hover:bg-blue-50" title="แก้ไขข้อมูล">
+                                        <i class="fas fa-edit text-lg"></i>
                                     </button>
                                 </div>
                                 
-                                <p class="text-[14px] font-semibold text-slate-700 truncate mb-2">${safeName}</p>
+                                <p class="text-[13px] font-semibold text-slate-700 truncate leading-tight">${safeName}</p>
                                 
-                                <div class="flex items-center justify-between mt-1 pt-2 border-t border-slate-50">
+                                <div class="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-50">
                                     <div class="shrink-0">
                                         ${phoneDisplayHtml}
                                     </div>
-                                    <div class="text-[11px] font-bold ${sClass} ${sBg} px-2.5 py-1 rounded-md text-right shrink-0">
+                                    <div class="text-[10px] font-bold ${sClass} ${sBg} px-2 py-0.5 rounded-md text-right shrink-0 border border-white">
                                         ${sText}
                                     </div>
                                 </div>
