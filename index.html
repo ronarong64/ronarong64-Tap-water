@@ -584,70 +584,84 @@
         }
 
         // ==========================================
-        // ฟังก์ชันบันทึกข้อมูล (ส่งไป Google Sheets)
-        // ==========================================
-        function saveUserData() {
-            const btn = document.getElementById('btn-save-user');
-            const oldHouseNo = document.getElementById('user-house-old').value;
-            const newHouseNo = document.getElementById('user-house').value;
-            const newName = document.getElementById('user-name').value;
-            const newPhone = document.getElementById('user-phone').value;
-            const fileInput = document.getElementById('user-image-file');
+// ฟังก์ชันบันทึกข้อมูล (ส่งไป Google Sheets ผ่าน fetch)
+// ==========================================
+async function saveUserData() {
+    const btn = document.getElementById('btn-save-user');
+    const oldHouseNo = document.getElementById('user-house-old').value;
+    const newHouseNo = document.getElementById('user-house').value;
+    const newName = document.getElementById('user-name').value;
+    const newPhone = document.getElementById('user-phone').value;
+    const fileInput = document.getElementById('user-image-file');
+    
+    if (!newHouseNo || !newName) {
+        showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "warning");
+        return;
+    }
+
+    // เริ่มการบันทึก
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
+
+    const finishProcess = async (blobData) => {
+        // เตรียมชุดข้อมูลเพื่อส่งไปให้ doPost รับ
+        const payload = {
+            action: "updateMember", // 👈 ต้องระบุ action เพื่อให้ GAS รู้ว่าต้องทำอะไร
+            oldHouseNo: oldHouseNo,
+            newHouseNo: newHouseNo,
+            newName: newName,
+            newPhone: newPhone,
+            imageBlob: blobData
+        };
+
+        try {
+            // ใช้ fetch แทน google.script.run
+            // หมายเหตุ: อย่าลืมประกาศตัวแปร API_URL ที่เก็บลิงก์ Web App ของคุณไว้ส่วนบนสุดของสคริปต์
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                // ส่งเป็น Text ป้องกันปัญหา CORS Preflight ในบางเบราว์เซอร์
+                body: JSON.stringify(payload) 
+            });
             
-            if (!newHouseNo || !newName) {
-                showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "warning");
-                return;
-            }
+            const result = await response.json();
 
-            // เริ่มการบันทึก
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
-
-            const finishProcess = (blobData) => {
-                const payload = {
-                    oldHouseNo: oldHouseNo,
-                    newHouseNo: newHouseNo,
-                    newName: newName,
-                    newPhone: newPhone,
-                    imageBlob: blobData
-                };
-
-                google.script.run
-                    .withSuccessHandler(function(response) {
-                        btn.disabled = false;
-                        btn.innerHTML = "บันทึกข้อมูล";
-                        if (response.success) {
-                            closeUserModal();
-                            showToast(response.message, "success");
-                            loadDashboardData(); // โหลดข้อมูลใหม่มาโชว์
-                        } else {
-                            showToast(response.message, "error");
-                        }
-                    })
-                    .withFailureHandler(function(err) {
-                        btn.disabled = false;
-                        btn.innerHTML = "บันทึกข้อมูล";
-                        showToast("ไม่สามารถติดต่อ Server ได้: " + err, "error");
-                    })
-                    .updateUserSettings(payload);
-            };
-
-            // ตรวจสอบรูปภาพ
-            if (fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    finishProcess(e.target.result);
-                };
-                reader.onerror = function() {
-                    showToast("การอ่านไฟล์รูปภาพผิดพลาด", "error");
-                    btn.disabled = false;
-                    btn.innerHTML = "บันทึกข้อมูล";
-                };
-                reader.readAsDataURL(fileInput.files[0]);
+            if (result.success) {
+                closeUserModal();
+                showToast(result.message, "success");
+                
+                // โหลดข้อมูลใหม่มาโชว์ (ตรวจสอบชื่อฟังก์ชันโหลดข้อมูลหน้าแดชบอร์ดของคุณ)
+                if (typeof loadDashboardData === "function") {
+                    loadDashboardData(); 
+                }
             } else {
-                finishProcess(""); // ไม่มีรูปใหม่
+                showToast(result.message, "error");
             }
+        } catch (err) {
+            showToast("ไม่สามารถติดต่อ Server ได้", "error");
+            console.error(err);
+        } finally {
+            // คืนค่าปุ่ม
+            btn.disabled = false;
+            btn.innerHTML = "บันทึกข้อมูล";
         }
+    };
+
+    // ตรวจสอบรูปภาพก่อนประมวลผล
+    if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            finishProcess(e.target.result);
+        };
+        reader.onerror = function() {
+            showToast("การอ่านไฟล์รูปภาพผิดพลาด", "error");
+            btn.disabled = false;
+            btn.innerHTML = "บันทึกข้อมูล";
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    } else {
+        finishProcess(""); // ไม่มีรูปใหม่
+    }
+}
 
         // ==========================================
         // ระบบค้นหา (กรองบ้าน) Real-time
