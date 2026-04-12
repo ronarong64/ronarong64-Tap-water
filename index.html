@@ -621,6 +621,132 @@
             toggleMenu(); // สั่งให้หุบเมนูเก็บทันทีหลังกด
         }
 
+        // ==========================================
+        // ระบบแจ้งเตือน (Toast Notification)
+        // ==========================================
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            // ตั้งค่าสีและไอคอนตามประเภท (success, error, warning)
+            let icon = 'fa-check-circle';
+            let colorClass = 'text-green-500';
+            let borderClass = 'border-green-500';
+            let bgIconClass = 'bg-green-100';
+
+            if (type === 'error') {
+                icon = 'fa-times-circle';
+                colorClass = 'text-red-500';
+                borderClass = 'border-red-500';
+                bgIconClass = 'bg-red-100';
+            } else if (type === 'warning') {
+                icon = 'fa-exclamation-circle';
+                colorClass = 'text-orange-500';
+                borderClass = 'border-orange-500';
+                bgIconClass = 'bg-orange-100';
+            }
+
+            // สร้างโครงสร้าง Toast
+            toast.className = `bg-white border-l-4 ${borderClass} rounded-xl shadow-xl p-4 flex items-center gap-3 transform translate-x-full opacity-0 transition-all duration-300 pointer-events-auto min-w-[250px] max-w-sm`;
+            toast.innerHTML = `
+                <div class="w-8 h-8 rounded-full ${bgIconClass} ${colorClass} flex items-center justify-center shrink-0">
+                    <i class="fas ${icon} text-lg"></i>
+                </div>
+                <div class="font-medium text-slate-700 text-sm flex-1">
+                    ${message}
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            // Animate เข้า
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            }, 10);
+
+            // Animate ออกและลบทิ้งอัตโนมัติหลัง 3 วินาที
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ==========================================
+        // ระบบยืนยันการทำงาน (Confirm Dialog)
+        // ==========================================
+        let currentConfirmCallback = null; // ตัวแปรเก็บฟังก์ชันที่จะให้ทำหลังกดยืนยัน
+
+        function openConfirmModal(title, message, confirmText, callback, isDanger = true) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-message').innerText = message;
+            
+            const actionBtn = document.getElementById('confirm-btn-action');
+            actionBtn.innerText = confirmText;
+            
+            // เปลี่ยนสีปุ่มตามประเภท (ลบสีแดง / บันทึกสีฟ้า)
+            if(isDanger) {
+                actionBtn.className = "flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/30 transition-all active:scale-95";
+            } else {
+                actionBtn.className = "flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95";
+            }
+
+            currentConfirmCallback = callback; // จำฟังก์ชันไว้
+            
+            // แสดง Modal
+            const modal = document.getElementById('confirm-modal');
+            const box = document.getElementById('confirm-modal-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            const box = document.getElementById('confirm-modal-box');
+            modal.classList.add('opacity-0');
+            box.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // เมื่อกดปุ่ม "ยืนยัน"
+        document.getElementById('confirm-btn-action').addEventListener('click', () => {
+            closeConfirmModal();
+            if (typeof currentConfirmCallback === 'function') {
+                currentConfirmCallback(); // เรียกฟังก์ชันที่ตั้งไว้
+            }
+        });
+
     </script>
+
+    <div id="toast-container" class="fixed top-5 right-5 z-[200] flex flex-col gap-3 pointer-events-none"></div>
+
+    <div id="confirm-modal" class="fixed inset-0 z-[250] bg-slate-900/50 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300" id="confirm-modal-box">
+            <div class="flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-500 shadow-inner">
+                    <i class="fas fa-exclamation-triangle text-3xl"></i>
+                </div>
+                <h3 id="confirm-title" class="text-xl font-bold text-slate-800 mb-2">ยืนยันการทำรายการ?</h3>
+                <p id="confirm-message" class="text-sm text-slate-500 mb-6">คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้ ข้อมูลที่ลบจะไม่สามารถกู้คืนได้</p>
+                
+                <div class="flex items-center gap-3 w-full">
+                    <button onclick="closeConfirmModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-all active:scale-95">
+                        ยกเลิก
+                    </button>
+                    <button id="confirm-btn-action" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/30 transition-all active:scale-95">
+                        ยืนยันการลบ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
