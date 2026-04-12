@@ -406,7 +406,7 @@
 
             users.forEach(user => {
                 const houseNo = escapeHTML(user.houseNo || "-");
-                const safeName = escapeHTML(user.name || "");
+                const safeName = escapeHTML(user.name || "ไม่มีชื่อเจ้าบ้าน");
                 const statusCode = user.statusCode || "none";
                 const amount = Number(user.amount || 0);
                 
@@ -421,50 +421,66 @@
 
                 if (user.isOverdue || statusCode === 'overdue') totalOverdueUsers++;
 
-                let sClass = "text-slate-400", sBg = "bg-slate-50", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
+                // กำหนดสีและข้อความสถานะ
+                let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
                 if (statusCode === 'paid' || statusCode === 'free') {
-                    sClass = "text-green-600"; sBg = "bg-green-50"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
+                    sClass = "text-green-600"; sBg = "bg-green-100"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
                 } else if (statusCode === 'overdue') {
-                    sClass = "text-red-500 font-bold"; sBg = "bg-red-50"; sIcon = "fa-exclamation-circle"; sText = `ค้างชำระ ${amount.toLocaleString()}.-`;
+                    sClass = "text-red-600 font-bold"; sBg = "bg-red-100"; sIcon = "fa-exclamation-circle"; sText = `ค้างชำระ ${amount.toLocaleString()}.-`;
                 } else if (statusCode === 'waiting') {
-                    sClass = "text-orange-500 font-bold"; sBg = "bg-orange-50"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}.-`;
+                    sClass = "text-orange-600 font-bold"; sBg = "bg-orange-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}.-`;
                 }
 
-                // รูปโปรไฟล์เจ้าบ้าน (ปรับให้ขอบมนสวยงาม)
+                // รูปโปรไฟล์เจ้าบ้าน (วงกลม)
                 let avatarHtml = profilePic 
-                    ? `<img src="${profilePic}" alt="profile" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<i class=\'fas fa-user text-slate-300\'></i>'">` 
+                    ? `<img src="${profilePic}" alt="profile" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-user text-slate-300\\'></i>'">` 
                     : `<i class="fas ${sIcon} text-lg"></i>`;
 
-                // 📞 เบอร์โทรศัพท์: แสดงเป็นเลขพร้อมกดโทรออก (ซ่อนไอคอนโทรศัพท์ตามคำขอ)
+                // 📞 เบอร์โทรศัพท์ (ย้ายมาซ้ายมือและจัดดีไซน์ใหม่ให้คลีนขึ้น)
                 let phoneDisplayHtml = phone
-                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 active:scale-95 transition-all">
-                           <i class="fas fa-phone-alt mr-1 text-[10px]"></i> ${phone}
+                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[12px] font-medium text-slate-500 flex items-center gap-1.5 hover:text-blue-600 active:scale-95 transition-all">
+                           <div class="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-phone-alt text-[9px]"></i></div>
+                           ${phone}
                        </a>`
-                    : ``;
+                    : `<span class="text-[11px] text-slate-300 italic">ไม่มีเบอร์โทร</span>`;
 
-                // 🟢 ไอคอน LINE: แสดงเฉพาะเมื่อมีข้อมูล
+                // 🟢 ไอคอน LINE
                 let lineIconHtml = lineId
-                    ? `<i class="fab fa-line text-green-500 text-xl drop-shadow-sm"></i>`
+                    ? `<i class="fab fa-line text-green-500 text-lg drop-shadow-sm"></i>`
                     : ``;
 
+                // 📦 โครงสร้างการ์ดใหม่
                 htmlContent += `
-                    <div class="user-card bg-white rounded-2xl p-3 shadow-sm border border-slate-100 flex items-center justify-between active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 hover:shadow-md w-full" onclick="alert('บ้านเลขที่: ${houseNo}')">
-                        <div class="flex items-center gap-4 min-w-0 w-full">
-                            <div class="w-12 h-12 rounded-2xl ${sBg} ${sClass} flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border border-white">
+                    <div class="user-card bg-white rounded-2xl p-4 shadow-sm border border-slate-100 active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 hover:shadow-md w-full" onclick="alert('บ้านเลขที่: ${houseNo}')">
+                        <div class="flex items-start gap-4 min-w-0 w-full">
+                            
+                            <div class="w-12 h-12 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border border-white mt-0.5">
                                 ${avatarHtml}
                             </div>
                             
                             <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-2">
-                                    <h4 class="text-base font-bold text-slate-700 truncate">${houseNo}</h4>
-                                    ${lineIconHtml}
+                                <div class="flex items-center justify-between mb-0.5">
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="text-base font-bold text-slate-800">${houseNo}</h4>
+                                        ${lineIconHtml}
+                                    </div>
+                                    <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-300 hover:text-amber-500 active:scale-90 px-2 py-1 transition-all rounded-lg hover:bg-amber-50" title="แก้ไขข้อมูล">
+                                        <i class="fas fa-edit text-[14px]"></i>
+                                    </button>
                                 </div>
-                                <p class="text-[12px] font-medium text-slate-500 truncate mb-1">${safeName}</p>
-                                <div class="flex items-center justify-between mt-1">
-                                    <p class="text-[11px] ${sClass}">${sText}</p>
-                                    ${phoneDisplayHtml}
+                                
+                                <p class="text-[14px] font-semibold text-slate-700 truncate mb-2">${safeName}</p>
+                                
+                                <div class="flex items-center justify-between mt-1 pt-2 border-t border-slate-50">
+                                    <div class="shrink-0">
+                                        ${phoneDisplayHtml}
+                                    </div>
+                                    <div class="text-[11px] font-bold ${sClass} ${sBg} px-2.5 py-1 rounded-md text-right shrink-0">
+                                        ${sText}
+                                    </div>
                                 </div>
                             </div>
+                            
                         </div>
                     </div>`;
             });
@@ -488,6 +504,15 @@
 
             // แสดงยอดรวมบนช่องค้นหา
             document.getElementById('search-count').innerText = users.length + " หลัง";
+        }
+
+        // ==========================================
+        // ฟังก์ชันจัดการข้อมูลสมาชิก
+        // ==========================================
+        function openEditMember(houseNo) {
+            console.log("กดปุ่มแก้ไขข้อมูลบ้านเลขที่: " + houseNo);
+            alert("กำลังเตรียมเปิดหน้าต่างแก้ไขข้อมูลของบ้านเลขที่: " + houseNo);
+            // เดี๋ยวเราเอาฟอร์มแก้ไขข้อมูลมาเขียนต่อตรงนี้ครับ
         }
 
         // ==========================================
