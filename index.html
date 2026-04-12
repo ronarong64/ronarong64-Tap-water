@@ -33,7 +33,7 @@
 </head>
 <body class="bg-slate-50 text-slate-900 h-screen w-screen overflow-hidden flex flex-col items-center justify-center">
 
-    <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-50 flex flex-col items-center justify-center p-6 transition-opacity duration-500">
+   <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-50 flex flex-col items-center justify-center p-6 transition-opacity duration-500">
         <div class="absolute inset-0 pointer-events-none overflow-hidden opacity-70">
             <div class="absolute top-[-10%] right-[-10%] w-80 h-80 bg-blue-200 rounded-full blur-3xl"></div>
             <div class="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-purple-200 rounded-full blur-3xl"></div>
@@ -64,12 +64,13 @@
             <p id="error-msg" class="hidden mt-5 bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm font-bold border border-red-100 animate-pulse w-full shadow-sm">
                 <i class="fas fa-times-circle mr-1"></i> <span id="error-text">รหัส PIN ไม่ถูกต้อง</span>
             </p>
+
+            <div class="text-center mt-8">
+                <p class="text-[10px] text-slate-400 font-medium uppercase tracking-widest">ผู้พัฒนาระบบ รณรงค์ อินทร์คง</p>
+                <p class="text-[9px] text-slate-300 mt-1 font-mono">v14.0.0 (Clean Start)</p>
+            </div>
         </div>
         
-        <div class="absolute bottom-6 text-center">
-            <p class="text-[10px] text-slate-400 font-medium uppercase tracking-widest">ผู้พัฒนาระบบ รณรงค์ อินทร์คง</p>
-            <p class="text-[9px] text-slate-400 mt-1 font-mono">v14.0.0 (Clean Start)</p>
-        </div>
     </div>
 
     <div id="main-screen" class="hidden fixed inset-0 flex flex-col bg-slate-50 w-full max-w-md mx-auto shadow-2xl overflow-hidden">
