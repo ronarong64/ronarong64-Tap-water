@@ -204,68 +204,47 @@
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-4 pb-24">
+        <main class="flex-1 overflow-y-auto hide-scrollbar p-4 pb-24">
             
-            <div class="relative w-full">
-                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="ค้นหาบ้านเลขที่ หรือ ชื่อ..." 
-                       class="w-full bg-white border border-slate-200 rounded-xl h-12 pl-11 pr-24 text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-sm shadow-sm">
-                <div class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-slate-50 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-500 border border-slate-100">
-                    <span id="search-count">...</span>
+            <div id="page-home" class="space-y-4 animate-fade-in">
                 </div>
-            </div>
 
-            <div id="overdue-warning-banner" class="hidden bg-gradient-to-r from-red-500 to-rose-600 rounded-2xl p-4 shadow-lg shadow-red-500/30 text-white flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center animate-pulse"><i class="fas fa-exclamation-triangle text-xl"></i></div>
+            <div id="page-settings" class="hidden space-y-4 animate-fade-in">
+                <div class="flex items-center gap-3 mb-6 mt-2">
+                    <div class="w-10 h-10 rounded-xl bg-slate-800 text-white flex items-center justify-center shadow-lg"><i class="fas fa-cog"></i></div>
                     <div>
-                        <h3 class="font-bold leading-tight">ตรวจพบสมาชิกค้างชำระเกินกำหนด!</h3>
-                        <p class="text-xs text-red-100">จำนวน <span id="overdue-warning-count" class="font-bold text-white text-base">0</span> หลัง (เตรียมงดจ่ายน้ำ)</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 shadow-lg shadow-blue-500/20 text-white flex items-center justify-between">
-                <div>
-                    <div class="flex items-center gap-1.5 mb-1 opacity-90">
-                        <i class="far fa-calendar-alt text-xs"></i>
-                        <span class="text-[12px] font-light tracking-wider uppercase">รอบบิลเก็บเดือน</span>
-                    </div>
-                    <div id="home-display-month" class="text-xl font-bold tracking-tight leading-none">
-                        <div class="h-6 w-24 bg-white/20 rounded animate-pulse"></div>
+                        <h2 class="text-xl font-bold text-slate-800 leading-tight">ตั้งค่าระบบ</h2>
+                        <p class="text-[11px] text-slate-500">จัดการอัตราค่าน้ำและการรับชำระเงิน</p>
                     </div>
                 </div>
 
-                <button onclick="openAddMemberModal()" class="admin-only w-12 h-12 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-xl flex items-center justify-center text-white text-xl transition-all shadow-sm backdrop-blur-md">
-                    <i class="fas fa-user-plus"></i>
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-tint text-blue-500"></i> อัตราค่าน้ำประปา</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-500 ml-1">ค่าน้ำประปา (บาท/หน่วย)</label>
+                            <input type="number" id="setting-rate" placeholder="เช่น 10" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 font-bold text-lg text-blue-600 focus:bg-white focus:border-blue-500 outline-none mt-1 transition-all">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold text-slate-500 ml-1">ค่ารักษามิเตอร์/ขั้นต่ำ (บาท/เดือน)</label>
+                            <input type="number" id="setting-min-fee" placeholder="เช่น 0 หรือ 20" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 font-bold text-lg text-slate-700 focus:bg-white focus:border-blue-500 outline-none mt-1 transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-qrcode text-purple-500"></i> บัญชีรับชำระเงิน</h3>
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-500 ml-1">เบอร์พร้อมเพย์ (PromptPay)</label>
+                        <input type="text" id="setting-promptpay" placeholder="08X-XXX-XXXX" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 font-bold text-slate-700 focus:bg-white focus:border-purple-500 outline-none mt-1 transition-all">
+                    </div>
+                </div>
+
+                <button onclick="saveSettingsData()" id="btn-save-settings" class="w-full py-3.5 mt-4 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-lg shadow-slate-900/20 active:scale-95 transition-all flex justify-center items-center gap-2">
+                    <i class="fas fa-save"></i> บันทึกการตั้งค่า
                 </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
-                <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-100 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center flex-shrink-0"><i class="fas fa-clipboard-list"></i></div>
-                    <div class="min-w-0"><p class="text-[11px] text-slate-400 font-medium">ยังไม่จดมิเตอร์</p><div id="dash-count-todo" class="text-lg font-bold text-slate-700 leading-none">0</div></div>
-                </div>
-                <div class="bg-white rounded-2xl p-3 shadow-sm border border-orange-100 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center flex-shrink-0"><i class="fas fa-clock"></i></div>
-                    <div class="min-w-0"><p class="text-[11px] text-slate-400 font-medium">รอชำระเงิน</p><div id="dash-count-waiting" class="text-lg font-bold text-orange-500 leading-none">0</div></div>
-                </div>
-                <div class="bg-white rounded-2xl p-3 shadow-sm border border-green-100 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0"><i class="fas fa-check-circle"></i></div>
-                    <div class="min-w-0"><p class="text-[11px] text-slate-400 font-medium">ชำระเรียบร้อย</p><div id="dash-count-paid" class="text-lg font-bold text-green-600 leading-none">0</div></div>
-                </div>
-                <div class="bg-white rounded-2xl p-3 shadow-sm border border-red-100 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0"><i class="fas fa-exclamation-circle"></i></div>
-                    <div class="min-w-0"><p class="text-[11px] text-slate-400 font-medium">ค้างชำระ</p><div id="dash-count-overdue" class="text-lg font-bold text-red-500 leading-none">0</div></div>
-                </div>
-            </div>
-
-            <div class="flex justify-between items-end mt-4 px-1">
-                <h3 class="font-bold text-slate-700 text-sm">รายชื่อบ้านทั้งหมด</h3>
-            </div>
-            
-            <div id="user-list" class="flex flex-col gap-2"></div>
-            
         </main>
     </div>
 
@@ -925,6 +904,88 @@
             closeConfirmModal();
             if (typeof currentConfirmCallback === 'function') {
                 currentConfirmCallback(); 
+            }
+        }
+
+        // ==========================================
+        // ระบบสลับหน้าจอ (Page Router)
+        // ==========================================
+        function showPage(pageId) {
+            // 1. ซ่อนทุกหน้าก่อน
+            document.getElementById('page-home').classList.add('hidden');
+            document.getElementById('page-settings').classList.add('hidden');
+            
+            // 2. แสดงเฉพาะหน้าที่เลือก
+            const targetPage = document.getElementById('page-' + pageId);
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+            }
+
+            // 3. ปิดเมนูด้านข้าง
+            toggleMenu(); 
+
+            // 4. ถ้ากดเปิดหน้าตั้งค่า ให้โหลดข้อมูลจากฐานข้อมูลมาโชว์ในช่อง
+            if (pageId === 'settings') {
+                loadSettingsData();
+            }
+        }
+
+        // ==========================================
+        // ระบบโหลดและบันทึกข้อมูลตั้งค่า (Settings)
+        // ==========================================
+        async function loadSettingsData() {
+            const btn = document.getElementById('btn-save-settings');
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> กำลังโหลด...`;
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(API_URL + "?action=getSettings");
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    document.getElementById('setting-rate').value = result.data.RATE_PER_UNIT || "";
+                    document.getElementById('setting-min-fee').value = result.data.MIN_FEE || "";
+                    document.getElementById('setting-promptpay').value = result.data.PROMPTPAY || "";
+                }
+            } catch (err) {
+                showToast("โหลดข้อมูลตั้งค่าไม่สำเร็จ", "error");
+            } finally {
+                btn.innerHTML = `<i class="fas fa-save"></i> บันทึกการตั้งค่า`;
+                btn.disabled = false;
+            }
+        }
+
+        async function saveSettingsData() {
+            const btn = document.getElementById('btn-save-settings');
+            const rate = document.getElementById('setting-rate').value;
+            const minFee = document.getElementById('setting-min-fee').value;
+            const promptpay = document.getElementById('setting-promptpay').value;
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: "saveSettings",
+                        rate: rate,
+                        minFee: minFee,
+                        promptpay: promptpay
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showToast("บันทึกการตั้งค่าเรียบร้อยแล้ว", "success");
+                } else {
+                    showToast("เกิดข้อผิดพลาดในการบันทึก", "error");
+                }
+            } catch (err) {
+                showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-save"></i> บันทึกการตั้งค่า`;
             }
         }
 
