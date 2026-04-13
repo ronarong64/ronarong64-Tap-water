@@ -412,7 +412,7 @@
                 const statusCode = user.statusCode || "none";
                 const amount = Number(user.amount || 0);
                 
-                // 1. 🔍 ส่วนค้นหารหัสภาพ (แก้ไขใหม่ให้แม่นยำขึ้น)
+                // 1. 🔍 ส่วนค้นหารหัสภาพ
                 let rawProfilePic = user.profilePic ? String(user.profilePic).trim() : "";
                 let fileId = "";
                 
@@ -438,27 +438,26 @@
                 let borderColor = "border-slate-200"; 
 
                 if (statusCode === 'paid' || statusCode === 'free') {
-                    sClass = "text-green-600"; sBg = "bg-green-100"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
-                    borderColor = "border-green-400 shadow-green-500/10";
+                    sClass = "text-emerald-600"; sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
+                    borderColor = "border-emerald-400 shadow-emerald-500/10";
                 } else if (statusCode === 'overdue') {
-                    sClass = "text-red-600 font-bold"; sBg = "bg-red-100"; sIcon = "fa-exclamation-circle"; sText = `ค้าง ${amount.toLocaleString()}.-`;
-                    borderColor = "border-red-400 shadow-red-500/10";
+                    sClass = "text-rose-600 font-bold"; sBg = "bg-rose-100"; sIcon = "fa-exclamation-circle"; sText = `ค้าง ${amount.toLocaleString()}.-`;
+                    borderColor = "border-rose-400 shadow-rose-500/10";
                 } else if (statusCode === 'waiting') {
-                    sClass = "text-orange-600 font-bold"; sBg = "bg-orange-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}.-`;
-                    borderColor = "border-orange-400 shadow-orange-500/10";
+                    sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}.-`;
+                    borderColor = "border-amber-400 shadow-amber-500/10";
                 }
 
                 // 4. 🖼️ ระบบสร้างรูปโปรไฟล์ 2 ชั้น (Two-Layer Fallback)
-                let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`; // ค่าเริ่มต้นถ้าไม่มีรูป
+                let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`; 
 
                 if (fileId) {
-                    // เซิร์ฟเวอร์หลัก และ เซิร์ฟเวอร์สำรอง
                     const mainImage = "https://lh3.googleusercontent.com/d/" + fileId + "=s200";
                     const backupImage = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w200";
-                    
-                    // แทรกโค้ด onerror เข้าไปในแท็ก img ถ้า main โหลดไม่ขึ้น ให้ใช้ backup อัตโนมัติ
                     avatarHtml = `<img src="${mainImage}" alt="profile" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.src='${backupImage}';">`;
-                } else if (rawProfilePic && rawProfilePic.startsWith("http")) {
+                } 
+                // 🌟 [จุดที่แก้ไข] เพิ่มเงื่อนไข rawProfilePic.startsWith("data:") ให้รองรับรูปภาพที่ถูกแสดงทันที
+                else if (rawProfilePic && (rawProfilePic.startsWith("http") || rawProfilePic.startsWith("data:"))) {
                     avatarHtml = `<img src="${rawProfilePic}" alt="profile" class="w-full h-full object-cover rounded-full">`;
                 }
 
@@ -470,38 +469,35 @@
                        </a>`
                     : `<span class="text-[9px] text-slate-300 italic">ไม่มีเบอร์โทร</span>`;
 
-                // ไอคอน LINE 
-                let lineIconHtml = lineId
-                    ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>`
-                    : ``;
+                let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
 
                 // 📦 โครงสร้างการ์ด 
                 htmlContent += `
-                    <div class="user-card bg-white rounded-xl p-2.5 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full" onclick="alert('บ้านเลขที่: ${houseNo}')">
-                        <div class="flex items-start gap-2.5 min-w-0 w-full">
+                    <div class="user-card bg-white/90 backdrop-blur-sm rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50/90 w-full mb-3" onclick="alert('บ้านเลขที่: ${houseNo}')">
+                        <div class="flex items-start gap-3 min-w-0 w-full">
                             
-                            <div class="w-9 h-9 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border border-white mt-0.5">
+                            <div class="w-12 h-12 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border-2 border-white mt-0.5">
                                 ${avatarHtml}
                             </div>
                             
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center justify-between mb-0">
-                                    <div class="flex items-center gap-1.5">
-                                        <h4 class="text-[14px] font-bold text-slate-800 leading-none">${houseNo}</h4>
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="text-[15px] font-bold text-slate-800 leading-none">${houseNo}</h4>
                                         ${lineIconHtml}
                                     </div>
-                                    <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-400 hover:text-blue-500 active:scale-90 px-1.5 py-0.5 transition-all rounded-md hover:bg-blue-50" title="แก้ไขข้อมูล">
-                                        <i class="fas fa-edit text-base"></i>
+                                    <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-400 hover:text-blue-500 active:scale-90 px-2 py-1 transition-all rounded-lg hover:bg-blue-50" title="แก้ไขข้อมูล">
+                                        <i class="fas fa-edit text-[15px]"></i>
                                     </button>
                                 </div>
                                 
-                                <p class="text-[12px] font-semibold text-slate-600 truncate leading-none mt-0.5">${safeName}</p>
+                                <p class="text-[13px] font-medium text-slate-500 truncate leading-none mt-1 mb-2">${safeName}</p>
                                 
-                                <div class="flex items-center justify-between mt-1 pt-1 border-t border-slate-50">
+                                <div class="flex items-center justify-between pt-1 border-t border-slate-100">
                                     <div class="shrink-0">
                                         ${phoneDisplayHtml}
                                     </div>
-                                    <div class="text-[9px] font-bold ${sClass} ${sBg} px-1.5 py-0.5 rounded border border-white shadow-sm shrink-0 leading-none">
+                                    <div class="text-[10px] font-bold ${sClass} ${sBg} px-2 py-1 rounded-md border border-white shadow-sm shrink-0 leading-none">
                                         ${sText}
                                     </div>
                                 </div>
@@ -513,7 +509,6 @@
 
             listContainer.innerHTML = htmlContent;
 
-            // อัปเดตตัวเลขสถิติ
             document.getElementById('dash-count-todo').innerText = stats.todo;
             document.getElementById('dash-count-waiting').innerText = stats.waiting;
             document.getElementById('dash-count-paid').innerText = stats.paid;
@@ -534,21 +529,20 @@
         // ระบบจัดการแก้ไขข้อมูลสมาชิก (Edit Member)
         // ==========================================
         function openEditMember(houseNo) {
-            // ค้นหาข้อมูลบ้านจากที่เราเก็บไว้ใน globalUsersList
+            document.getElementById('user-modal-title').innerText = "แก้ไขข้อมูลสมาชิก";
+
             const user = window.globalUsersList.find(u => u.houseNo === houseNo);
             if (!user) {
                 showToast("ไม่พบข้อมูลบ้านเลขที่นี้", "error");
                 return;
             }
 
-            // นำข้อมูลมาใส่ในช่อง Input
             document.getElementById('user-house-old').value = user.houseNo; 
             document.getElementById('user-house').value = user.houseNo;
             document.getElementById('user-name').value = user.name || "";
             document.getElementById('user-phone').value = user.phone || "";
             document.getElementById('user-line-id').value = user.lineId || "";
 
-            // จัดการรูปภาพ (🌟 เพิ่มระบบแปลงลิงก์เหมือนในหน้าหลัก)
             const preview = document.getElementById('user-image-preview');
             const placeholder = document.getElementById('user-image-placeholder');
             
@@ -557,7 +551,6 @@
 
             if (rawProfilePic) {
                 let fileId = "";
-                // ดึงรหัสไฟล์ออกมา
                 if (rawProfilePic.includes("id=")) {
                     fileId = rawProfilePic.split('id=')[1].split('&')[0];
                 } else if (rawProfilePic.includes("/d/")) {
@@ -565,20 +558,18 @@
                 }
 
                 if (fileId) {
-                    // ใช้เซิร์ฟเวอร์ lh3 เป็นหลัก
                     finalImageUrl = "https://lh3.googleusercontent.com/d/" + fileId + "=s200";
-                    
-                    // เพิ่มระบบสำรอง ถ้ารูปหลักไม่มาระหว่างแก้ไข ให้ดึงจาก Thumbnail
                     preview.onerror = function() {
                         this.onerror = null;
                         this.src = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w200";
                     };
-                } else if (rawProfilePic.startsWith("http")) {
+                } 
+                // 🌟 [จุดที่แก้ไข] เพิ่มเงื่อนไข rawProfilePic.startsWith("data:") เช่นกัน
+                else if (rawProfilePic.startsWith("http") || rawProfilePic.startsWith("data:")) {
                     finalImageUrl = rawProfilePic;
                 }
             }
             
-            // เช็คว่ามีรูปลิงก์สุดท้ายที่จะโชว์ไหม
             if (finalImageUrl) {
                 preview.src = finalImageUrl;
                 preview.classList.remove('hidden');
@@ -589,7 +580,6 @@
                 placeholder.classList.remove('hidden');
             }
 
-            // แสดง Modal พร้อม Animation
             const modal = document.getElementById('user-modal');
             const box = document.getElementById('user-modal-box');
             modal.classList.remove('hidden');
