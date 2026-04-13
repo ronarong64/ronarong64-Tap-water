@@ -860,13 +860,13 @@
             }, 300);
         }
 
-        // เมื่อกดปุ่ม "ยืนยัน"
-        document.getElementById('confirm-btn-action').addEventListener('click', () => {
+        // เมื่อกดปุ่ม "ยืนยัน" (ปรับใหม่เพื่อแก้ Error addEventListener)
+        function executeConfirmAction() {
             closeConfirmModal();
             if (typeof currentConfirmCallback === 'function') {
                 currentConfirmCallback(); // เรียกฟังก์ชันที่ตั้งไว้
             }
-        });
+        }
 
     </script>
 
