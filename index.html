@@ -647,11 +647,8 @@
             }
         }
 
-        // ==========================================
-// ฟังก์ชันบันทึกข้อมูล (ส่งไป Google Sheets ผ่าน fetch)
-// ==========================================
-        // ==========================================
-// ฟังก์ชันบันทึกข้อมูล (รองรับทั้ง "เพิ่มใหม่" และ "แก้ไข")
+       // ==========================================
+// ฟังก์ชันบันทึกข้อมูล (อัปเดตหน้าจอทันที ไม่ต้องรีโหลดใหม่)
 // ==========================================
 async function saveUserData() {
     const btn = document.getElementById('btn-save-user');
@@ -661,26 +658,19 @@ async function saveUserData() {
     const newPhone = document.getElementById('user-phone').value;
     const fileInput = document.getElementById('user-image-file');
     
-    // ตรวจสอบว่ากรอกข้อมูลจำเป็นครบไหม
     if (!newHouseNo || !newName) {
         showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "warning");
         return;
     }
 
-    // เปลี่ยนสถานะปุ่มตอนกำลังบันทึก
     btn.disabled = true;
     btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
 
     const finishProcess = async (blobData) => {
-        
-        // 🌟 [จุดสำคัญที่ปรับปรุง] เช็คว่าเป็นการเพิ่มใหม่ หรือ แก้ไขของเดิม
-        // ถ้า oldHouseNo ว่างเปล่า = เพิ่มใหม่ (addMember)
-        // ถ้า oldHouseNo มีค่า = แก้ไขข้อมูลเดิม (updateMember)
         const actionType = oldHouseNo ? "updateMember" : "addMember";
 
-        // เตรียมชุดข้อมูลเพื่อส่งไปให้ doPost รับ
         const payload = {
-            action: actionType, // 👈 ใช้ตัวแปร actionType ที่เช็คไว้ด้านบน
+            action: actionType,
             oldHouseNo: oldHouseNo,
             newHouseNo: newHouseNo,
             newName: newName,
@@ -689,7 +679,6 @@ async function saveUserData() {
         };
 
         try {
-            // ส่งข้อมูลไปที่ Google Apps Script
             const response = await fetch(API_URL, {
                 method: 'POST',
                 body: JSON.stringify(payload) 
@@ -697,33 +686,65 @@ async function saveUserData() {
             
             const result = await response.json();
 
-            // เช็คผลลัพธ์ที่ตอบกลับมาจาก Google Sheet
             if (result.success) {
-                closeUserModal(); // ปิดหน้าต่าง Modal
-                showToast(result.message, "success"); // แจ้งเตือนสำเร็จ
+                closeUserModal(); 
+                showToast(result.message, "success"); 
                 
-                // โหลดข้อมูลบนแดชบอร์ดใหม่ เพื่อให้เห็นข้อมูลอัปเดตทันที
-                if (typeof loadDashboardData === "function") {
-                    loadDashboardData(); 
+                // 🌟 [ส่วนที่ปรับปรุงใหม่] อัปเดตข้อมูลบนหน้าจอทันที โดยไม่ต้องโหลดใหม่จากเซิร์ฟเวอร์
+                if (window.globalUsersList) {
+                    
+                    // 1. จำตำแหน่งการเลื่อนหน้าจอ (Scroll) ปัจจุบันไว้
+                    const scrollContainer = document.querySelector('main');
+                    const currentScroll = scrollContainer ? scrollContainer.scrollTop : 0;
+
+                    // 2. อัปเดตข้อมูลลงในความจำของหน้าเว็บ (Local Array)
+                    if (actionType === "updateMember") {
+                        const userIndex = window.globalUsersList.findIndex(u => u.houseNo === oldHouseNo);
+                        if (userIndex !== -1) {
+                            window.globalUsersList[userIndex].houseNo = newHouseNo;
+                            window.globalUsersList[userIndex].name = newName;
+                            window.globalUsersList[userIndex].phone = newPhone;
+                            // ถ้ารูปใหม่ถูกเลือก ให้เอารูปนั้นมาโชว์ชั่วคราวได้เลย
+                            if (blobData) {
+                                window.globalUsersList[userIndex].profilePic = blobData; 
+                            }
+                        }
+                    } else if (actionType === "addMember") {
+                        // ถ้าเป็นสมาชิกใหม่ ให้ต่อท้าย Array
+                        window.globalUsersList.push({
+                            houseNo: newHouseNo,
+                            name: newName,
+                            phone: newPhone,
+                            profilePic: blobData || "",
+                            statusCode: "none", // สถานะเริ่มต้นยังไม่จดมิเตอร์
+                            amount: 0
+                        });
+                    }
+
+                    // 3. สั่งวาดการ์ดหน้าจอใหม่ด้วยข้อมูลที่แก้แล้ว (ทำงานไวมาก ระดับเสี้ยววินาที)
+                    renderRealData(window.globalUsersList);
+
+                    // 4. บังคับให้หน้าจอเลื่อนกลับมาอยู่ที่จุดเดิม!
+                    if (scrollContainer) {
+                        scrollContainer.scrollTop = currentScroll;
+                    }
                 }
+
             } else {
-                showToast(result.message, "error"); // แจ้งเตือนกรณีเกิดข้อผิดพลาด (เช่น เลขบ้านซ้ำ)
+                showToast(result.message, "error"); 
             }
         } catch (err) {
             showToast("ไม่สามารถติดต่อ Server ได้", "error");
             console.error(err);
         } finally {
-            // คืนค่าปุ่มกลับเป็นเหมือนเดิม ไม่ว่าจะบันทึกผ่านหรือไม่
             btn.disabled = false;
             btn.innerHTML = "บันทึกข้อมูล";
         }
     };
 
-    // ตรวจสอบว่ามีการเลือกรูปภาพใหม่มาด้วยหรือไม่
     if (fileInput.files && fileInput.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            // ถ้ารูปอ่านผ่าน ให้ส่งข้อมูลรูปไปด้วย
             finishProcess(e.target.result);
         };
         reader.onerror = function() {
@@ -733,7 +754,6 @@ async function saveUserData() {
         };
         reader.readAsDataURL(fileInput.files[0]);
     } else {
-        // ถ้าไม่มีการแนบรูป ให้ส่งข้อมูลว่างๆ ไป
         finishProcess(""); 
     }
 }
