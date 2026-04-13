@@ -870,12 +870,12 @@ async function saveUserData() {
         }
 
         // เมื่อกดปุ่ม "ยืนยัน"
-        document.getElementById('confirm-btn-action').addEventListener('click', () => {
+        function executeConfirmAction() {
             closeConfirmModal();
             if (typeof currentConfirmCallback === 'function') {
                 currentConfirmCallback(); // เรียกฟังก์ชันที่ตั้งไว้
             }
-        });
+        }
 
     </script>
 
@@ -894,7 +894,7 @@ async function saveUserData() {
                     <button onclick="closeConfirmModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-all active:scale-95">
                         ยกเลิก
                     </button>
-                    <button id="confirm-btn-action" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/30 transition-all active:scale-95">
+                    <button id="confirm-btn-action" onclick="executeConfirmAction()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/30 transition-all active:scale-95">
                         ยืนยันการลบ
                     </button>
                 </div>
