@@ -534,6 +534,8 @@
         // ระบบจัดการแก้ไขข้อมูลสมาชิก (Edit Member)
         // ==========================================
         function openEditMember(houseNo) {
+            // เปลี่ยนหัวข้อ Modal คืนกลับมา
+            document.getElementById('user-modal-title').innerText = "แก้ไขข้อมูลสมาชิก";
             // ค้นหาข้อมูลบ้านจากที่เราเก็บไว้ใน globalUsersList
             const user = window.globalUsersList.find(u => u.houseNo === houseNo);
             if (!user) {
@@ -648,70 +650,92 @@
         }
 
         // ==========================================
-        // ฟังก์ชันบันทึกข้อมูล (ส่งไป Google Sheets)
-        // ==========================================
-        function saveUserData() {
-            const btn = document.getElementById('btn-save-user');
-            const oldHouseNo = document.getElementById('user-house-old').value;
-            const newHouseNo = document.getElementById('user-house').value;
-            const newName = document.getElementById('user-name').value;
-            const newPhone = document.getElementById('user-phone').value;
-            const fileInput = document.getElementById('user-image-file');
+// ฟังก์ชันบันทึกข้อมูล (รองรับทั้ง "เพิ่มใหม่" และ "แก้ไข")
+// ==========================================
+async function saveUserData() {
+    const btn = document.getElementById('btn-save-user');
+    const oldHouseNo = document.getElementById('user-house-old').value;
+    const newHouseNo = document.getElementById('user-house').value;
+    const newName = document.getElementById('user-name').value;
+    const newPhone = document.getElementById('user-phone').value;
+    const fileInput = document.getElementById('user-image-file');
+    
+    // ตรวจสอบว่ากรอกข้อมูลจำเป็นครบไหม
+    if (!newHouseNo || !newName) {
+        showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "warning");
+        return;
+    }
+
+    // เปลี่ยนสถานะปุ่มตอนกำลังบันทึก
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
+
+    const finishProcess = async (blobData) => {
+        
+        // 🌟 [จุดสำคัญที่ปรับปรุง] เช็คว่าเป็นการเพิ่มใหม่ หรือ แก้ไขของเดิม
+        // ถ้า oldHouseNo ว่างเปล่า = เพิ่มใหม่ (addMember)
+        // ถ้า oldHouseNo มีค่า = แก้ไขข้อมูลเดิม (updateMember)
+        const actionType = oldHouseNo ? "updateMember" : "addMember";
+
+        // เตรียมชุดข้อมูลเพื่อส่งไปให้ doPost รับ
+        const payload = {
+            action: actionType, // 👈 ใช้ตัวแปร actionType ที่เช็คไว้ด้านบน
+            oldHouseNo: oldHouseNo,
+            newHouseNo: newHouseNo,
+            newName: newName,
+            newPhone: newPhone,
+            imageBlob: blobData
+        };
+
+        try {
+            // ส่งข้อมูลไปที่ Google Apps Script
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload) 
+            });
             
-            if (!newHouseNo || !newName) {
-                showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "warning");
-                return;
-            }
+            const result = await response.json();
 
-            // เริ่มการบันทึก
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
-
-            const finishProcess = (blobData) => {
-                const payload = {
-                    oldHouseNo: oldHouseNo,
-                    newHouseNo: newHouseNo,
-                    newName: newName,
-                    newPhone: newPhone,
-                    imageBlob: blobData
-                };
-
-                google.script.run
-                    .withSuccessHandler(function(response) {
-                        btn.disabled = false;
-                        btn.innerHTML = "บันทึกข้อมูล";
-                        if (response.success) {
-                            closeUserModal();
-                            showToast(response.message, "success");
-                            loadDashboardData(); // โหลดข้อมูลใหม่มาโชว์
-                        } else {
-                            showToast(response.message, "error");
-                        }
-                    })
-                    .withFailureHandler(function(err) {
-                        btn.disabled = false;
-                        btn.innerHTML = "บันทึกข้อมูล";
-                        showToast("ไม่สามารถติดต่อ Server ได้: " + err, "error");
-                    })
-                    .updateUserSettings(payload);
-            };
-
-            // ตรวจสอบรูปภาพ
-            if (fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    finishProcess(e.target.result);
-                };
-                reader.onerror = function() {
-                    showToast("การอ่านไฟล์รูปภาพผิดพลาด", "error");
-                    btn.disabled = false;
-                    btn.innerHTML = "บันทึกข้อมูล";
-                };
-                reader.readAsDataURL(fileInput.files[0]);
+            // เช็คผลลัพธ์ที่ตอบกลับมาจาก Google Sheet
+            if (result.success) {
+                closeUserModal(); // ปิดหน้าต่าง Modal
+                showToast(result.message, "success"); // แจ้งเตือนสำเร็จ
+                
+                // โหลดข้อมูลบนแดชบอร์ดใหม่ เพื่อให้เห็นข้อมูลอัปเดตทันที
+                if (typeof loadDashboardData === "function") {
+                    loadDashboardData(); 
+                }
             } else {
-                finishProcess(""); // ไม่มีรูปใหม่
+                showToast(result.message, "error"); // แจ้งเตือนกรณีเกิดข้อผิดพลาด (เช่น เลขบ้านซ้ำ)
             }
+        } catch (err) {
+            showToast("ไม่สามารถติดต่อ Server ได้", "error");
+            console.error(err);
+        } finally {
+            // คืนค่าปุ่มกลับเป็นเหมือนเดิม ไม่ว่าจะบันทึกผ่านหรือไม่
+            btn.disabled = false;
+            btn.innerHTML = "บันทึกข้อมูล";
         }
+    };
+
+    // ตรวจสอบว่ามีการเลือกรูปภาพใหม่มาด้วยหรือไม่
+    if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // ถ้ารูปอ่านผ่าน ให้ส่งข้อมูลรูปไปด้วย
+            finishProcess(e.target.result);
+        };
+        reader.onerror = function() {
+            showToast("การอ่านไฟล์รูปภาพผิดพลาด", "error");
+            btn.disabled = false;
+            btn.innerHTML = "บันทึกข้อมูล";
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    } else {
+        // ถ้าไม่มีการแนบรูป ให้ส่งข้อมูลว่างๆ ไป
+        finishProcess(""); 
+    }
+}
 
         // ==========================================
         // ระบบค้นหา (กรองบ้าน) Real-time
@@ -772,10 +796,36 @@
             }
         }
 
-        // ฟังก์ชันเตรียมไว้สำหรับตอนกดปุ่ม + เพิ่มสมาชิก
+        // ==========================================
+        // ฟังก์ชันเตรียมเปิดหน้าต่าง: เพิ่มสมาชิกใหม่
+        // ==========================================
         function openAddMemberModal() {
-            alert("กำลังเตรียมเปิดหน้าต่าง: เพิ่มสมาชิกใหม่");
-            // เดี๋ยวเรามาเขียนโค้ดสำหรับฟอร์มเพิ่มสมาชิกใส่ตรงนี้ภายหลังครับ
+            // เปลี่ยนหัวข้อ Modal
+            document.getElementById('user-modal-title').innerText = "เพิ่มสมาชิกใหม่";
+
+            // เคลียร์ค่าในฟอร์มให้ว่างเปล่า
+            document.getElementById('user-house-old').value = ""; // 🌟 สำคัญ: ถ้าตรงนี้ว่างเปล่า ระบบจะรู้ว่าคือการ "เพิ่มใหม่"
+            document.getElementById('user-house').value = "";
+            document.getElementById('user-name').value = "";
+            document.getElementById('user-phone').value = "";
+            document.getElementById('user-line-id').value = "";
+            document.getElementById('user-image-file').value = "";
+
+            // รีเซ็ตรูปภาพกลับไปเป็นไอคอนกล้อง
+            const preview = document.getElementById('user-image-preview');
+            const placeholder = document.getElementById('user-image-placeholder');
+            preview.src = '';
+            preview.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+
+            // แสดง Modal พร้อม Animation
+            const modal = document.getElementById('user-modal');
+            const box = document.getElementById('user-modal-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+            }, 10);
         }
 
         // ทำให้ปุ่มในเมนูสว่างขึ้นเวลากดเลือก
@@ -813,63 +863,69 @@
             toggleMenu(); // สั่งให้หุบเมนูเก็บทันทีหลังกด
         }
 
-        // ==========================================
-        // ระบบแจ้งเตือน (Toast Notification)
+       // ==========================================
+        // 🌟 ระบบแจ้งเตือน (Toast Notification - พื้นหลังสี)
         // ==========================================
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             
-            // ตั้งค่าสีและไอคอนตามประเภท (success, error, warning)
             let icon = 'fa-check-circle';
-            let colorClass = 'text-green-500';
-            let borderClass = 'border-green-500';
-            let bgIconClass = 'bg-green-100';
+            let bgClass = 'bg-emerald-500'; // พื้นสีเขียว
+            let progressColor = 'bg-emerald-700';
 
             if (type === 'error') {
                 icon = 'fa-times-circle';
-                colorClass = 'text-red-500';
-                borderClass = 'border-red-500';
-                bgIconClass = 'bg-red-100';
+                bgClass = 'bg-rose-500'; // พื้นสีแดง
+                progressColor = 'bg-rose-700';
             } else if (type === 'warning') {
-                icon = 'fa-exclamation-circle';
-                colorClass = 'text-orange-500';
-                borderClass = 'border-orange-500';
-                bgIconClass = 'bg-orange-100';
+                icon = 'fa-exclamation-triangle';
+                bgClass = 'bg-amber-500'; // พื้นสีส้ม
+                progressColor = 'bg-amber-700';
             }
 
-            // สร้างโครงสร้าง Toast
-            toast.className = `bg-white border-l-4 ${borderClass} rounded-xl shadow-xl p-4 flex items-center gap-3 transform translate-x-full opacity-0 transition-all duration-300 pointer-events-auto min-w-[250px] max-w-sm`;
+            // ใช้พื้นหลังเป็นสีล้วน (bgClass) และตัวอักษรสีขาว
+            toast.className = `${bgClass} text-white rounded-2xl shadow-2xl flex flex-col transform translate-x-full opacity-0 transition-all duration-500 ease-out pointer-events-auto min-w-[280px] max-w-sm overflow-hidden border border-white/20`;
+            
             toast.innerHTML = `
-                <div class="w-8 h-8 rounded-full ${bgIconClass} ${colorClass} flex items-center justify-center shrink-0">
-                    <i class="fas ${icon} text-lg"></i>
+                <div class="p-4 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center shrink-0 shadow-inner">
+                        <i class="fas ${icon} text-xl text-white drop-shadow-md"></i>
+                    </div>
+                    <div class="font-bold text-white text-[14px] flex-1 leading-tight drop-shadow-sm">
+                        ${message}
+                    </div>
+                    <button onclick="this.closest('.flex-col').remove()" class="text-white/70 hover:text-white bg-black/10 hover:bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="font-medium text-slate-700 text-sm flex-1">
-                    ${message}
+                <div class="w-full h-1 bg-black/10">
+                    <div class="h-full ${progressColor} transition-all duration-3000 ease-linear" style="width: 100%;"></div>
                 </div>
-                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600">
-                    <i class="fas fa-times"></i>
-                </button>
             `;
 
             container.appendChild(toast);
 
-            // Animate เข้า
+            // Animate เข้ามา
             setTimeout(() => {
                 toast.classList.remove('translate-x-full', 'opacity-0');
+                // เริ่มให้หลอดเวลาหดลงเหลือ 0%
+                setTimeout(() => {
+                    toast.querySelector('div.h-full').style.width = '0%';
+                }, 50);
             }, 10);
 
             // Animate ออกและลบทิ้งอัตโนมัติหลัง 3 วินาที
             setTimeout(() => {
                 toast.classList.add('translate-x-full', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
+                setTimeout(() => toast.remove(), 500);
             }, 3000);
         }
 
         // ==========================================
-        // ระบบยืนยันการทำงาน (Confirm Dialog)
+        // 🌟 ระบบยืนยันการทำงาน (Confirm Dialog - พื้นหลังสี)
         // ==========================================
-        let currentConfirmCallback = null; // ตัวแปรเก็บฟังก์ชันที่จะให้ทำหลังกดยืนยัน
+        let currentConfirmCallback = null; 
 
         function openConfirmModal(title, message, confirmText, callback, isDanger = true) {
             document.getElementById('confirm-title').innerText = title;
@@ -878,22 +934,30 @@
             const actionBtn = document.getElementById('confirm-btn-action');
             actionBtn.innerText = confirmText;
             
-            // เปลี่ยนสีปุ่มตามประเภท (ลบสีแดง / บันทึกสีฟ้า)
+            const box = document.getElementById('confirm-modal-box');
+            const iconBox = document.getElementById('confirm-icon-box');
+            const iconElement = document.getElementById('confirm-icon');
+            
+            // เปลี่ยนสีพื้นหลังหน้าต่าง Modal ตามประเภท!
             if(isDanger) {
-                actionBtn.className = "flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/30 transition-all active:scale-95";
+                // พื้นหลังสีแดงเข้ม สำหรับการลบข้อมูล
+                box.className = "bg-gradient-to-br from-red-500 to-rose-600 rounded-[2rem] p-8 w-full max-w-sm shadow-2xl shadow-red-500/40 transform scale-95 translate-y-4 transition-all duration-300 border border-red-400";
+                actionBtn.className = "flex-1 bg-white text-rose-600 hover:bg-rose-50 font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm";
+                iconElement.className = "fas fa-exclamation-triangle text-4xl animate-pulse text-white drop-shadow-lg";
             } else {
-                actionBtn.className = "flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95";
+                // พื้นหลังสีน้ำเงิน สำหรับการยืนยันทั่วไป
+                box.className = "bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2rem] p-8 w-full max-w-sm shadow-2xl shadow-blue-500/40 transform scale-95 translate-y-4 transition-all duration-300 border border-blue-400";
+                actionBtn.className = "flex-1 bg-white text-blue-600 hover:bg-blue-50 font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm";
+                iconElement.className = "fas fa-question-circle text-4xl animate-pulse text-white drop-shadow-lg";
             }
 
-            currentConfirmCallback = callback; // จำฟังก์ชันไว้
+            currentConfirmCallback = callback; 
             
-            // แสดง Modal
             const modal = document.getElementById('confirm-modal');
-            const box = document.getElementById('confirm-modal-box');
             modal.classList.remove('hidden');
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
-                box.classList.remove('scale-95');
+                box.classList.remove('scale-95', 'translate-y-4');
             }, 10);
         }
 
@@ -901,17 +965,16 @@
             const modal = document.getElementById('confirm-modal');
             const box = document.getElementById('confirm-modal-box');
             modal.classList.add('opacity-0');
-            box.classList.add('scale-95');
+            box.classList.add('scale-95', 'translate-y-4');
             setTimeout(() => {
                 modal.classList.add('hidden');
             }, 300);
         }
 
-        // เมื่อกดปุ่ม "ยืนยัน" (ปรับใหม่เพื่อแก้ Error addEventListener)
         function executeConfirmAction() {
             closeConfirmModal();
             if (typeof currentConfirmCallback === 'function') {
-                currentConfirmCallback(); // เรียกฟังก์ชันที่ตั้งไว้
+                currentConfirmCallback(); 
             }
         }
 
@@ -919,21 +982,24 @@
 
     <div id="toast-container" class="fixed top-5 right-5 z-[200] flex flex-col gap-3 pointer-events-none"></div>
 
-    <div id="confirm-modal" class="fixed inset-0 z-[250] bg-slate-900/50 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300" id="confirm-modal-box">
+    <div id="confirm-modal" class="fixed inset-0 z-[250] bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        <div class="rounded-[2rem] p-8 w-full max-w-sm shadow-2xl transform scale-95 translate-y-4 transition-all duration-300" id="confirm-modal-box">
             <div class="flex flex-col items-center text-center">
-                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-500 shadow-inner">
-                    <i class="fas fa-exclamation-triangle text-3xl"></i>
+                
+                <div id="confirm-icon-box" class="w-20 h-20 bg-black/10 rounded-full flex items-center justify-center mb-4 shadow-inner relative">
+                    <div class="absolute inset-0 border-4 border-white/30 rounded-full"></div>
+                    <i id="confirm-icon" class="fas fa-exclamation-triangle text-4xl animate-pulse text-white drop-shadow-md"></i>
                 </div>
-                <h3 id="confirm-title" class="text-xl font-bold text-slate-800 mb-2">ยืนยันการทำรายการ?</h3>
-                <p id="confirm-message" class="text-sm text-slate-500 mb-6">คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้ ข้อมูลที่ลบจะไม่สามารถกู้คืนได้</p>
+                
+                <h3 id="confirm-title" class="text-xl font-bold text-white mb-2 tracking-tight drop-shadow-sm">ยืนยันการทำรายการ?</h3>
+                <p id="confirm-message" class="text-sm text-white/90 mb-8 font-medium leading-relaxed drop-shadow-sm">คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้ ข้อมูลที่ลบจะไม่สามารถกู้คืนได้</p>
                 
                 <div class="flex items-center gap-3 w-full">
-                    <button onclick="closeConfirmModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-all active:scale-95">
+                    <button onclick="closeConfirmModal()" class="flex-1 bg-black/10 hover:bg-black/20 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 text-sm border border-white/20">
                         ยกเลิก
                     </button>
-                    <button id="confirm-btn-action" onclick="executeConfirmAction()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/30 transition-all active:scale-95">
-                        ยืนยันการลบ
+                    <button id="confirm-btn-action" onclick="executeConfirmAction()" class="flex-1 bg-white text-rose-600 font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm">
+                        ยืนยัน
                     </button>
                 </div>
             </div>
