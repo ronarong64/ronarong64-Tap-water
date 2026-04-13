@@ -412,24 +412,20 @@
                 const statusCode = user.statusCode || "none";
                 const amount = Number(user.amount || 0);
                 
-                // 🌟 [แก้ไขใหม่] ดึงรหัส ID ไฟล์ และใช้เซิร์ฟเวอร์ lh3 เพื่อทะลุการบล็อก
-                let profilePic = user.profilePic ? String(user.profilePic).trim() : "";
+                // 1. 🔍 ส่วนค้นหารหัสภาพ (แก้ไขใหม่ให้แม่นยำขึ้น)
+                let rawProfilePic = user.profilePic ? String(user.profilePic).trim() : "";
                 let fileId = "";
-
-                if (profilePic.includes("/d/")) {
-                    fileId = profilePic.split('/d/')[1].split('/')[0];
-                } else if (profilePic.includes("id=")) {
-                    fileId = profilePic.split('id=')[1].split('&')[0];
-                }
-
-                if (fileId) {
-                    // ใช้ lh3.googleusercontent.com ซึ่งเป็นช่องทางที่ Google ยอมให้รูปโชว์บนเว็บภายนอกได้ 100%
-                    profilePic = `https://lh3.googleusercontent.com/d/${fileId}`;
+                
+                if (rawProfilePic.includes("id=")) {
+                    fileId = rawProfilePic.split('id=')[1].split('&')[0];
+                } else if (rawProfilePic.includes("/d/")) {
+                    fileId = rawProfilePic.split('/d/')[1].split('/')[0];
                 }
 
                 const lineId = escapeHTML(user.lineId || "");
                 const phone = escapeHTML(user.phone || "");
 
+                // 2. คำนวณสถานะบิล
                 if (statusCode === 'none') stats.todo++;
                 else if (statusCode === 'waiting') stats.waiting++;
                 else if (statusCode === 'paid' || statusCode === 'free') stats.paid++;
@@ -437,7 +433,7 @@
 
                 if (user.isOverdue || statusCode === 'overdue') totalOverdueUsers++;
 
-                // 🟢 สีและเส้นขอบการ์ด
+                // 3. 🟢 สีและเส้นขอบการ์ด
                 let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จด";
                 let borderColor = "border-slate-200"; 
 
@@ -452,10 +448,19 @@
                     borderColor = "border-orange-400 shadow-orange-500/10";
                 }
 
-                // 🖼️ รูปโปรไฟล์ (ลบ onerror ออกชั่วคราวเพื่อตรวจสอบว่าเกิด Error อะไรขึ้นถ้าภาพไม่มา)
-                let avatarHtml = profilePic 
-                    ? `<img src="${profilePic}" alt="profile" class="w-full h-full object-cover rounded-full">` 
-                    : `<i class="fas ${sIcon} text-sm"></i>`;
+                // 4. 🖼️ ระบบสร้างรูปโปรไฟล์ 2 ชั้น (Two-Layer Fallback)
+                let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`; // ค่าเริ่มต้นถ้าไม่มีรูป
+
+                if (fileId) {
+                    // เซิร์ฟเวอร์หลัก และ เซิร์ฟเวอร์สำรอง
+                    const mainImage = "https://lh3.googleusercontent.com/d/" + fileId + "=s200";
+                    const backupImage = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w200";
+                    
+                    // แทรกโค้ด onerror เข้าไปในแท็ก img ถ้า main โหลดไม่ขึ้น ให้ใช้ backup อัตโนมัติ
+                    avatarHtml = `<img src="${mainImage}" alt="profile" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.src='${backupImage}';">`;
+                } else if (rawProfilePic && rawProfilePic.startsWith("http")) {
+                    avatarHtml = `<img src="${rawProfilePic}" alt="profile" class="w-full h-full object-cover rounded-full">`;
+                }
 
                 // 📞 เบอร์โทรศัพท์ 
                 let phoneDisplayHtml = phone
