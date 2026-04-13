@@ -626,6 +626,28 @@
         }
 
         // ==========================================
+        // ฟังก์ชันพรีวิวรูปภาพเวลาผู้ใช้กดเลือกรูปใหม่
+        // ==========================================
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('user-image-preview');
+                    const placeholder = document.getElementById('user-image-placeholder');
+                    
+                    // ล้างค่า onerror เดิมทิ้ง ป้องกันการเด้งกลับไปรูปเก่า
+                    preview.onerror = null; 
+                    
+                    // นำรูปใหม่จากเครื่องมาแสดง
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // ==========================================
 // ฟังก์ชันบันทึกข้อมูล (ส่งไป Google Sheets ผ่าน fetch)
 // ==========================================
 async function saveUserData() {
