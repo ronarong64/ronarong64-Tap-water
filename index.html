@@ -431,17 +431,17 @@
 
                 if (user.isOverdue || statusCode === 'overdue') totalOverdueUsers++;
 
-                let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จด";
+                let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
                 let borderColor = "border-slate-200"; 
 
                 if (statusCode === 'paid' || statusCode === 'free') {
                     sClass = "text-emerald-600"; sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
                     borderColor = "border-emerald-400 shadow-emerald-500/10";
                 } else if (statusCode === 'overdue') {
-                    sClass = "text-rose-600 font-bold"; sBg = "bg-rose-100"; sIcon = "fa-exclamation-circle"; sText = `ค้าง ${amount.toLocaleString()}.-`;
+                    sClass = "text-rose-600 font-bold"; sBg = "bg-rose-100"; sIcon = "fa-exclamation-circle"; sText = `ค้างชำระ ${amount.toLocaleString()}. บาท`;
                     borderColor = "border-rose-400 shadow-rose-500/10";
                 } else if (statusCode === 'waiting') {
-                    sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}.-`;
+                    sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}. บาท`;
                     borderColor = "border-amber-400 shadow-amber-500/10";
                 }
 
@@ -481,10 +481,10 @@
                                         <i class="fas fa-edit text-[15px]"></i>
                                     </button>
                                 </div>
-                                <p class="name-text text-[13px] font-medium text-slate-500 truncate leading-none mt-1 mb-2">${safeName}</p>
+                                <p class="name-text text-[14px] font-medium text-slate-500 truncate leading-none mt-1 mb-2">${safeName}</p>
                                 <div class="flex items-center justify-between pt-1 border-t border-slate-100">
                                     <div class="phone-box">${phoneDisplayHtml}</div>
-                                    <div class="status-badge text-[10px] font-bold ${sClass} ${sBg} px-2 py-1 rounded-md border border-white shadow-sm shrink-0 leading-none">${sText}</div>
+                                    <div class="status-badge text-[11px] font-bold ${sClass} ${sBg} px-2 py-1 rounded-md border border-white shadow-sm shrink-0 leading-none">${sText}</div>
                                 </div>
                             </div>
                         </div>
