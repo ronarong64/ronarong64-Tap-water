@@ -542,18 +542,45 @@
             }
 
             // นำข้อมูลมาใส่ในช่อง Input
-            document.getElementById('user-house-old').value = user.houseNo; // เก็บค่าเดิมไว้เผื่อเปลี่ยนเลขบ้าน
+            document.getElementById('user-house-old').value = user.houseNo; 
             document.getElementById('user-house').value = user.houseNo;
             document.getElementById('user-name').value = user.name || "";
             document.getElementById('user-phone').value = user.phone || "";
             document.getElementById('user-line-id').value = user.lineId || "";
 
-            // จัดการรูปภาพ
+            // จัดการรูปภาพ (🌟 เพิ่มระบบแปลงลิงก์เหมือนในหน้าหลัก)
             const preview = document.getElementById('user-image-preview');
             const placeholder = document.getElementById('user-image-placeholder');
             
-            if (user.profilePic) {
-                preview.src = user.profilePic;
+            let rawProfilePic = user.profilePic ? String(user.profilePic).trim() : "";
+            let finalImageUrl = "";
+
+            if (rawProfilePic) {
+                let fileId = "";
+                // ดึงรหัสไฟล์ออกมา
+                if (rawProfilePic.includes("id=")) {
+                    fileId = rawProfilePic.split('id=')[1].split('&')[0];
+                } else if (rawProfilePic.includes("/d/")) {
+                    fileId = rawProfilePic.split('/d/')[1].split('/')[0];
+                }
+
+                if (fileId) {
+                    // ใช้เซิร์ฟเวอร์ lh3 เป็นหลัก
+                    finalImageUrl = "https://lh3.googleusercontent.com/d/" + fileId + "=s200";
+                    
+                    // เพิ่มระบบสำรอง ถ้ารูปหลักไม่มาระหว่างแก้ไข ให้ดึงจาก Thumbnail
+                    preview.onerror = function() {
+                        this.onerror = null;
+                        this.src = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w200";
+                    };
+                } else if (rawProfilePic.startsWith("http")) {
+                    finalImageUrl = rawProfilePic;
+                }
+            }
+            
+            // เช็คว่ามีรูปลิงก์สุดท้ายที่จะโชว์ไหม
+            if (finalImageUrl) {
+                preview.src = finalImageUrl;
                 preview.classList.remove('hidden');
                 placeholder.classList.add('hidden');
             } else {
@@ -572,16 +599,29 @@
             }, 10);
         }
 
-        // ฟังก์ชันปิด Modal
+       // ==========================================
+        // ฟังก์ชันปิดหน้าต่าง Modal แก้ไขสมาชิก
+        // ==========================================
         function closeUserModal() {
             const modal = document.getElementById('user-modal');
             const box = document.getElementById('user-modal-box');
+            
+            // ถ้าหาหน้าต่างไม่เจอ ให้หยุดการทำงาน (ป้องกัน Error)
+            if (!modal || !box) return;
+
+            // เล่นแอนิเมชันตอนปิด (เฟดออก + ย่อขนาดลง)
             modal.classList.add('opacity-0');
             box.classList.add('scale-95');
+            
+            // รอให้แอนิเมชันเล่นจบ 0.3 วินาที (300ms) แล้วค่อยซ่อนหน้าต่าง
             setTimeout(() => {
                 modal.classList.add('hidden');
-                // เคลียร์ค่า input file เพื่อให้เลือกรูปเดิมซ้ำได้
-                document.getElementById('user-image-file').value = ""; 
+                
+                // เคลียร์ค่าไฟล์รูปภาพเก่าออก เผื่อรอบหน้ากดเข้ามาเลือกรูปเดิมซ้ำจะได้ไม่มีปัญหา
+                const fileInput = document.getElementById('user-image-file');
+                if (fileInput) {
+                    fileInput.value = ""; 
+                }
             }, 300);
         }
 
