@@ -456,11 +456,11 @@
                 }
 
                 let phoneDisplayHtml = phone
-                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[10px] font-medium text-slate-500 flex items-center gap-1">
+                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[11px] font-medium text-slate-500 flex items-center gap-1">
                            <div class="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-phone-alt text-[7px]"></i></div>
                            <span class="phone-text">${phone}</span>
                        </a>`
-                    : `<span class="text-[9px] text-slate-300 italic">ไม่มีเบอร์โทร</span>`;
+                    : `<span class="text-[11px] text-slate-400 italic">ไม่มีเบอร์โทร</span>`;
 
                 let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
 
