@@ -412,7 +412,6 @@
                 const statusCode = user.statusCode || "none";
                 const amount = Number(user.amount || 0);
                 
-                // 1. 🔍 ส่วนค้นหารหัสภาพ (แก้ไขใหม่ให้แม่นยำขึ้น)
                 let rawProfilePic = user.profilePic ? String(user.profilePic).trim() : "";
                 let fileId = "";
                 
@@ -425,7 +424,6 @@
                 const lineId = escapeHTML(user.lineId || "");
                 const phone = escapeHTML(user.phone || "");
 
-                // 2. คำนวณสถานะบิล
                 if (statusCode === 'none') stats.todo++;
                 else if (statusCode === 'waiting') stats.waiting++;
                 else if (statusCode === 'paid' || statusCode === 'free') stats.paid++;
@@ -433,100 +431,71 @@
 
                 if (user.isOverdue || statusCode === 'overdue') totalOverdueUsers++;
 
-                // 3. 🟢 สีและเส้นขอบการ์ด
                 let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จด";
                 let borderColor = "border-slate-200"; 
 
                 if (statusCode === 'paid' || statusCode === 'free') {
-                    sClass = "text-green-600"; sBg = "bg-green-100"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
-                    borderColor = "border-green-400 shadow-green-500/10";
+                    sClass = "text-emerald-600"; sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
+                    borderColor = "border-emerald-400 shadow-emerald-500/10";
                 } else if (statusCode === 'overdue') {
-                    sClass = "text-red-600 font-bold"; sBg = "bg-red-100"; sIcon = "fa-exclamation-circle"; sText = `ค้าง ${amount.toLocaleString()}.-`;
-                    borderColor = "border-red-400 shadow-red-500/10";
+                    sClass = "text-rose-600 font-bold"; sBg = "bg-rose-100"; sIcon = "fa-exclamation-circle"; sText = `ค้าง ${amount.toLocaleString()}.-`;
+                    borderColor = "border-rose-400 shadow-rose-500/10";
                 } else if (statusCode === 'waiting') {
-                    sClass = "text-orange-600 font-bold"; sBg = "bg-orange-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}.-`;
-                    borderColor = "border-orange-400 shadow-orange-500/10";
+                    sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}.-`;
+                    borderColor = "border-amber-400 shadow-amber-500/10";
                 }
 
-                // 4. 🖼️ ระบบสร้างรูปโปรไฟล์ 2 ชั้น (Two-Layer Fallback)
-                let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`; // ค่าเริ่มต้นถ้าไม่มีรูป
+                let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`; 
 
                 if (fileId) {
-                    // เซิร์ฟเวอร์หลัก และ เซิร์ฟเวอร์สำรอง
-                    const mainImage = "https://lh3.googleusercontent.com/d/" + fileId + "=s200";
+                    const mainImage = "https://lh3.googleusercontent.com/d/" + fileId;
                     const backupImage = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w200";
-                    
-                    // แทรกโค้ด onerror เข้าไปในแท็ก img ถ้า main โหลดไม่ขึ้น ให้ใช้ backup อัตโนมัติ
                     avatarHtml = `<img src="${mainImage}" alt="profile" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.src='${backupImage}';">`;
-                } else if (rawProfilePic && rawProfilePic.startsWith("http")) {
+                } else if (rawProfilePic && (rawProfilePic.startsWith("http") || rawProfilePic.startsWith("data:"))) {
                     avatarHtml = `<img src="${rawProfilePic}" alt="profile" class="w-full h-full object-cover rounded-full">`;
                 }
 
-                // 📞 เบอร์โทรศัพท์ 
                 let phoneDisplayHtml = phone
-                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[10px] font-medium text-slate-500 flex items-center gap-1 hover:text-blue-600 active:scale-95 transition-all">
+                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[10px] font-medium text-slate-500 flex items-center gap-1">
                            <div class="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-phone-alt text-[7px]"></i></div>
-                           ${phone}
+                           <span class="phone-text">${phone}</span>
                        </a>`
                     : `<span class="text-[9px] text-slate-300 italic">ไม่มีเบอร์โทร</span>`;
 
-                // ไอคอน LINE 
-                let lineIconHtml = lineId
-                    ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>`
-                    : ``;
+                let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
 
-                // 📦 โครงสร้างการ์ด 
+                // 🌟 เพิ่ม id="card-${houseNo}" เพื่อให้เราหาเจอเวลาจะอัปเดตเฉพาะจุด
                 htmlContent += `
-                    <div class="user-card bg-white rounded-xl p-2.5 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full" onclick="alert('บ้านเลขที่: ${houseNo}')">
-                        <div class="flex items-start gap-2.5 min-w-0 w-full">
-                            
-                            <div class="w-9 h-9 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border border-white mt-0.5">
+                    <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="alert('บ้านเลขที่: ${houseNo}')">
+                        <div class="flex items-start gap-3 min-w-0 w-full">
+                            <div class="avatar-box w-12 h-12 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border-2 border-white mt-0.5">
                                 ${avatarHtml}
                             </div>
-                            
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center justify-between mb-0">
-                                    <div class="flex items-center gap-1.5">
-                                        <h4 class="text-[14px] font-bold text-slate-800 leading-none">${houseNo}</h4>
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="house-no-text text-[15px] font-bold text-slate-800 leading-none">${houseNo}</h4>
                                         ${lineIconHtml}
                                     </div>
-                                    <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-400 hover:text-blue-500 active:scale-90 px-1.5 py-0.5 transition-all rounded-md hover:bg-blue-50" title="แก้ไขข้อมูล">
-                                        <i class="fas fa-edit text-base"></i>
+                                    <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-400 hover:text-blue-500 active:scale-90 px-2 py-1">
+                                        <i class="fas fa-edit text-[15px]"></i>
                                     </button>
                                 </div>
-                                
-                                <p class="text-[12px] font-semibold text-slate-600 truncate leading-none mt-0.5">${safeName}</p>
-                                
-                                <div class="flex items-center justify-between mt-1 pt-1 border-t border-slate-50">
-                                    <div class="shrink-0">
-                                        ${phoneDisplayHtml}
-                                    </div>
-                                    <div class="text-[9px] font-bold ${sClass} ${sBg} px-1.5 py-0.5 rounded border border-white shadow-sm shrink-0 leading-none">
-                                        ${sText}
-                                    </div>
+                                <p class="name-text text-[13px] font-medium text-slate-500 truncate leading-none mt-1 mb-2">${safeName}</p>
+                                <div class="flex items-center justify-between pt-1 border-t border-slate-100">
+                                    <div class="phone-box">${phoneDisplayHtml}</div>
+                                    <div class="status-badge text-[10px] font-bold ${sClass} ${sBg} px-2 py-1 rounded-md border border-white shadow-sm shrink-0 leading-none">${sText}</div>
                                 </div>
                             </div>
-                            
                         </div>
                     </div>`;
             });
 
             listContainer.innerHTML = htmlContent;
-
-            // อัปเดตตัวเลขสถิติ
             document.getElementById('dash-count-todo').innerText = stats.todo;
             document.getElementById('dash-count-waiting').innerText = stats.waiting;
             document.getElementById('dash-count-paid').innerText = stats.paid;
             document.getElementById('dash-count-overdue').innerText = stats.overdue;
-
-            const banner = document.getElementById('overdue-warning-banner');
-            if (totalOverdueUsers > 0) {
-                document.getElementById('overdue-warning-count').innerText = totalOverdueUsers;
-                banner.classList.remove('hidden');
-            } else {
-                banner.classList.add('hidden');
-            }
-
             document.getElementById('search-count').innerText = users.length + " หลัง";
         }
 
@@ -652,7 +621,7 @@
         // ==========================================
 // ฟังก์ชันบันทึกข้อมูล (รองรับทั้ง "เพิ่มใหม่" และ "แก้ไข")
 // ==========================================
-        async function saveUserData() {
+       async function saveUserData() {
     const btn = document.getElementById('btn-save-user');
     const oldHouseNo = document.getElementById('user-house-old').value;
     const newHouseNo = document.getElementById('user-house').value;
@@ -669,31 +638,44 @@
     btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
 
     const finishProcess = async (blobData) => {
-        // เช็คว่าเป็นเพิ่มใหม่หรือแก้ไข
         const actionType = oldHouseNo ? "updateMember" : "addMember";
-
-        const payload = {
-            action: actionType,
-            oldHouseNo: oldHouseNo,
-            newHouseNo: newHouseNo,
-            newName: newName,
-            newPhone: newPhone,
-            imageBlob: blobData
-        };
+        const payload = { action: actionType, oldHouseNo, newHouseNo, newName, newPhone, imageBlob: blobData };
 
         try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload) 
-            });
+            const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
             const result = await response.json();
 
             if (result.success) {
-                closeUserModal();
-                showToast(result.message, "success");
-                loadDashboardData(); // โหลดข้อมูลใหม่มาแสดง
+                closeUserModal(); 
+                showToast(result.message, "success"); 
+                
+                if (actionType === "updateMember") {
+                    // 🌟 อัปเดตเฉพาะจุด: หาการ์ดใบเดิมแล้วเปลี่ยนข้อมูลข้างในทันที
+                    const card = document.getElementById(`card-${oldHouseNo}`);
+                    if (card) {
+                        if (newName) card.querySelector('.name-text').innerText = newName;
+                        if (newHouseNo) card.querySelector('.house-no-text').innerText = newHouseNo;
+                        if (newPhone) {
+                            const phoneEl = card.querySelector('.phone-text');
+                            if (phoneEl) phoneEl.innerText = newPhone;
+                        }
+                        if (blobData) {
+                            card.querySelector('.avatar-box').innerHTML = `<img src="${blobData}" class="w-full h-full object-cover rounded-full">`;
+                        }
+                        // เปลี่ยน ID การ์ดเผื่อมีการเปลี่ยนเลขบ้าน
+                        card.id = `card-${newHouseNo}`;
+                    }
+                    // อัปเดตข้อมูลในตัวแปร Global ด้วย
+                    const userIndex = window.globalUsersList.findIndex(u => u.houseNo === oldHouseNo);
+                    if (userIndex !== -1) {
+                        window.globalUsersList[userIndex] = { ...window.globalUsersList[userIndex], houseNo: newHouseNo, name: newName, phone: newPhone, profilePic: blobData || window.globalUsersList[userIndex].profilePic };
+                    }
+                } else {
+                    // ถ้าเพิ่มใหม่ ให้โหลดใหม่ทั้งหมด (เพราะต้องเรียงลำดับใหม่)
+                    loadDashboardData();
+                }
             } else {
-                showToast(result.message, "error");
+                showToast(result.message, "error"); 
             }
         } catch (err) {
             showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", "error");
