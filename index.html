@@ -600,6 +600,32 @@
         }
 
         // ==========================================
+        // ฟังก์ชันปิดหน้าต่าง Modal แก้ไขสมาชิก
+        // ==========================================
+        function closeUserModal() {
+            const modal = document.getElementById('user-modal');
+            const box = document.getElementById('user-modal-box');
+            
+            // ถ้าหาหน้าต่างไม่เจอ ให้หยุดการทำงาน (ป้องกัน Error)
+            if (!modal || !box) return;
+
+            // เล่นแอนิเมชันตอนปิด (เฟดออก + ย่อขนาดลง)
+            modal.classList.add('opacity-0');
+            box.classList.add('scale-95');
+            
+            // รอให้แอนิเมชันเล่นจบ 0.3 วินาที (300ms) แล้วค่อยซ่อนหน้าต่าง
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                
+                // เคลียร์ค่าไฟล์รูปภาพเก่าออก เผื่อรอบหน้ากดเข้ามาเลือกรูปเดิมซ้ำจะได้ไม่มีปัญหา
+                const fileInput = document.getElementById('user-image-file');
+                if (fileInput) {
+                    fileInput.value = ""; 
+                }
+            }, 300);
+        }
+
+        // ==========================================
 // ฟังก์ชันบันทึกข้อมูล (ส่งไป Google Sheets ผ่าน fetch)
 // ==========================================
 async function saveUserData() {
