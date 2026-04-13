@@ -7,7 +7,7 @@
 
     <script>
         // 👇 นำ URL ที่ลงท้ายด้วย /exec จาก Google Apps Script มาใส่ในเครื่องหมายคำพูดด้านล่าง
-        const API_URL = "https://script.google.com/macros/s/AKfycbzCRn58j2YxyK_3PrQrAIrq7-rEmYayLX4W7SpmR0KgDOaYSfo2jBo_y8Hq9qac0L9FWQ/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbz_rkhS9bIVqcWGTNa2PhGfdw0Ik3cWy6rHzSU_pYtR9nQY7PupMSUdfqLaUgUGBLtj/exec";
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -204,47 +204,68 @@
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto hide-scrollbar p-4 pb-24">
+        <main class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-4 pb-24">
             
-            <div id="page-home" class="space-y-4 animate-fade-in">
+            <div class="relative w-full">
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="ค้นหาบ้านเลขที่ หรือ ชื่อ..." 
+                       class="w-full bg-white border border-slate-200 rounded-xl h-12 pl-11 pr-24 text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-sm shadow-sm">
+                <div class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-slate-50 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-500 border border-slate-100">
+                    <span id="search-count">...</span>
                 </div>
+            </div>
 
-            <div id="page-settings" class="hidden space-y-4 animate-fade-in">
-                <div class="flex items-center gap-3 mb-6 mt-2">
-                    <div class="w-10 h-10 rounded-xl bg-slate-800 text-white flex items-center justify-center shadow-lg"><i class="fas fa-cog"></i></div>
+            <div id="overdue-warning-banner" class="hidden bg-gradient-to-r from-red-500 to-rose-600 rounded-2xl p-4 shadow-lg shadow-red-500/30 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center animate-pulse"><i class="fas fa-exclamation-triangle text-xl"></i></div>
                     <div>
-                        <h2 class="text-xl font-bold text-slate-800 leading-tight">ตั้งค่าระบบ</h2>
-                        <p class="text-[11px] text-slate-500">จัดการอัตราค่าน้ำและการรับชำระเงิน</p>
+                        <h3 class="font-bold leading-tight">ตรวจพบสมาชิกค้างชำระเกินกำหนด!</h3>
+                        <p class="text-xs text-red-100">จำนวน <span id="overdue-warning-count" class="font-bold text-white text-base">0</span> หลัง (เตรียมงดจ่ายน้ำ)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 shadow-lg shadow-blue-500/20 text-white flex items-center justify-between">
+                <div>
+                    <div class="flex items-center gap-1.5 mb-1 opacity-90">
+                        <i class="far fa-calendar-alt text-xs"></i>
+                        <span class="text-[12px] font-light tracking-wider uppercase">รอบบิลเก็บเดือน</span>
+                    </div>
+                    <div id="home-display-month" class="text-xl font-bold tracking-tight leading-none">
+                        <div class="h-6 w-24 bg-white/20 rounded animate-pulse"></div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-tint text-blue-500"></i> อัตราค่าน้ำประปา</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="text-[11px] font-bold text-slate-500 ml-1">ค่าน้ำประปา (บาท/หน่วย)</label>
-                            <input type="number" id="setting-rate" placeholder="เช่น 10" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 font-bold text-lg text-blue-600 focus:bg-white focus:border-blue-500 outline-none mt-1 transition-all">
-                        </div>
-                        <div>
-                            <label class="text-[11px] font-bold text-slate-500 ml-1">ค่ารักษามิเตอร์/ขั้นต่ำ (บาท/เดือน)</label>
-                            <input type="number" id="setting-min-fee" placeholder="เช่น 0 หรือ 20" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 font-bold text-lg text-slate-700 focus:bg-white focus:border-blue-500 outline-none mt-1 transition-all">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-qrcode text-purple-500"></i> บัญชีรับชำระเงิน</h3>
-                    <div>
-                        <label class="text-[11px] font-bold text-slate-500 ml-1">เบอร์พร้อมเพย์ (PromptPay)</label>
-                        <input type="text" id="setting-promptpay" placeholder="08X-XXX-XXXX" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 font-bold text-slate-700 focus:bg-white focus:border-purple-500 outline-none mt-1 transition-all">
-                    </div>
-                </div>
-
-                <button onclick="saveSettingsData()" id="btn-save-settings" class="w-full py-3.5 mt-4 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-lg shadow-slate-900/20 active:scale-95 transition-all flex justify-center items-center gap-2">
-                    <i class="fas fa-save"></i> บันทึกการตั้งค่า
+                <button onclick="openAddMemberModal()" class="admin-only w-12 h-12 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-xl flex items-center justify-center text-white text-xl transition-all shadow-sm backdrop-blur-md">
+                    <i class="fas fa-user-plus"></i>
                 </button>
             </div>
 
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center flex-shrink-0"><i class="fas fa-clipboard-list"></i></div>
+                    <div class="min-w-0"><p class="text-[11px] text-slate-400 font-medium">ยังไม่จดมิเตอร์</p><div id="dash-count-todo" class="text-lg font-bold text-slate-700 leading-none">0</div></div>
+                </div>
+                <div class="bg-white rounded-2xl p-3 shadow-sm border border-orange-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center flex-shrink-0"><i class="fas fa-clock"></i></div>
+                    <div class="min-w-0"><p class="text-[11px] text-slate-400 font-medium">รอชำระเงิน</p><div id="dash-count-waiting" class="text-lg font-bold text-orange-500 leading-none">0</div></div>
+                </div>
+                <div class="bg-white rounded-2xl p-3 shadow-sm border border-green-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0"><i class="fas fa-check-circle"></i></div>
+                    <div class="min-w-0"><p class="text-[11px] text-slate-400 font-medium">ชำระเรียบร้อย</p><div id="dash-count-paid" class="text-lg font-bold text-green-600 leading-none">0</div></div>
+                </div>
+                <div class="bg-white rounded-2xl p-3 shadow-sm border border-red-100 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0"><i class="fas fa-exclamation-circle"></i></div>
+                    <div class="min-w-0"><p class="text-[11px] text-slate-400 font-medium">ค้างชำระ</p><div id="dash-count-overdue" class="text-lg font-bold text-red-500 leading-none">0</div></div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-end mt-4 px-1">
+                <h3 class="font-bold text-slate-700 text-sm">รายชื่อบ้านทั้งหมด</h3>
+            </div>
+            
+            <div id="user-list" class="flex flex-col gap-2"></div>
+            
         </main>
     </div>
 
@@ -391,15 +412,7 @@
                 const statusCode = user.statusCode || "none";
                 const amount = Number(user.amount || 0);
                 
-                let rawProfilePic = user.profilePic ? String(user.profilePic).trim() : "";
-                let fileId = "";
-                
-                if (rawProfilePic.includes("id=")) {
-                    fileId = rawProfilePic.split('id=')[1].split('&')[0];
-                } else if (rawProfilePic.includes("/d/")) {
-                    fileId = rawProfilePic.split('/d/')[1].split('/')[0];
-                }
-
+                const profilePic = user.profilePic || "";
                 const lineId = escapeHTML(user.lineId || "");
                 const phone = escapeHTML(user.phone || "");
 
@@ -410,71 +423,93 @@
 
                 if (user.isOverdue || statusCode === 'overdue') totalOverdueUsers++;
 
+                // 🟢 สีและเส้นขอบการ์ด
                 let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จด";
                 let borderColor = "border-slate-200"; 
 
                 if (statusCode === 'paid' || statusCode === 'free') {
-                    sClass = "text-emerald-600"; sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
-                    borderColor = "border-emerald-400 shadow-emerald-500/10";
+                    sClass = "text-green-600"; sBg = "bg-green-100"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
+                    borderColor = "border-green-400 shadow-green-500/10";
                 } else if (statusCode === 'overdue') {
-                    sClass = "text-rose-600 font-bold"; sBg = "bg-rose-100"; sIcon = "fa-exclamation-circle"; sText = `ค้าง ${amount.toLocaleString()}.-`;
-                    borderColor = "border-rose-400 shadow-rose-500/10";
+                    sClass = "text-red-600 font-bold"; sBg = "bg-red-100"; sIcon = "fa-exclamation-circle"; sText = `ค้าง ${amount.toLocaleString()}.-`;
+                    borderColor = "border-red-400 shadow-red-500/10";
                 } else if (statusCode === 'waiting') {
-                    sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}.-`;
-                    borderColor = "border-amber-400 shadow-amber-500/10";
+                    sClass = "text-orange-600 font-bold"; sBg = "bg-orange-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}.-`;
+                    borderColor = "border-orange-400 shadow-orange-500/10";
                 }
 
-                let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`; 
+                // 🖼️ รูปโปรไฟล์ (ลดขนาดลงเหลือ w-9 h-9)
+                let avatarHtml = profilePic 
+                    ? `<img src="${profilePic}" alt="profile" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-user text-slate-300 text-sm\\'></i>'">` 
+                    : `<i class="fas ${sIcon} text-sm"></i>`;
 
-                if (fileId) {
-                    const mainImage = "https://lh3.googleusercontent.com/d/" + fileId;
-                    const backupImage = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w200";
-                    avatarHtml = `<img src="${mainImage}" alt="profile" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.src='${backupImage}';">`;
-                } else if (rawProfilePic && (rawProfilePic.startsWith("http") || rawProfilePic.startsWith("data:"))) {
-                    avatarHtml = `<img src="${rawProfilePic}" alt="profile" class="w-full h-full object-cover rounded-full">`;
-                }
-
+                // 📞 เบอร์โทรศัพท์ (ย่อขนาดและลดระยะห่าง)
                 let phoneDisplayHtml = phone
-                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[10px] font-medium text-slate-500 flex items-center gap-1">
+                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[10px] font-medium text-slate-500 flex items-center gap-1 hover:text-blue-600 active:scale-95 transition-all">
                            <div class="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-phone-alt text-[7px]"></i></div>
-                           <span class="phone-text">${phone}</span>
+                           ${phone}
                        </a>`
                     : `<span class="text-[9px] text-slate-300 italic">ไม่มีเบอร์โทร</span>`;
 
-                let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
+                // ไอคอน LINE (ย่อขนาดเหลือ text-base)
+                let lineIconHtml = lineId
+                    ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>`
+                    : ``;
 
-                // 🌟 เพิ่ม id="card-${houseNo}" เพื่อให้เราหาเจอเวลาจะอัปเดตเฉพาะจุด
+                // 📦 โครงสร้างการ์ด (ลด Padding เป็น p-2.5 และดึงบรรทัดให้ชิดกัน)
                 htmlContent += `
-                    <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="alert('บ้านเลขที่: ${houseNo}')">
-                        <div class="flex items-start gap-3 min-w-0 w-full">
-                            <div class="avatar-box w-12 h-12 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border-2 border-white mt-0.5">
+                    <div class="user-card bg-white rounded-xl p-2.5 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full" onclick="alert('บ้านเลขที่: ${houseNo}')">
+                        <div class="flex items-start gap-2.5 min-w-0 w-full">
+                            
+                            <div class="w-9 h-9 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border border-white mt-0.5">
                                 ${avatarHtml}
                             </div>
+                            
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center justify-between mb-0">
-                                    <div class="flex items-center gap-2">
-                                        <h4 class="house-no-text text-[15px] font-bold text-slate-800 leading-none">${houseNo}</h4>
+                                    <div class="flex items-center gap-1.5">
+                                        <h4 class="text-[14px] font-bold text-slate-800 leading-none">${houseNo}</h4>
                                         ${lineIconHtml}
                                     </div>
-                                    <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-400 hover:text-blue-500 active:scale-90 px-2 py-1">
-                                        <i class="fas fa-edit text-[15px]"></i>
+                                    <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-400 hover:text-blue-500 active:scale-90 px-1.5 py-0.5 transition-all rounded-md hover:bg-blue-50" title="แก้ไขข้อมูล">
+                                        <i class="fas fa-edit text-base"></i>
                                     </button>
                                 </div>
-                                <p class="name-text text-[13px] font-medium text-slate-500 truncate leading-none mt-1 mb-2">${safeName}</p>
-                                <div class="flex items-center justify-between pt-1 border-t border-slate-100">
-                                    <div class="phone-box">${phoneDisplayHtml}</div>
-                                    <div class="status-badge text-[10px] font-bold ${sClass} ${sBg} px-2 py-1 rounded-md border border-white shadow-sm shrink-0 leading-none">${sText}</div>
+                                
+                                <p class="text-[12px] font-semibold text-slate-600 truncate leading-none mt-0.5">${safeName}</p>
+                                
+                                <div class="flex items-center justify-between mt-1 pt-1 border-t border-slate-50">
+                                    <div class="shrink-0">
+                                        ${phoneDisplayHtml}
+                                    </div>
+                                    <div class="text-[9px] font-bold ${sClass} ${sBg} px-1.5 py-0.5 rounded border border-white shadow-sm shrink-0 leading-none">
+                                        ${sText}
+                                    </div>
                                 </div>
                             </div>
+                            
                         </div>
                     </div>`;
             });
 
             listContainer.innerHTML = htmlContent;
+
+            // อัปเดตตัวเลขสถิติ 4 กล่อง
             document.getElementById('dash-count-todo').innerText = stats.todo;
             document.getElementById('dash-count-waiting').innerText = stats.waiting;
             document.getElementById('dash-count-paid').innerText = stats.paid;
             document.getElementById('dash-count-overdue').innerText = stats.overdue;
+
+            // จัดการป้ายเตือนค้างชำระ
+            const banner = document.getElementById('overdue-warning-banner');
+            if (totalOverdueUsers > 0) {
+                document.getElementById('overdue-warning-count').innerText = totalOverdueUsers;
+                banner.classList.remove('hidden');
+            } else {
+                banner.classList.add('hidden');
+            }
+
+            // แสดงยอดรวมบนช่องค้นหา
             document.getElementById('search-count').innerText = users.length + " หลัง";
         }
 
@@ -482,49 +517,26 @@
         // ระบบจัดการแก้ไขข้อมูลสมาชิก (Edit Member)
         // ==========================================
         function openEditMember(houseNo) {
-            document.getElementById('user-modal-title').innerText = "แก้ไขข้อมูลสมาชิก";
-
+            // ค้นหาข้อมูลบ้านจากที่เราเก็บไว้ใน globalUsersList
             const user = window.globalUsersList.find(u => u.houseNo === houseNo);
             if (!user) {
                 showToast("ไม่พบข้อมูลบ้านเลขที่นี้", "error");
                 return;
             }
 
-            document.getElementById('user-house-old').value = user.houseNo; 
+            // นำข้อมูลมาใส่ในช่อง Input
+            document.getElementById('user-house-old').value = user.houseNo; // เก็บค่าเดิมไว้เผื่อเปลี่ยนเลขบ้าน
             document.getElementById('user-house').value = user.houseNo;
             document.getElementById('user-name').value = user.name || "";
             document.getElementById('user-phone').value = user.phone || "";
             document.getElementById('user-line-id').value = user.lineId || "";
 
+            // จัดการรูปภาพ
             const preview = document.getElementById('user-image-preview');
             const placeholder = document.getElementById('user-image-placeholder');
             
-            let rawProfilePic = user.profilePic ? String(user.profilePic).trim() : "";
-            let finalImageUrl = "";
-
-            if (rawProfilePic) {
-                let fileId = "";
-                if (rawProfilePic.includes("id=")) {
-                    fileId = rawProfilePic.split('id=')[1].split('&')[0];
-                } else if (rawProfilePic.includes("/d/")) {
-                    fileId = rawProfilePic.split('/d/')[1].split('/')[0];
-                }
-
-                if (fileId) {
-                    finalImageUrl = "https://lh3.googleusercontent.com/d/" + fileId + "=s200";
-                    preview.onerror = function() {
-                        this.onerror = null;
-                        this.src = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w200";
-                    };
-                } 
-                // 🌟 [จุดที่แก้ไข] เพิ่มเงื่อนไข rawProfilePic.startsWith("data:") เช่นกัน
-                else if (rawProfilePic.startsWith("http") || rawProfilePic.startsWith("data:")) {
-                    finalImageUrl = rawProfilePic;
-                }
-            }
-            
-            if (finalImageUrl) {
-                preview.src = finalImageUrl;
+            if (user.profilePic) {
+                preview.src = user.profilePic;
                 preview.classList.remove('hidden');
                 placeholder.classList.add('hidden');
             } else {
@@ -533,6 +545,7 @@
                 placeholder.classList.remove('hidden');
             }
 
+            // แสดง Modal พร้อม Animation
             const modal = document.getElementById('user-modal');
             const box = document.getElementById('user-modal-box');
             modal.classList.remove('hidden');
@@ -542,46 +555,26 @@
             }, 10);
         }
 
-        // ==========================================
-        // ฟังก์ชันปิดหน้าต่าง Modal แก้ไขสมาชิก
-        // ==========================================
+        // ฟังก์ชันปิด Modal
         function closeUserModal() {
             const modal = document.getElementById('user-modal');
             const box = document.getElementById('user-modal-box');
-            
-            // ถ้าหาหน้าต่างไม่เจอ ให้หยุดการทำงาน (ป้องกัน Error)
-            if (!modal || !box) return;
-
-            // เล่นแอนิเมชันตอนปิด (เฟดออก + ย่อขนาดลง)
             modal.classList.add('opacity-0');
             box.classList.add('scale-95');
-            
-            // รอให้แอนิเมชันเล่นจบ 0.3 วินาที (300ms) แล้วค่อยซ่อนหน้าต่าง
             setTimeout(() => {
                 modal.classList.add('hidden');
-                
-                // เคลียร์ค่าไฟล์รูปภาพเก่าออก เผื่อรอบหน้ากดเข้ามาเลือกรูปเดิมซ้ำจะได้ไม่มีปัญหา
-                const fileInput = document.getElementById('user-image-file');
-                if (fileInput) {
-                    fileInput.value = ""; 
-                }
+                // เคลียร์ค่า input file เพื่อให้เลือกรูปเดิมซ้ำได้
+                document.getElementById('user-image-file').value = ""; 
             }, 300);
         }
 
-        // ==========================================
         // ฟังก์ชันพรีวิวรูปภาพเวลาผู้ใช้กดเลือกรูปใหม่
-        // ==========================================
         function previewImage(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const preview = document.getElementById('user-image-preview');
                     const placeholder = document.getElementById('user-image-placeholder');
-                    
-                    // ล้างค่า onerror เดิมทิ้ง ป้องกันการเด้งกลับไปรูปเก่า
-                    preview.onerror = null; 
-                    
-                    // นำรูปใหม่จากเครื่องมาแสดง
                     preview.src = e.target.result;
                     preview.classList.remove('hidden');
                     placeholder.classList.add('hidden');
@@ -591,80 +584,70 @@
         }
 
         // ==========================================
-// ฟังก์ชันบันทึกข้อมูล (อัปเดตหน้าจอทันที + ล็อคตำแหน่งไม่ให้หลุด)
-// ==========================================
-        async function saveUserData() {
-    const btn = document.getElementById('btn-save-user');
-    const oldHouseNo = document.getElementById('user-house-old').value;
-    const newHouseNo = document.getElementById('user-house').value;
-    const newName = document.getElementById('user-name').value;
-    const newPhone = document.getElementById('user-phone').value;
-    const fileInput = document.getElementById('user-image-file');
-    
-    if (!newHouseNo || !newName) {
-        showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "warning");
-        return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
-
-    const finishProcess = async (blobData) => {
-        const actionType = oldHouseNo ? "updateMember" : "addMember";
-        const payload = { action: actionType, oldHouseNo, newHouseNo, newName, newPhone, imageBlob: blobData };
-
-        try {
-            const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-            const result = await response.json();
-
-            if (result.success) {
-                closeUserModal(); 
-                showToast(result.message, "success"); 
-                
-                if (actionType === "updateMember") {
-                    // 🌟 อัปเดตเฉพาะจุด: หาการ์ดใบเดิมแล้วเปลี่ยนข้อมูลข้างในทันที
-                    const card = document.getElementById(`card-${oldHouseNo}`);
-                    if (card) {
-                        if (newName) card.querySelector('.name-text').innerText = newName;
-                        if (newHouseNo) card.querySelector('.house-no-text').innerText = newHouseNo;
-                        if (newPhone) {
-                            const phoneEl = card.querySelector('.phone-text');
-                            if (phoneEl) phoneEl.innerText = newPhone;
-                        }
-                        if (blobData) {
-                            card.querySelector('.avatar-box').innerHTML = `<img src="${blobData}" class="w-full h-full object-cover rounded-full">`;
-                        }
-                        // เปลี่ยน ID การ์ดเผื่อมีการเปลี่ยนเลขบ้าน
-                        card.id = `card-${newHouseNo}`;
-                    }
-                    // อัปเดตข้อมูลในตัวแปร Global ด้วย
-                    const userIndex = window.globalUsersList.findIndex(u => u.houseNo === oldHouseNo);
-                    if (userIndex !== -1) {
-                        window.globalUsersList[userIndex] = { ...window.globalUsersList[userIndex], houseNo: newHouseNo, name: newName, phone: newPhone, profilePic: blobData || window.globalUsersList[userIndex].profilePic };
-                    }
-                } else {
-                    // ถ้าเพิ่มใหม่ ให้โหลดใหม่ทั้งหมด (เพราะต้องเรียงลำดับใหม่)
-                    loadDashboardData();
-                }
-            } else {
-                showToast(result.message, "error"); 
+        // ฟังก์ชันบันทึกข้อมูล (ส่งไป Google Sheets)
+        // ==========================================
+        function saveUserData() {
+            const btn = document.getElementById('btn-save-user');
+            const oldHouseNo = document.getElementById('user-house-old').value;
+            const newHouseNo = document.getElementById('user-house').value;
+            const newName = document.getElementById('user-name').value;
+            const newPhone = document.getElementById('user-phone').value;
+            const fileInput = document.getElementById('user-image-file');
+            
+            if (!newHouseNo || !newName) {
+                showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "warning");
+                return;
             }
-        } catch (err) {
-            showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", "error");
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = "บันทึกข้อมูล";
-        }
-    };
 
-    if (fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = (e) => finishProcess(e.target.result);
-        reader.readAsDataURL(fileInput.files[0]);
-    } else {
-        finishProcess(""); 
-    }
-}
+            // เริ่มการบันทึก
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
+
+            const finishProcess = (blobData) => {
+                const payload = {
+                    oldHouseNo: oldHouseNo,
+                    newHouseNo: newHouseNo,
+                    newName: newName,
+                    newPhone: newPhone,
+                    imageBlob: blobData
+                };
+
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        btn.disabled = false;
+                        btn.innerHTML = "บันทึกข้อมูล";
+                        if (response.success) {
+                            closeUserModal();
+                            showToast(response.message, "success");
+                            loadDashboardData(); // โหลดข้อมูลใหม่มาโชว์
+                        } else {
+                            showToast(response.message, "error");
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        btn.disabled = false;
+                        btn.innerHTML = "บันทึกข้อมูล";
+                        showToast("ไม่สามารถติดต่อ Server ได้: " + err, "error");
+                    })
+                    .updateUserSettings(payload);
+            };
+
+            // ตรวจสอบรูปภาพ
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    finishProcess(e.target.result);
+                };
+                reader.onerror = function() {
+                    showToast("การอ่านไฟล์รูปภาพผิดพลาด", "error");
+                    btn.disabled = false;
+                    btn.innerHTML = "บันทึกข้อมูล";
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                finishProcess(""); // ไม่มีรูปใหม่
+            }
+        }
 
         // ==========================================
         // ระบบค้นหา (กรองบ้าน) Real-time
@@ -725,36 +708,10 @@
             }
         }
 
-        // ==========================================
-        // ฟังก์ชันเปิดหน้าต่าง: เพิ่มสมาชิกใหม่
-        // ==========================================
+        // ฟังก์ชันเตรียมไว้สำหรับตอนกดปุ่ม + เพิ่มสมาชิก
         function openAddMemberModal() {
-            // เปลี่ยนหัวข้อ Modal
-            document.getElementById('user-modal-title').innerText = "เพิ่มสมาชิกใหม่";
-
-            // เคลียร์ค่าในฟอร์มให้ว่างเปล่า
-            document.getElementById('user-house-old').value = ""; // 🌟 สำคัญ: ถ้าตรงนี้ว่างเปล่า ระบบจะรู้ว่าคือการ "เพิ่มใหม่"
-            document.getElementById('user-house').value = "";
-            document.getElementById('user-name').value = "";
-            document.getElementById('user-phone').value = "";
-            document.getElementById('user-line-id').value = "";
-            document.getElementById('user-image-file').value = "";
-
-            // รีเซ็ตรูปภาพกลับไปเป็นไอคอนกล้อง
-            const preview = document.getElementById('user-image-preview');
-            const placeholder = document.getElementById('user-image-placeholder');
-            preview.src = '';
-            preview.classList.add('hidden');
-            placeholder.classList.remove('hidden');
-
-            // แสดง Modal พร้อม Animation
-            const modal = document.getElementById('user-modal');
-            const box = document.getElementById('user-modal-box');
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                box.classList.remove('scale-95');
-            }, 10);
+            alert("กำลังเตรียมเปิดหน้าต่าง: เพิ่มสมาชิกใหม่");
+            // เดี๋ยวเรามาเขียนโค้ดสำหรับฟอร์มเพิ่มสมาชิกใส่ตรงนี้ภายหลังครับ
         }
 
         // ทำให้ปุ่มในเมนูสว่างขึ้นเวลากดเลือก
@@ -792,69 +749,63 @@
             toggleMenu(); // สั่งให้หุบเมนูเก็บทันทีหลังกด
         }
 
-       // ==========================================
-        // 🌟 ระบบแจ้งเตือน (Toast Notification - พื้นหลังสี)
+        // ==========================================
+        // ระบบแจ้งเตือน (Toast Notification)
         // ==========================================
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             
+            // ตั้งค่าสีและไอคอนตามประเภท (success, error, warning)
             let icon = 'fa-check-circle';
-            let bgClass = 'bg-emerald-500'; // พื้นสีเขียว
-            let progressColor = 'bg-emerald-700';
+            let colorClass = 'text-green-500';
+            let borderClass = 'border-green-500';
+            let bgIconClass = 'bg-green-100';
 
             if (type === 'error') {
                 icon = 'fa-times-circle';
-                bgClass = 'bg-rose-500'; // พื้นสีแดง
-                progressColor = 'bg-rose-700';
+                colorClass = 'text-red-500';
+                borderClass = 'border-red-500';
+                bgIconClass = 'bg-red-100';
             } else if (type === 'warning') {
-                icon = 'fa-exclamation-triangle';
-                bgClass = 'bg-amber-500'; // พื้นสีส้ม
-                progressColor = 'bg-amber-700';
+                icon = 'fa-exclamation-circle';
+                colorClass = 'text-orange-500';
+                borderClass = 'border-orange-500';
+                bgIconClass = 'bg-orange-100';
             }
 
-            // ใช้พื้นหลังเป็นสีล้วน (bgClass) และตัวอักษรสีขาว
-            toast.className = `${bgClass} text-white rounded-2xl shadow-2xl flex flex-col transform translate-x-full opacity-0 transition-all duration-500 ease-out pointer-events-auto min-w-[280px] max-w-sm overflow-hidden border border-white/20`;
-            
+            // สร้างโครงสร้าง Toast
+            toast.className = `bg-white border-l-4 ${borderClass} rounded-xl shadow-xl p-4 flex items-center gap-3 transform translate-x-full opacity-0 transition-all duration-300 pointer-events-auto min-w-[250px] max-w-sm`;
             toast.innerHTML = `
-                <div class="p-4 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center shrink-0 shadow-inner">
-                        <i class="fas ${icon} text-xl text-white drop-shadow-md"></i>
-                    </div>
-                    <div class="font-bold text-white text-[14px] flex-1 leading-tight drop-shadow-sm">
-                        ${message}
-                    </div>
-                    <button onclick="this.closest('.flex-col').remove()" class="text-white/70 hover:text-white bg-black/10 hover:bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90">
-                        <i class="fas fa-times"></i>
-                    </button>
+                <div class="w-8 h-8 rounded-full ${bgIconClass} ${colorClass} flex items-center justify-center shrink-0">
+                    <i class="fas ${icon} text-lg"></i>
                 </div>
-                <div class="w-full h-1 bg-black/10">
-                    <div class="h-full ${progressColor} transition-all duration-3000 ease-linear" style="width: 100%;"></div>
+                <div class="font-medium text-slate-700 text-sm flex-1">
+                    ${message}
                 </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times"></i>
+                </button>
             `;
 
             container.appendChild(toast);
 
-            // Animate เข้ามา
+            // Animate เข้า
             setTimeout(() => {
                 toast.classList.remove('translate-x-full', 'opacity-0');
-                // เริ่มให้หลอดเวลาหดลงเหลือ 0%
-                setTimeout(() => {
-                    toast.querySelector('div.h-full').style.width = '0%';
-                }, 50);
             }, 10);
 
             // Animate ออกและลบทิ้งอัตโนมัติหลัง 3 วินาที
             setTimeout(() => {
                 toast.classList.add('translate-x-full', 'opacity-0');
-                setTimeout(() => toast.remove(), 500);
+                setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
         // ==========================================
-        // 🌟 ระบบยืนยันการทำงาน (Confirm Dialog - พื้นหลังสี)
+        // ระบบยืนยันการทำงาน (Confirm Dialog)
         // ==========================================
-        let currentConfirmCallback = null; 
+        let currentConfirmCallback = null; // ตัวแปรเก็บฟังก์ชันที่จะให้ทำหลังกดยืนยัน
 
         function openConfirmModal(title, message, confirmText, callback, isDanger = true) {
             document.getElementById('confirm-title').innerText = title;
@@ -863,30 +814,22 @@
             const actionBtn = document.getElementById('confirm-btn-action');
             actionBtn.innerText = confirmText;
             
-            const box = document.getElementById('confirm-modal-box');
-            const iconBox = document.getElementById('confirm-icon-box');
-            const iconElement = document.getElementById('confirm-icon');
-            
-            // เปลี่ยนสีพื้นหลังหน้าต่าง Modal ตามประเภท!
+            // เปลี่ยนสีปุ่มตามประเภท (ลบสีแดง / บันทึกสีฟ้า)
             if(isDanger) {
-                // พื้นหลังสีแดงเข้ม สำหรับการลบข้อมูล
-                box.className = "bg-gradient-to-br from-red-500 to-rose-600 rounded-[2rem] p-8 w-full max-w-sm shadow-2xl shadow-red-500/40 transform scale-95 translate-y-4 transition-all duration-300 border border-red-400";
-                actionBtn.className = "flex-1 bg-white text-rose-600 hover:bg-rose-50 font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm";
-                iconElement.className = "fas fa-exclamation-triangle text-4xl animate-pulse text-white drop-shadow-lg";
+                actionBtn.className = "flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/30 transition-all active:scale-95";
             } else {
-                // พื้นหลังสีน้ำเงิน สำหรับการยืนยันทั่วไป
-                box.className = "bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2rem] p-8 w-full max-w-sm shadow-2xl shadow-blue-500/40 transform scale-95 translate-y-4 transition-all duration-300 border border-blue-400";
-                actionBtn.className = "flex-1 bg-white text-blue-600 hover:bg-blue-50 font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm";
-                iconElement.className = "fas fa-question-circle text-4xl animate-pulse text-white drop-shadow-lg";
+                actionBtn.className = "flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95";
             }
 
-            currentConfirmCallback = callback; 
+            currentConfirmCallback = callback; // จำฟังก์ชันไว้
             
+            // แสดง Modal
             const modal = document.getElementById('confirm-modal');
+            const box = document.getElementById('confirm-modal-box');
             modal.classList.remove('hidden');
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
-                box.classList.remove('scale-95', 'translate-y-4');
+                box.classList.remove('scale-95');
             }, 10);
         }
 
@@ -894,41 +837,39 @@
             const modal = document.getElementById('confirm-modal');
             const box = document.getElementById('confirm-modal-box');
             modal.classList.add('opacity-0');
-            box.classList.add('scale-95', 'translate-y-4');
+            box.classList.add('scale-95');
             setTimeout(() => {
                 modal.classList.add('hidden');
             }, 300);
         }
 
-        function executeConfirmAction() {
+        // เมื่อกดปุ่ม "ยืนยัน"
+        document.getElementById('confirm-btn-action').addEventListener('click', () => {
             closeConfirmModal();
             if (typeof currentConfirmCallback === 'function') {
-                currentConfirmCallback(); 
+                currentConfirmCallback(); // เรียกฟังก์ชันที่ตั้งไว้
             }
-        }
+        });
 
     </script>
 
     <div id="toast-container" class="fixed top-5 right-5 z-[200] flex flex-col gap-3 pointer-events-none"></div>
 
-    <div id="confirm-modal" class="fixed inset-0 z-[250] bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
-        <div class="rounded-[2rem] p-8 w-full max-w-sm shadow-2xl transform scale-95 translate-y-4 transition-all duration-300" id="confirm-modal-box">
+    <div id="confirm-modal" class="fixed inset-0 z-[250] bg-slate-900/50 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300" id="confirm-modal-box">
             <div class="flex flex-col items-center text-center">
-                
-                <div id="confirm-icon-box" class="w-20 h-20 bg-black/10 rounded-full flex items-center justify-center mb-4 shadow-inner relative">
-                    <div class="absolute inset-0 border-4 border-white/30 rounded-full"></div>
-                    <i id="confirm-icon" class="fas fa-exclamation-triangle text-4xl animate-pulse text-white drop-shadow-md"></i>
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-500 shadow-inner">
+                    <i class="fas fa-exclamation-triangle text-3xl"></i>
                 </div>
-                
-                <h3 id="confirm-title" class="text-xl font-bold text-white mb-2 tracking-tight drop-shadow-sm">ยืนยันการทำรายการ?</h3>
-                <p id="confirm-message" class="text-sm text-white/90 mb-8 font-medium leading-relaxed drop-shadow-sm">คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้ ข้อมูลที่ลบจะไม่สามารถกู้คืนได้</p>
+                <h3 id="confirm-title" class="text-xl font-bold text-slate-800 mb-2">ยืนยันการทำรายการ?</h3>
+                <p id="confirm-message" class="text-sm text-slate-500 mb-6">คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้ ข้อมูลที่ลบจะไม่สามารถกู้คืนได้</p>
                 
                 <div class="flex items-center gap-3 w-full">
-                    <button onclick="closeConfirmModal()" class="flex-1 bg-black/10 hover:bg-black/20 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 text-sm border border-white/20">
+                    <button onclick="closeConfirmModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-all active:scale-95">
                         ยกเลิก
                     </button>
-                    <button id="confirm-btn-action" onclick="executeConfirmAction()" class="flex-1 bg-white text-rose-600 font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm">
-                        ยืนยัน
+                    <button id="confirm-btn-action" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-500/30 transition-all active:scale-95">
+                        ยืนยันการลบ
                     </button>
                 </div>
             </div>
