@@ -650,6 +650,9 @@
         // ==========================================
 // ฟังก์ชันบันทึกข้อมูล (ส่งไป Google Sheets ผ่าน fetch)
 // ==========================================
+        // ==========================================
+// ฟังก์ชันบันทึกข้อมูล (รองรับทั้ง "เพิ่มใหม่" และ "แก้ไข")
+// ==========================================
 async function saveUserData() {
     const btn = document.getElementById('btn-save-user');
     const oldHouseNo = document.getElementById('user-house-old').value;
@@ -658,19 +661,26 @@ async function saveUserData() {
     const newPhone = document.getElementById('user-phone').value;
     const fileInput = document.getElementById('user-image-file');
     
+    // ตรวจสอบว่ากรอกข้อมูลจำเป็นครบไหม
     if (!newHouseNo || !newName) {
         showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "warning");
         return;
     }
 
-    // เริ่มการบันทึก
+    // เปลี่ยนสถานะปุ่มตอนกำลังบันทึก
     btn.disabled = true;
     btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
 
     const finishProcess = async (blobData) => {
+        
+        // 🌟 [จุดสำคัญที่ปรับปรุง] เช็คว่าเป็นการเพิ่มใหม่ หรือ แก้ไขของเดิม
+        // ถ้า oldHouseNo ว่างเปล่า = เพิ่มใหม่ (addMember)
+        // ถ้า oldHouseNo มีค่า = แก้ไขข้อมูลเดิม (updateMember)
+        const actionType = oldHouseNo ? "updateMember" : "addMember";
+
         // เตรียมชุดข้อมูลเพื่อส่งไปให้ doPost รับ
         const payload = {
-            action: "updateMember", // 👈 ต้องระบุ action เพื่อให้ GAS รู้ว่าต้องทำอะไร
+            action: actionType, // 👈 ใช้ตัวแปร actionType ที่เช็คไว้ด้านบน
             oldHouseNo: oldHouseNo,
             newHouseNo: newHouseNo,
             newName: newName,
@@ -679,41 +689,41 @@ async function saveUserData() {
         };
 
         try {
-            // ใช้ fetch แทน google.script.run
-            // หมายเหตุ: อย่าลืมประกาศตัวแปร API_URL ที่เก็บลิงก์ Web App ของคุณไว้ส่วนบนสุดของสคริปต์
+            // ส่งข้อมูลไปที่ Google Apps Script
             const response = await fetch(API_URL, {
                 method: 'POST',
-                // ส่งเป็น Text ป้องกันปัญหา CORS Preflight ในบางเบราว์เซอร์
                 body: JSON.stringify(payload) 
             });
             
             const result = await response.json();
 
+            // เช็คผลลัพธ์ที่ตอบกลับมาจาก Google Sheet
             if (result.success) {
-                closeUserModal();
-                showToast(result.message, "success");
+                closeUserModal(); // ปิดหน้าต่าง Modal
+                showToast(result.message, "success"); // แจ้งเตือนสำเร็จ
                 
-                // โหลดข้อมูลใหม่มาโชว์ (ตรวจสอบชื่อฟังก์ชันโหลดข้อมูลหน้าแดชบอร์ดของคุณ)
+                // โหลดข้อมูลบนแดชบอร์ดใหม่ เพื่อให้เห็นข้อมูลอัปเดตทันที
                 if (typeof loadDashboardData === "function") {
                     loadDashboardData(); 
                 }
             } else {
-                showToast(result.message, "error");
+                showToast(result.message, "error"); // แจ้งเตือนกรณีเกิดข้อผิดพลาด (เช่น เลขบ้านซ้ำ)
             }
         } catch (err) {
             showToast("ไม่สามารถติดต่อ Server ได้", "error");
             console.error(err);
         } finally {
-            // คืนค่าปุ่ม
+            // คืนค่าปุ่มกลับเป็นเหมือนเดิม ไม่ว่าจะบันทึกผ่านหรือไม่
             btn.disabled = false;
             btn.innerHTML = "บันทึกข้อมูล";
         }
     };
 
-    // ตรวจสอบรูปภาพก่อนประมวลผล
+    // ตรวจสอบว่ามีการเลือกรูปภาพใหม่มาด้วยหรือไม่
     if (fileInput.files && fileInput.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
+            // ถ้ารูปอ่านผ่าน ให้ส่งข้อมูลรูปไปด้วย
             finishProcess(e.target.result);
         };
         reader.onerror = function() {
@@ -723,7 +733,8 @@ async function saveUserData() {
         };
         reader.readAsDataURL(fileInput.files[0]);
     } else {
-        finishProcess(""); // ไม่มีรูปใหม่
+        // ถ้าไม่มีการแนบรูป ให้ส่งข้อมูลว่างๆ ไป
+        finishProcess(""); 
     }
 }
 
@@ -786,10 +797,36 @@ async function saveUserData() {
             }
         }
 
-        // ฟังก์ชันเตรียมไว้สำหรับตอนกดปุ่ม + เพิ่มสมาชิก
+        // ==========================================
+        // ฟังก์ชันเปิดหน้าต่าง: เพิ่มสมาชิกใหม่
+        // ==========================================
         function openAddMemberModal() {
-            alert("กำลังเตรียมเปิดหน้าต่าง: เพิ่มสมาชิกใหม่");
-            // เดี๋ยวเรามาเขียนโค้ดสำหรับฟอร์มเพิ่มสมาชิกใส่ตรงนี้ภายหลังครับ
+            // เปลี่ยนหัวข้อ Modal
+            document.getElementById('user-modal-title').innerText = "เพิ่มสมาชิกใหม่";
+
+            // เคลียร์ค่าในฟอร์มให้ว่างเปล่า
+            document.getElementById('user-house-old').value = ""; // 🌟 สำคัญ: ถ้าตรงนี้ว่างเปล่า ระบบจะรู้ว่าคือการ "เพิ่มใหม่"
+            document.getElementById('user-house').value = "";
+            document.getElementById('user-name').value = "";
+            document.getElementById('user-phone').value = "";
+            document.getElementById('user-line-id').value = "";
+            document.getElementById('user-image-file').value = "";
+
+            // รีเซ็ตรูปภาพกลับไปเป็นไอคอนกล้อง
+            const preview = document.getElementById('user-image-preview');
+            const placeholder = document.getElementById('user-image-placeholder');
+            preview.src = '';
+            preview.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+
+            // แสดง Modal พร้อม Animation
+            const modal = document.getElementById('user-modal');
+            const box = document.getElementById('user-modal-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+            }, 10);
         }
 
         // ทำให้ปุ่มในเมนูสว่างขึ้นเวลากดเลือก
