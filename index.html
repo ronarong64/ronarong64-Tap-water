@@ -637,8 +637,8 @@
             }
         }
 
-       // ==========================================
-// ฟังก์ชันบันทึกข้อมูล (อัปเดตหน้าจอทันที ไม่ต้องรีโหลดใหม่)
+        // ==========================================
+// ฟังก์ชันบันทึกข้อมูล (อัปเดตหน้าจอทันที + ล็อคตำแหน่งไม่ให้หลุด)
 // ==========================================
 async function saveUserData() {
     const btn = document.getElementById('btn-save-user');
@@ -680,43 +680,51 @@ async function saveUserData() {
                 closeUserModal(); 
                 showToast(result.message, "success"); 
                 
-                // 🌟 [ส่วนที่ปรับปรุงใหม่] อัปเดตข้อมูลบนหน้าจอทันที โดยไม่ต้องโหลดใหม่จากเซิร์ฟเวอร์
                 if (window.globalUsersList) {
                     
-                    // 1. จำตำแหน่งการเลื่อนหน้าจอ (Scroll) ปัจจุบันไว้
+                    // 🌟 1. จำตำแหน่งการเลื่อนหน้าจอ (Scroll) ปัจจุบันไว้
                     const scrollContainer = document.querySelector('main');
                     const currentScroll = scrollContainer ? scrollContainer.scrollTop : 0;
 
-                    // 2. อัปเดตข้อมูลลงในความจำของหน้าเว็บ (Local Array)
+                    // 2. อัปเดตข้อมูลในระบบ
                     if (actionType === "updateMember") {
                         const userIndex = window.globalUsersList.findIndex(u => u.houseNo === oldHouseNo);
                         if (userIndex !== -1) {
                             window.globalUsersList[userIndex].houseNo = newHouseNo;
                             window.globalUsersList[userIndex].name = newName;
                             window.globalUsersList[userIndex].phone = newPhone;
-                            // ถ้ารูปใหม่ถูกเลือก ให้เอารูปนั้นมาโชว์ชั่วคราวได้เลย
                             if (blobData) {
                                 window.globalUsersList[userIndex].profilePic = blobData; 
                             }
                         }
                     } else if (actionType === "addMember") {
-                        // ถ้าเป็นสมาชิกใหม่ ให้ต่อท้าย Array
                         window.globalUsersList.push({
                             houseNo: newHouseNo,
                             name: newName,
                             phone: newPhone,
                             profilePic: blobData || "",
-                            statusCode: "none", // สถานะเริ่มต้นยังไม่จดมิเตอร์
+                            statusCode: "none",
                             amount: 0
                         });
                     }
 
-                    // 3. สั่งวาดการ์ดหน้าจอใหม่ด้วยข้อมูลที่แก้แล้ว (ทำงานไวมาก ระดับเสี้ยววินาที)
+                    // 3. วาดการ์ดใหม่
                     renderRealData(window.globalUsersList);
 
-                    // 4. บังคับให้หน้าจอเลื่อนกลับมาอยู่ที่จุดเดิม!
+                    // 🌟 4. ล็อคตำแหน่ง Scroll แบบ 3 จังหวะ (แก้ปัญหาจอเด้งหลุด 100%)
                     if (scrollContainer) {
+                        // จังหวะที่ 1: คืนค่าทันที
                         scrollContainer.scrollTop = currentScroll;
+                        
+                        // จังหวะที่ 2: รอให้เบราว์เซอร์จัดเรียง HTML เสร็จแล้วล็อคซ้ำ
+                        requestAnimationFrame(() => {
+                            scrollContainer.scrollTop = currentScroll;
+                        });
+
+                        // จังหวะที่ 3: เผื่อมือถือบางรุ่นประมวลผลภาพช้า ดีเลย์ 50ms แล้วล็อคซ้ำอีกรอบ
+                        setTimeout(() => {
+                            scrollContainer.scrollTop = currentScroll;
+                        }, 50);
                     }
                 }
 
