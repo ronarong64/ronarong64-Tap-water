@@ -496,14 +496,14 @@
           </div>
 
           <div class="grid grid-cols-2 gap-2 mt-2">
-    <button onclick="openBankModal()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 px-3 py-2 rounded-xl text-sm font-bold transition shadow-sm flex items-center justify-center gap-1">
+            <button onclick="openBankModal()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 px-3 py-2 rounded-xl text-sm font-bold transition shadow-sm flex items-center justify-center gap-1">
         <i class="fas fa-university mr-1"></i> บัญชีธนาคาร
     </button>
-    
-    <button onclick="openBroadcastModal()" class="bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-xl font-bold text-sm h-10 shadow-md active:scale-95 transition flex items-center justify-center gap-1">
+
+            <button onclick="openBroadcastModal()" class="bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-xl font-bold text-sm h-10 shadow-md active:scale-95 transition flex items-center justify-center gap-1">
         <i class="fas fa-bullhorn"></i> แจ้งข่าวสาร
     </button>
-</div>
+          </div>
         </div>
       </div>
     </main>
@@ -1030,30 +1030,6 @@ function toggleOption(elementId, isChecked) {
     }
 }
 
-// โหลดข้อมูลตั้งค่าจาก Google Sheets
-async function loadSettingsData() {
-    const btn = document.getElementById('btn-save-settings');
-    btn.disabled = true;
-    btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> กำลังโหลด...`;
-
-    try {
-        const response = await fetch(API_URL + "?action=getSettings");
-        const result = await response.json();
-        
-        if (result.success && result.data) {
-            const d = result.data;
-            // นำค่าไปใส่ใน Input (ตรวจ ID ให้ตรงกับ HTML ของคุณ)
-            if(document.getElementById('set-price')) document.getElementById('set-price').value = d.PRICE || "";
-            // ... (ใส่ค่าตัวอื่นๆ ให้ครบตาม ID)
-        }
-    } catch (err) {
-        showToast("โหลดข้อมูลตั้งค่าไม่สำเร็จ", "error");
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fas fa-save"></i> บันทึกการตั้งค่า`;
-    }
-}
-
         // ทำให้ปุ่มในเมนูสว่างขึ้นเวลากดเลือก
         function setActiveMenu(clickedBtn) {
             const allBtns = document.querySelectorAll('.menu-btn');
@@ -1239,65 +1215,72 @@ function showPage(pageId) {
         });
       
         // ==========================================
-// ฟังก์ชันโหลดข้อมูลตั้งค่ามาแสดง (Load Settings)
+// ฟังก์ชันโหลดข้อมูลตั้งค่ามาแสดง (Load Settings) ฉบับสมบูรณ์
 // ==========================================
 async function loadSettingsData() {
     const btn = document.getElementById('btn-save-settings');
-    // แสดงสถานะกำลังโหลดที่ปุ่มบันทึก
-    const originalBtnText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> กำลังดึงข้อมูล...`;
+    
+    // เปลียนสถานะปุ่มให้เป็น "กำลังโหลด..."
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> กำลังโหลด...`;
+    }
 
     try {
-        // ดึงข้อมูลจาก Google Apps Script ผ่าน action=getSettings
+        // ดึงข้อมูลจาก Google Apps Script
         const response = await fetch(API_URL + "?action=getSettings");
         const result = await response.json();
         
         if (result.success && result.data) {
             const d = result.data;
 
-            // 1. หยอดค่าตัวเลข/ข้อความลงในช่อง Input
-            if(document.getElementById('set-price')) document.getElementById('set-price').value = d.PRICE || 0;
-            if(document.getElementById('set-collection-rate')) document.getElementById('set-collection-rate').value = d.COLLECTION_RATE || 0;
-            if(document.getElementById('set-max-overdue')) document.getElementById('set-max-overdue').value = d.MAX_OVERDUE || 0;
-            if(document.getElementById('set-start-day')) document.getElementById('set-start-day').value = d.START_DAY || 1;
-            if(document.getElementById('set-end-day')) document.getElementById('set-end-day').value = d.END_DAY || 31;
-            if(document.getElementById('set-free-limit')) document.getElementById('set-free-limit').value = d.FREE_LIMIT || 0;
+            // --- 1. ข้อมูลตั้งค่าค่าน้ำ (ตัวเลข/ข้อความ) ---
+            if(document.getElementById('set-price')) document.getElementById('set-price').value = d.PRICE || "";
+            if(document.getElementById('set-collection-rate')) document.getElementById('set-collection-rate').value = d.COLLECTION_RATE || "";
+            if(document.getElementById('set-max-overdue')) document.getElementById('set-max-overdue').value = d.MAX_OVERDUE || "";
+            if(document.getElementById('set-start-day')) document.getElementById('set-start-day').value = d.START_DAY || "";
+            if(document.getElementById('set-end-day')) document.getElementById('set-end-day').value = d.END_DAY || "";
 
-            // 2. จัดการปุ่มเปิด-ปิด (Switch / Checkbox)
-            // หมายเหตุ: ค่าที่มาจาก GAS จะเป็น String 'true' หรือ 'false'
+            // --- 2. ข้อมูลบัญชีธนาคาร (เตรียมไว้สำหรับ Modal) ---
+            if(document.getElementById('bank-name')) document.getElementById('bank-name').value = d.BANK_NAME || "";
+            if(document.getElementById('bank-acc-name')) document.getElementById('bank-acc-name').value = d.ACC_NAME || "";
+            if(document.getElementById('bank-acc-number')) document.getElementById('bank-acc-number').value = d.ACC_NUMBER || "";
+
+            // --- 3. ระบบรายงานอัตโนมัติ (Switch & Dropdown) ---
             const autoReport = document.getElementById('set-auto-report');
             if(autoReport) {
                 autoReport.checked = (d.AUTO_REPORT === "true");
                 toggleOption('auto-report-options', autoReport.checked);
             }
+            if(d.REPORT_DAY) document.getElementById('set-report-day').value = d.REPORT_DAY;
+            if(d.REPORT_TIME) document.getElementById('set-report-time').value = d.REPORT_TIME;
 
+            // --- 4. ระบบเตือนชำระเงินอัตโนมัติ (Switch & Dropdown) ---
             const autoBill = document.getElementById('set-auto-bill');
             if(autoBill) {
                 autoBill.checked = (d.AUTO_BILL === "true");
                 toggleOption('auto-bill-options', autoBill.checked);
             }
+            if(d.BILL_DAY) document.getElementById('set-bill-day').value = d.BILL_DAY;
+            if(d.BILL_TIME) document.getElementById('set-bill-time').value = d.BILL_TIME;
 
+            // --- 5. ระบบใช้น้ำฟรี (Switch & Input) ---
             const freeEnabled = document.getElementById('set-free-enabled');
             if(freeEnabled) {
                 freeEnabled.checked = (d.FREE_ENABLED === "true");
                 toggleOption('free-limit-box', freeEnabled.checked);
             }
-
-            // 3. จัดการตัวเลือก (Select Dropdown)
-            if(d.REPORT_DAY) document.getElementById('set-report-day').value = d.REPORT_DAY;
-            if(d.REPORT_TIME) document.getElementById('set-report-time').value = d.REPORT_TIME;
-            if(d.BILL_DAY) document.getElementById('set-bill-day').value = d.BILL_DAY;
-            if(d.BILL_TIME) document.getElementById('set-bill-time').value = d.BILL_TIME;
-
+            if(document.getElementById('set-free-limit')) document.getElementById('set-free-limit').value = d.FREE_LIMIT || "";
         }
     } catch (err) {
         console.error("Load Settings Error:", err);
         showToast("ไม่สามารถโหลดข้อมูลตั้งค่าได้", "error");
     } finally {
-        // คืนค่าสถานะปุ่ม
-        btn.disabled = false;
-        btn.innerHTML = originalBtnText;
+        // คืนสถานะปุ่มกลับมาให้กดบันทึกได้เหมือนเดิม
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fas fa-save"></i> บันทึกการตั้งค่า`;
+        }
     }
 }
 
@@ -1374,6 +1357,7 @@ async function loadSettingsData() {
             
             const modal = document.getElementById('bank-modal');
             const box = document.getElementById('bank-modal-box');
+            
             modal.classList.remove('hidden');
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
@@ -1528,28 +1512,31 @@ async function loadSettingsData() {
     </div>
   </div>
 
-  <div id="bank-modal" class="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
-        <div class="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl transform scale-95 transition-all duration-300 overflow-hidden" id="bank-modal-box">
-            
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white relative">
-                <button onclick="closeBankModal()" class="absolute right-4 top-4 w-8 h-8 flex items-center justify-center bg-white/20 rounded-full hover:bg-white/30 transition-all">
+  <div id="bank-modal"
+    class="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+    <div
+      class="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl transform scale-95 transition-all duration-300 overflow-hidden"
+      id="bank-modal-box">
+
+      <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white relative">
+        <button onclick="closeBankModal()" class="absolute right-4 top-4 w-8 h-8 flex items-center justify-center bg-white/20 rounded-full hover:bg-white/30 transition-all">
                     <i class="fas fa-times text-sm"></i>
                 </button>
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shadow-inner">
-                        <i class="fas fa-university text-2xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-bold">ข้อมูลบัญชีธนาคาร</h3>
-                        <p class="text-xs text-blue-100 font-light">สำหรับรับชำระค่าน้ำประปา</p>
-                    </div>
-                </div>
-            </div>
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shadow-inner">
+            <i class="fas fa-university text-2xl"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold">ข้อมูลบัญชีธนาคาร</h3>
+            <p class="text-xs text-blue-100 font-light">สำหรับรับชำระค่าน้ำประปา</p>
+          </div>
+        </div>
+      </div>
 
-            <div class="p-6 space-y-4">
-                <div class="space-y-1">
-                    <label class="ml-1 text-[11px] font-bold text-slate-500 uppercase">เลือกธนาคาร</label>
-                    <select id="bank-name" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-700 font-medium outline-none focus:border-blue-500 transition-all">
+      <div class="p-6 space-y-4">
+        <div class="space-y-1">
+          <label class="ml-1 text-[11px] font-bold text-slate-500 uppercase">เลือกธนาคาร</label>
+          <select id="bank-name" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-700 font-medium outline-none focus:border-blue-500 transition-all">
                         <option value="">-- เลือกธนาคาร --</option>
                         <option value="กสิกรไทย">ธนาคารกสิกรไทย (K-Bank)</option>
                         <option value="ไทยพาณิชย์">ธนาคารไทยพาณิชย์ (SCB)</option>
@@ -1560,27 +1547,27 @@ async function loadSettingsData() {
                         <option value="ธ.ก.ส.">ธ.ก.ส. (BAAC)</option>
                         <option value="ทหารไทยธนชาต">ทหารไทยธนชาต (TTB)</option>
                     </select>
-                </div>
-
-                <div class="space-y-1">
-                    <label class="ml-1 text-[11px] font-bold text-slate-500 uppercase">ชื่อบัญชี</label>
-                    <input type="text" id="bank-acc-name" placeholder="ชื่อ-นามสกุล" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-700 font-medium outline-none focus:border-blue-500 transition-all">
-                </div>
-
-                <div class="space-y-1">
-                    <label class="ml-1 text-[11px] font-bold text-slate-500 uppercase">เลขที่บัญชี</label>
-                    <input type="text" id="bank-acc-number" placeholder="XXX-X-XXXXX-X" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-700 font-bold tracking-wider outline-none focus:border-blue-500 transition-all">
-                </div>
-
-                <div class="pt-4 flex gap-3">
-                    <button onclick="closeBankModal()" class="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl active:scale-95 transition-all text-sm">ยกเลิก</button>
-                    <button id="btn-save-bank" onclick="saveBankData()" class="flex-1 py-3.5 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
-                        <i class="fas fa-save"></i> บันทึกข้อมูล
-                    </button>
-                </div>
-            </div>
         </div>
+
+        <div class="space-y-1">
+          <label class="ml-1 text-[11px] font-bold text-slate-500 uppercase">ชื่อบัญชี</label>
+          <input type="text" id="bank-acc-name" placeholder="ชื่อ-นามสกุล" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-700 font-medium outline-none focus:border-blue-500 transition-all">
+        </div>
+
+        <div class="space-y-1">
+          <label class="ml-1 text-[11px] font-bold text-slate-500 uppercase">เลขที่บัญชี</label>
+          <input type="text" id="bank-acc-number" placeholder="XXX-X-XXXXX-X" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-700 font-bold tracking-wider outline-none focus:border-blue-500 transition-all">
+        </div>
+
+        <div class="pt-4 flex gap-3">
+          <button onclick="closeBankModal()" class="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl active:scale-95 transition-all text-sm">ยกเลิก</button>
+          <button id="btn-save-bank" onclick="saveBankData()" class="flex-1 py-3.5 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
+                        <i class="fas fa-save"></i> บันทึกข้อมูล
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
 
 </body>
 
