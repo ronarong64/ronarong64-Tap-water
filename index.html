@@ -496,13 +496,14 @@
           </div>
 
           <div class="grid grid-cols-2 gap-2 mt-2">
-            <button onclick="alert('เตรียมเปิดระบบ: บัญชีธนาคาร')" class="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 px-3 py-2 rounded-xl text-sm font-bold transition shadow-sm flex items-center justify-center gap-1">
-                            <i class="fas fa-university mr-1"></i> บัญชีธนาคาร
-                        </button>
-            <button onclick="alert('เตรียมเปิดระบบ: แจ้งข่าวสาร')" class="bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-xl font-bold text-sm h-10 shadow-md active:scale-95 transition flex items-center justify-center gap-1">
-                            <i class="fas fa-bullhorn"></i> แจ้งข่าวสาร
-                        </button>
-          </div>
+    <button onclick="openBankModal()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 px-3 py-2 rounded-xl text-sm font-bold transition shadow-sm flex items-center justify-center gap-1">
+        <i class="fas fa-university mr-1"></i> บัญชีธนาคาร
+    </button>
+    
+    <button onclick="openBroadcastModal()" class="bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-xl font-bold text-sm h-10 shadow-md active:scale-95 transition flex items-center justify-center gap-1">
+        <i class="fas fa-bullhorn"></i> แจ้งข่าวสาร
+    </button>
+</div>
         </div>
       </div>
     </main>
@@ -1361,6 +1362,79 @@ async function loadSettingsData() {
             clickedElement.classList.add('bg-white/10', 'text-white', 'shadow-inner');
         }
 
+        // 1. ฟังก์ชันเปิดหน้าต่างธนาคาร
+        function openBankModal() {
+            // โหลดข้อมูลเดิมที่มีในหน้า Settings มาใส่ในฟอร์มก่อน (ถ้ามี)
+            const bankName = document.getElementById('bank-name');
+            const accName = document.getElementById('bank-acc-name');
+            const accNumber = document.getElementById('bank-acc-number');
+
+            // ดึงค่าล่าสุดจากระบบ (จากตัวแปร global ที่เราเก็บค่า settings ไว้)
+            // หมายเหตุ: ตรงนี้ถ้ายังไม่มีการโหลดค่ามา ต้องเรียก loadSettingsData ก่อน
+            
+            const modal = document.getElementById('bank-modal');
+            const box = document.getElementById('bank-modal-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+            }, 10);
+        }
+
+        // 2. ฟังก์ชันปิดหน้าต่างธนาคาร
+        function closeBankModal() {
+            const modal = document.getElementById('bank-modal');
+            const box = document.getElementById('bank-modal-box');
+            modal.classList.add('opacity-0');
+            box.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        // 3. ฟังก์ชันบันทึกข้อมูลธนาคารลง Google Sheet
+        async function saveBankData() {
+            const btn = document.getElementById('btn-save-bank');
+            const bank = document.getElementById('bank-name').value;
+            const name = document.getElementById('bank-acc-name').value;
+            const number = document.getElementById('bank-acc-number').value;
+
+            if (!bank || !name || !number) {
+                showToast("กรุณากรอกข้อมูลธนาคารให้ครบถ้วน", "warning");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i>`;
+
+            const payload = {
+                action: "saveBankData",
+                bankName: bank,
+                accName: name,
+                accNumber: number
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast("บันทึกข้อมูลบัญชีธนาคารสำเร็จ", "success");
+                    closeBankModal();
+                    // สั่งรีโหลดข้อมูล Settings เพื่อให้หน้าจออัปเดตค่าล่าสุด
+                    loadSettingsData(); 
+                } else {
+                    showToast(result.message, "error");
+                }
+            } catch (err) {
+                showToast("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-save"></i> บันทึกข้อมูล`;
+            }
+        }
+
   </script>
 
   <div id="toast-container" class="fixed top-5 right-5 z-[200] flex flex-col gap-3 pointer-events-none"></div>
@@ -1453,6 +1527,60 @@ async function loadSettingsData() {
       </div>
     </div>
   </div>
+
+  <div id="bank-modal" class="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl transform scale-95 transition-all duration-300 overflow-hidden" id="bank-modal-box">
+            
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white relative">
+                <button onclick="closeBankModal()" class="absolute right-4 top-4 w-8 h-8 flex items-center justify-center bg-white/20 rounded-full hover:bg-white/30 transition-all">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shadow-inner">
+                        <i class="fas fa-university text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold">ข้อมูลบัญชีธนาคาร</h3>
+                        <p class="text-xs text-blue-100 font-light">สำหรับรับชำระค่าน้ำประปา</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div class="space-y-1">
+                    <label class="ml-1 text-[11px] font-bold text-slate-500 uppercase">เลือกธนาคาร</label>
+                    <select id="bank-name" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-700 font-medium outline-none focus:border-blue-500 transition-all">
+                        <option value="">-- เลือกธนาคาร --</option>
+                        <option value="กสิกรไทย">ธนาคารกสิกรไทย (K-Bank)</option>
+                        <option value="ไทยพาณิชย์">ธนาคารไทยพาณิชย์ (SCB)</option>
+                        <option value="กรุงเทพ">ธนาคารกรุงเทพ (BBL)</option>
+                        <option value="กรุงไทย">ธนาคารกรุงไทย (KTB)</option>
+                        <option value="กรุงศรีอยุธยา">ธนาคารกรุงศรีอยุธยา (BAY)</option>
+                        <option value="ออมสิน">ธนาคารออมสิน (GSB)</option>
+                        <option value="ธ.ก.ส.">ธ.ก.ส. (BAAC)</option>
+                        <option value="ทหารไทยธนชาต">ทหารไทยธนชาต (TTB)</option>
+                    </select>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="ml-1 text-[11px] font-bold text-slate-500 uppercase">ชื่อบัญชี</label>
+                    <input type="text" id="bank-acc-name" placeholder="ชื่อ-นามสกุล" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-700 font-medium outline-none focus:border-blue-500 transition-all">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="ml-1 text-[11px] font-bold text-slate-500 uppercase">เลขที่บัญชี</label>
+                    <input type="text" id="bank-acc-number" placeholder="XXX-X-XXXXX-X" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-700 font-bold tracking-wider outline-none focus:border-blue-500 transition-all">
+                </div>
+
+                <div class="pt-4 flex gap-3">
+                    <button onclick="closeBankModal()" class="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl active:scale-95 transition-all text-sm">ยกเลิก</button>
+                    <button id="btn-save-bank" onclick="saveBankData()" class="flex-1 py-3.5 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
+                        <i class="fas fa-save"></i> บันทึกข้อมูล
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
 
