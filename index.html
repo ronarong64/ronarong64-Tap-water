@@ -1238,52 +1238,67 @@ function showPage(pageId) {
         });
       
         // ==========================================
-        // ระบบโหลดและบันทึกข้อมูลตั้งค่า (Settings) ฉบับสมบูรณ์
-        // ==========================================
-        async function loadSettingsData() {
-            const btn = document.getElementById('btn-save-settings');
-            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> กำลังโหลด...`;
-            btn.disabled = true;
+// ฟังก์ชันโหลดข้อมูลตั้งค่ามาแสดง (Load Settings)
+// ==========================================
+async function loadSettingsData() {
+    const btn = document.getElementById('btn-save-settings');
+    // แสดงสถานะกำลังโหลดที่ปุ่มบันทึก
+    const originalBtnText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> กำลังดึงข้อมูล...`;
 
-            try {
-                const response = await fetch(API_URL + "?action=getSettings");
-                const result = await response.json();
-                
-                if (result.success && result.data) {
-                    const d = result.data;
-                    document.getElementById('set-price').value = d.PRICE || "";
-                    document.getElementById('set-collection-rate').value = d.COLLECTION_RATE || "";
-                    document.getElementById('set-max-overdue').value = d.MAX_OVERDUE || "";
-                    document.getElementById('set-start-day').value = d.START_DAY || "";
-                    document.getElementById('set-end-day').value = d.END_DAY || "";
-                    
-                    // ตั้งค่า Checkbox และปลดล็อคเมนู
-                    const chkReport = document.getElementById('set-auto-report');
-                    chkReport.checked = (d.AUTO_REPORT === 'true');
-                    toggleOption('auto-report-options', chkReport.checked);
-                    
-                    const chkBill = document.getElementById('set-auto-bill');
-                    chkBill.checked = (d.AUTO_BILL === 'true');
-                    toggleOption('auto-bill-options', chkBill.checked);
+    try {
+        // ดึงข้อมูลจาก Google Apps Script ผ่าน action=getSettings
+        const response = await fetch(API_URL + "?action=getSettings");
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const d = result.data;
 
-                    const chkFree = document.getElementById('set-free-enabled');
-                    chkFree.checked = (d.FREE_ENABLED === 'true');
-                    toggleOption('free-limit-box', chkFree.checked);
+            // 1. หยอดค่าตัวเลข/ข้อความลงในช่อง Input
+            if(document.getElementById('set-price')) document.getElementById('set-price').value = d.PRICE || 0;
+            if(document.getElementById('set-collection-rate')) document.getElementById('set-collection-rate').value = d.COLLECTION_RATE || 0;
+            if(document.getElementById('set-max-overdue')) document.getElementById('set-max-overdue').value = d.MAX_OVERDUE || 0;
+            if(document.getElementById('set-start-day')) document.getElementById('set-start-day').value = d.START_DAY || 1;
+            if(document.getElementById('set-end-day')) document.getElementById('set-end-day').value = d.END_DAY || 31;
+            if(document.getElementById('set-free-limit')) document.getElementById('set-free-limit').value = d.FREE_LIMIT || 0;
 
-                    // ตั้งค่าตัวเลือก Select
-                    if(d.REPORT_DAY) document.getElementById('set-report-day').value = d.REPORT_DAY;
-                    if(d.REPORT_TIME) document.getElementById('set-report-time').value = d.REPORT_TIME;
-                    if(d.BILL_DAY) document.getElementById('set-bill-day').value = d.BILL_DAY;
-                    if(d.BILL_TIME) document.getElementById('set-bill-time').value = d.BILL_TIME;
-                    document.getElementById('set-free-limit').value = d.FREE_LIMIT || "";
-                }
-            } catch (err) {
-                showToast("โหลดข้อมูลตั้งค่าไม่สำเร็จ", "error");
-            } finally {
-                btn.innerHTML = `<i class="fas fa-save"></i> บันทึกการตั้งค่า`;
-                btn.disabled = false;
+            // 2. จัดการปุ่มเปิด-ปิด (Switch / Checkbox)
+            // หมายเหตุ: ค่าที่มาจาก GAS จะเป็น String 'true' หรือ 'false'
+            const autoReport = document.getElementById('set-auto-report');
+            if(autoReport) {
+                autoReport.checked = (d.AUTO_REPORT === "true");
+                toggleOption('auto-report-options', autoReport.checked);
             }
+
+            const autoBill = document.getElementById('set-auto-bill');
+            if(autoBill) {
+                autoBill.checked = (d.AUTO_BILL === "true");
+                toggleOption('auto-bill-options', autoBill.checked);
+            }
+
+            const freeEnabled = document.getElementById('set-free-enabled');
+            if(freeEnabled) {
+                freeEnabled.checked = (d.FREE_ENABLED === "true");
+                toggleOption('free-limit-box', freeEnabled.checked);
+            }
+
+            // 3. จัดการตัวเลือก (Select Dropdown)
+            if(d.REPORT_DAY) document.getElementById('set-report-day').value = d.REPORT_DAY;
+            if(d.REPORT_TIME) document.getElementById('set-report-time').value = d.REPORT_TIME;
+            if(d.BILL_DAY) document.getElementById('set-bill-day').value = d.BILL_DAY;
+            if(d.BILL_TIME) document.getElementById('set-bill-time').value = d.BILL_TIME;
+
         }
+    } catch (err) {
+        console.error("Load Settings Error:", err);
+        showToast("ไม่สามารถโหลดข้อมูลตั้งค่าได้", "error");
+    } finally {
+        // คืนค่าสถานะปุ่ม
+        btn.disabled = false;
+        btn.innerHTML = originalBtnText;
+    }
+}
 
         async function saveSettingsData() {
             const btn = document.getElementById('btn-save-settings');
