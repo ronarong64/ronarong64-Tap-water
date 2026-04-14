@@ -1018,27 +1018,6 @@
     }, 10);
 }
 
-        // ฟังก์ชันสลับหน้าจอ
-function showPage(pageId) {
-    // ซ่อนทุกหน้า
-    document.getElementById('page-home').classList.add('hidden');
-    document.getElementById('page-settings').classList.add('hidden');
-    
-    // แสดงหน้าที่เลือก
-    const targetPage = document.getElementById('page-' + pageId);
-    if (targetPage) {
-        targetPage.classList.remove('hidden');
-    }
-
-    // ปิดเมนูด้านข้างอัตโนมัติ
-    if (typeof toggleMenu === "function") toggleMenu(); 
-
-    // ถ้าเปิดหน้าตั้งค่า ให้โหลดข้อมูลมาโชว์
-    if (pageId === 'settings') {
-        loadSettingsData();
-    }
-}
-
 // ฟังก์ชันเปิด-ปิด เมนูย่อยในหน้าตั้งค่า
 function toggleOption(elementId, isChecked) {
     const el = document.getElementById(elementId);
@@ -1088,11 +1067,33 @@ async function loadSettingsData() {
             clickedBtn.classList.add('bg-white/10');
         }
 
-        // ฟังก์ชันจำลองเปลี่ยนหน้า (เดี๋ยวเรามาเขียนของจริงใส่ทีหลัง)
-        function showPage(pageId) {
-            console.log("กำลังเปิดหน้า: " + pageId);
-            toggleMenu(); // กดเมนูเสร็จ ให้หุบเมนูเก็บอัตโนมัติ
-        }
+        // ==========================================
+// ฟังก์ชันสลับหน้าจอ
+// ==========================================
+function showPage(pageId) {
+    // 1. ซ่อนทุกหน้าที่มีในระบบก่อน
+    const pageHome = document.getElementById('page-home');
+    const pageSettings = document.getElementById('page-settings');
+    
+    if (pageHome) pageHome.classList.add('hidden');
+    if (pageSettings) pageSettings.classList.add('hidden');
+    
+    // 2. แสดงเฉพาะหน้าที่เรากำลังจะเปิด
+    const targetPage = document.getElementById('page-' + pageId);
+    if (targetPage) {
+        targetPage.classList.remove('hidden');
+    }
+
+    // 3. ปิดเมนูด้านข้างอัตโนมัติ
+    if (typeof toggleMenu === "function") {
+        toggleMenu(); 
+    }
+
+    // 4. ถ้ากดเข้ามาที่หน้า "ตั้งค่าระบบ" (settings) ให้โหลดข้อมูลจากฐานข้อมูลมาแสดงทันที
+    if (pageId === 'settings' && typeof loadSettingsData === "function") {
+        loadSettingsData();
+    }
+}
         
         function openAboutModal() {
             alert("ระบบบริหารจัดการน้ำประปาหมู่บ้าน\nพัฒนาโดย: รณรงค์ อินทร์คง\nเวอร์ชัน: 14.0.0");
@@ -1235,17 +1236,7 @@ async function loadSettingsData() {
             if(reportDay) reportDay.innerHTML = dayOptions;
             if(billDay) billDay.innerHTML = dayOptions;
         });
-
-        // เปิด-ปิด เมนูตั้งค่าย่อย
-        function toggleOption(elementId, isChecked) {
-            const el = document.getElementById(elementId);
-            if (isChecked) {
-                el.classList.remove('opacity-50', 'pointer-events-none');
-            } else {
-                el.classList.add('opacity-50', 'pointer-events-none');
-            }
-        }
-
+      
         // ==========================================
         // ระบบโหลดและบันทึกข้อมูลตั้งค่า (Settings) ฉบับสมบูรณ์
         // ==========================================
