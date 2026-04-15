@@ -1109,17 +1109,17 @@ function showPage(pageId) {
             }
 
             // ใช้พื้นหลังเป็นสีล้วน (bgClass) และตัวอักษรสีขาว
-            toast.className = `${bgClass} text-white rounded-2xl shadow-2xl flex flex-col transform translate-x-full opacity-0 transition-all duration-500 ease-out pointer-events-auto w-fit overflow-hidden border border-white/20`;
+            toast.className = `${bgClass} text-white rounded-2xl shadow-2xl flex flex-col transform translate-x-full opacity-0 transition-all duration-500 ease-out pointer-events-auto min-w-[200px] max-w-sm overflow-hidden border border-white/20`;
             
             toast.innerHTML = `
-                <div class="p-3 pr-6 flex items-center gap-3">
+                <div class="p-4 flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center shrink-0 shadow-inner">
-                        <i class="fas ${icon} text-2xl text-white drop-shadow-md"></i>
+                        <i class="fas ${icon} text-xl text-white drop-shadow-md"></i>
                     </div>
-                    <div class="font-bold text-white text-lg flex-1 leading-tight drop-shadow-sm whitespace-nowrap">
+                    <div class="font-bold text-white text-[15px] flex-1 leading-tight drop-shadow-sm">
                         ${message}
                     </div>
-                    <button onclick="this.closest('.flex-col').remove()" class="text-white/70 hover:text-white bg-black/10 hover:bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 ml-2">
+                    <button onclick="this.closest('.flex-col').remove()" class="text-white/70 hover:text-white bg-black/10 hover:bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
