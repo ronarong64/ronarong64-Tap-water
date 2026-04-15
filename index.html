@@ -1432,46 +1432,33 @@ async function loadSettingsData() {
 
         // 1. เปิดหน้าต่างจดมิเตอร์ (ดึงข้อมูลจาก globalUsersList ทันที)
         function openBillingModal(houseNo) {
-            // ค้นหาข้อมูลลูกบ้านจากรายการที่มีอยู่แล้วในระบบ
             const user = window.globalUsersList.find(u => u.houseNo === houseNo);
-            if (!user) {
-                showToast("ไม่พบข้อมูลบ้านหลังนี้", "error");
-                return;
-            }
+            if (!user) return;
 
-            // นำข้อมูลมาเก็บใน State จำลอง
             currentBillState.houseNo = user.houseNo;
             currentBillState.prevUnit = parseInt(user.prevUnit) || 0;
             currentBillState.overdue = parseFloat(user.overdue) || 0;
             currentBillState.overdueDetails = user.overdueList || [];
 
-            // 🎯 ดึงราคาจากข้อมูลที่โหลดมาจาก Setting
-            const price = parseFloat(document.getElementById('set-price').value) || 0;
+            // 🎯 ดึงราคาจากหน้าตั้งค่า (Settings) มาแสดงทันที
+            // ตรวจสอบว่า ID 'set-price' มีค่าหรือไม่
+            const priceInput = document.getElementById('set-price');
+            const price = priceInput ? parseFloat(priceInput.value) : 0;
 
-            // รีเซ็ตหน้าจอ และโชว์ข้อมูลทันที
             document.getElementById('bill-house-display').innerText = `บ้าน ${user.houseNo} (${user.name || 'ไม่มีชื่อ'})`;
             document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
             document.getElementById('bill-curr-unit').value = '';
             
-            // แสดงตัวเลขเริ่มต้น
-            document.getElementById('calc-price').innerText = price; // แสดงราคา/หน่วย
+            // 🎯 แสดงราคาต่อหน่วยในฟอร์มทันที
+            document.getElementById('calc-price').innerText = price;
+            
             document.getElementById('calc-usage').innerText = '0';
             document.getElementById('calc-current-amount').innerText = '0';
             document.getElementById('calc-overdue').innerText = currentBillState.overdue.toLocaleString();
             document.getElementById('calc-total').innerText = currentBillState.overdue.toLocaleString();
 
-            // 🌟 เพิ่มเติม: รีเซ็ตปุ่มบันทึก/ชำระเงิน ให้กลับมากดได้ปกติ
-            const btnWait = document.getElementById('btn-save-waiting');
-            const btnPaid = document.getElementById('btn-save-paid');
-            if (btnWait) { btnWait.disabled = false; btnWait.classList.remove('opacity-50', 'cursor-not-allowed'); }
-            if (btnPaid) { btnPaid.disabled = false; btnPaid.classList.remove('opacity-50', 'cursor-not-allowed'); }
-
-            // รีเซ็ตหน้าต่างรายละเอียดค้างชำระ
-            document.getElementById('overdue-details-box').classList.add('hidden');
-            document.getElementById('icon-overdue-toggle').className = "fas fa-chevron-down text-[10px]";
             renderOverdueDetails();
 
-            // แสดง Modal
             const modal = document.getElementById('billing-modal');
             const box = document.getElementById('billing-modal-box');
             modal.classList.remove('hidden');
@@ -1572,32 +1559,26 @@ async function loadSettingsData() {
                 return;
             }
 
-            const btnWait = document.getElementById('btn-save-waiting');
-            const btnPaid = document.getElementById('btn-save-paid');
-            
-            // ล็อคปุ่ม
-            btnWait.disabled = true; btnPaid.disabled = true;
-            if (status === 'Waiting') btnWait.innerHTML = `<i class="fas fa-spinner fa-spin"></i> บันทึก...`;
-            else btnPaid.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ชำระเงิน...`;
-
-            // ดึงค่าเตรียมส่ง
-            const usage = parseInt(currUnit) - currentBillState.prevUnit;
-            const price = parseFloat(document.getElementById('set-price').value) || 0;
-            const currentAmount = parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, ''));
-            const grandTotal = parseFloat(document.getElementById('calc-total').innerText.replace(/,/g, ''));
+            // 🎯 ดึงชื่อผู้ที่ล๊อกอิน (ตรวจสอบ ID ให้ตรงกับใน HTML ของคุณที่มีชื่อแอดมิน)
+            let collectorName = "Admin"; 
+            const adminNameEl = document.getElementById('admin-name'); // หรือ ID ที่คุณใช้โชว์ชื่อคนล๊อกอิน
+            if (adminNameEl) {
+                collectorName = adminNameEl.innerText || adminNameEl.value;
+            }
 
             const payload = {
                 action: "saveBilling",
                 houseNo: currentBillState.houseNo,
                 prevUnit: currentBillState.prevUnit,
                 currUnit: currUnit,
-                usage: usage,
-                pricePerUnit: price,
-                currentAmount: currentAmount,
+                usage: parseInt(currUnit) - currentBillState.prevUnit,
+                pricePerUnit: parseFloat(document.getElementById('calc-price').innerText),
+                currentAmount: parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, '')),
                 overdueAmount: currentBillState.overdue,
-                grandTotal: grandTotal,
-                status: status, // "Waiting" หรือ "Paid"
-                paymentMethod: status === 'Paid' ? 'เงินสด' : '' // ค่าเริ่มต้น
+                grandTotal: parseFloat(document.getElementById('calc-total').innerText.replace(/,/g, '')),
+                status: status,
+                collector: collectorName, // 🎯 ส่งชื่อผู้บันทึกไปคอลัมน์ M
+                paymentMethod: status === 'Paid' ? 'เงินสด' : ''
             };
 
             try {
