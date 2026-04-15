@@ -601,8 +601,18 @@
 
         // 4. ฟังก์ชันออกจากระบบ
         function logout() {
-            sessionStorage.removeItem('water_app_session');
-            location.reload(); // รีเฟรชหน้าเว็บ 1 รอบ
+            // ล้างข้อมูลทั้งหมดในเครื่อง
+            sessionStorage.clear();
+            localStorage.removeItem("username"); // ลบชื่อผู้บันทึกที่จำไว้ด้วย
+
+            // 🎯 พยายามสั่งปิดหน้าต่าง
+            window.close(); 
+
+            // กรณีที่ window.close() ไม่ทำงาน (เพราะเบราว์เซอร์บล็อกไว้)
+            // ให้ส่งผู้ใช้ไปยังหน้าว่าง หรือหน้าที่บอกว่าออกจากระบบแล้วแทน
+            setTimeout(() => {
+                window.location.href = "about:blank"; // ไปที่หน้าขาวว่างๆ
+            }, 100);
         }
 
         // 5. เพิ่มลูกเล่น: พิมพ์ครบ 4 ตัว ให้ล๊อกอินอัตโนมัติ
