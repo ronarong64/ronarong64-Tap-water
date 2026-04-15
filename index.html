@@ -573,27 +573,31 @@
         }
 
         // 3. ฟังก์ชันสลับจากหน้าล๊อกอินไปหน้าหลัก
-        function showMainScreen(data) {
-            document.getElementById('login-screen').classList.add('opacity-0', 'pointer-events-none');
-            
-            setTimeout(() => {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('main-screen').classList.remove('hidden');
-                
-                document.getElementById('display-username').innerText = data.username;
-                const roleEl = document.getElementById('display-role');
-                roleEl.innerText = data.role;
-                if(String(data.role).toLowerCase() === 'admin') {
-                    roleEl.className = "text-[10px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full font-bold uppercase mt-0.5 border border-purple-200 shadow-sm";
-                }
-
-                // 🟢 สั่งให้อัปเดตเดือนปัจจุบัน
-                updateCurrentMonth();
-
-                // สั่งให้โหลดข้อมูลบ้าน
-                loadDashboardData();
-            }, 400);
+       function showMainScreen(data) {
+    document.getElementById('login-screen').classList.add('opacity-0', 'pointer-events-none');
+    
+    setTimeout(() => {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('main-screen').classList.remove('hidden');
+        
+        // 🎯 บันทึกชื่อผู้ใช้ลงในหน้าจอ (ID นี้จะถูกใช้ดึงไปบันทึกในคอลัมน์ M)
+        document.getElementById('display-username').innerText = data.username;
+        
+        const roleEl = document.getElementById('display-role');
+        roleEl.innerText = data.role;
+        if(String(data.role).toLowerCase() === 'admin') {
+            roleEl.className = "text-[10px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full font-bold uppercase mt-0.5 border border-purple-200 shadow-sm";
         }
+
+        updateCurrentMonth();
+
+        // 🎯 สั่งให้โหลดข้อมูลตั้งค่า (ราคา/หน่วย) มารอไว้ทันที เพื่อป้องกัน NaN
+        loadSettingsData();
+
+        // สั่งให้โหลดข้อมูลบ้าน
+        loadDashboardData();
+    }, 400);
+}
 
         // 4. ฟังก์ชันออกจากระบบ
         function logout() {
@@ -1437,42 +1441,45 @@ async function loadSettingsData() {
 
         // 1. เปิดหน้าต่างจดมิเตอร์ (ดึงข้อมูลจาก globalUsersList ทันที)
         function openBillingModal(houseNo) {
-            const user = window.globalUsersList.find(u => u.houseNo === houseNo);
-            if (!user) return;
+    const user = window.globalUsersList.find(u => u.houseNo === houseNo);
+    if (!user) return;
 
-            // 🎯 แก้ปัญหา NaN: ดึงค่าราคาอย่างปลอดภัย
-            const priceInput = document.getElementById('set-price');
-            let priceVal = 0;
-            if (priceInput && priceInput.value !== "") {
-                priceVal = parseFloat(priceInput.value);
-            }
-            if (isNaN(priceVal)) priceVal = 0; // บังคับให้เป็น 0 ถ้าดึงค่าไม่ได้ จะได้ไม่โชว์ NaN
+    // 🎯 ดึงราคาจากหน้าจอ Settings อย่างปลอดภัย
+    const priceInput = document.getElementById('set-price');
+    let priceVal = 0;
+    if (priceInput && priceInput.value !== "") {
+        priceVal = parseFloat(priceInput.value);
+    }
+    
+    // ถ้ายังเป็น NaN ให้บังคับเป็น 0 เพื่อความปลอดภัย
+    if (isNaN(priceVal)) priceVal = 0;
 
-            currentBillState = {
-                houseNo: user.houseNo,
-                prevUnit: parseInt(user.prevUnit) || 0,
-                overdue: parseFloat(user.overdue) || 0,
-                overdueDetails: user.overdueList || []
-            };
+    currentBillState = {
+        houseNo: user.houseNo,
+        prevUnit: parseInt(user.prevUnit) || 0,
+        overdue: parseFloat(user.overdue) || 0,
+        overdueDetails: user.overdueList || []
+    };
 
-            // แสดงข้อมูลบนฟอร์ม
-            document.getElementById('bill-house-display').innerText = `บ้านเลขที่ ${user.houseNo}`;
-            document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
-            
-            // 🎯 แสดงราคาต่อหน่วย
-            document.getElementById('calc-price').innerText = priceVal; 
-            document.getElementById('calc-overdue').innerText = currentBillState.overdue.toLocaleString();
-            
-            // รีเซ็ตค่าอื่นๆ
-            document.getElementById('bill-curr-unit').value = '';
-            document.getElementById('calc-usage').innerText = '0';
-            document.getElementById('calc-current-amount').innerText = '0';
-            document.getElementById('calc-total').innerText = currentBillState.overdue.toLocaleString();
+    // แสดงข้อมูลในฟอร์ม
+    document.getElementById('bill-house-display').innerText = `บ้านเลขที่ ${user.houseNo}`;
+    document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
+    
+    // 🎯 แสดงราคา/หน่วย ทันที (จะมาจากการโหลดตอน Login)
+    document.getElementById('calc-price').innerText = priceVal;
+    
+    document.getElementById('calc-overdue').innerText = currentBillState.overdue.toLocaleString();
+    
+    // รีเซ็ตค่าอื่นๆ
+    document.getElementById('bill-curr-unit').value = '';
+    document.getElementById('calc-usage').innerText = '0';
+    document.getElementById('calc-current-amount').innerText = '0';
+    document.getElementById('calc-total').innerText = currentBillState.overdue.toLocaleString();
 
-            const modal = document.getElementById('billing-modal');
-            modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.remove('opacity-0'), 10);
-        }
+    const modal = document.getElementById('billing-modal');
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+}
 
         function closeBillingModal() {
             const modal = document.getElementById('billing-modal');
