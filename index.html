@@ -1657,24 +1657,32 @@ async function loadSettingsData() {
         }
 
         function updateLocalUserData(houseNo, newUnit, status) {
-            // 1. ค้นหาตำแหน่งของบ้านหลังนี้ในตัวแปรหลัก
-            const userIndex = window.globalUsersList.findIndex(u => u.houseNo === houseNo);
+            // 1. ค้นหาบ้านในรายการหลัก
+            const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
             
-            if (userIndex !== -1) {
-                // 2. อัปเดตเลขมิเตอร์ล่าสุด และสถานะในตัวแปร
-                window.globalUsersList[userIndex].prevUnit = newUnit; // เลขเดือนนี้จะกลายเป็นเลขเดือนก่อนในครั้งหน้า
-                window.globalUsersList[userIndex].status = status.toLowerCase(); // 'paid' หรือ 'waiting'
+            if (user) {
+                // 🎯 จุดสำคัญ: ต้องอัปเดตที่ 'statusCode' เพราะฟังก์ชัน renderRealData ใช้ตัวนี้วาดหน้าจอ
+                user.statusCode = status.toLowerCase(); // 'paid' หรือ 'waiting'
+                user.prevUnit = parseInt(newUnit);      // อัปเดตเลขมิเตอร์เดือนก่อน (ให้กลายเป็นเลขล่าสุด)
                 
-                // 3. สั่งให้ Render (วาด) รายการบ้านใหม่จากตัวแปรเดิมที่อัปเดตแล้ว
-                // หมายเหตุ: ฟังก์ชัน renderUserList คือฟังก์ชันที่คุณใช้วาดรายชื่อบ้านในหน้า Dashboard
-                if (typeof renderUserList === "function") {
-                    renderUserList(window.globalUsersList); 
+                // คำนวณยอดเงินเบื้องต้น (ถ้าต้องการให้ตัวเลขในหน้าบัดจ์อัปเดตด้วย)
+                const price = parseFloat(document.getElementById('set-price').value) || 0;
+                const usage = user.prevUnit - (parseInt(user.oldUnit) || 0); // สมมติคุณมีค่าเก่าเก็บไว้
+                user.amount = usage * price; 
+
+                // หากชำระเงินแล้ว ให้ล้างค่าค้างชำระ
+                if (status.toLowerCase() === 'paid') {
+                    user.overdue = 0;
+                    user.isOverdue = false;
                 }
+
+                console.log(`✅ อัปเดตบ้าน ${houseNo} สำเร็จ! กำลังวาดหน้าจอใหม่...`);
+
+                // 🎯 เรียกใช้ฟังก์ชันของคุณเพื่อวาดหน้าจอใหม่ทันที
+                renderRealData(window.globalUsersList); 
                 
-                // 4. อัปเดตตัวเลขสรุปบน Dashboard (ถ้ามี)
-                if (typeof updateDashboardStats === "function") {
-                    updateDashboardStats();
-                }
+            } else {
+                console.error("❌ ไม่พบข้อมูลบ้านเลขที่นี้ในรายการ");
             }
         }
 
