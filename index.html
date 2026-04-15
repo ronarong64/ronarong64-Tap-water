@@ -1488,39 +1488,62 @@ async function loadSettingsData() {
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        // 2. แสดงรายละเอียดรายการค้างชำระ
-        function renderOverdueDetails() {
-            const container = document.getElementById('overdue-details-content');
+        // ==========================================
+        // ระบบ Pop-up รายละเอียดค้างชำระ
+        // ==========================================
+        
+        // 1. ฟังก์ชันเปิดหน้าต่างรายละเอียดค้างชำระ
+        function openOverdueModal() {
             if (currentBillState.overdueDetails.length === 0) {
-                container.innerHTML = `<div class="text-center text-red-500 py-1"><i class="fas fa-check-circle mr-1"></i>คุณไม่มียอดค้างชำระ</div>`;
+                showToast("บ้านหลังนี้ไม่มียอดค้างชำระ", "info");
                 return;
             }
-
-            let html = '';
-            currentBillState.overdueDetails.forEach(bill => {
-                html += `
-                <div class="flex justify-between items-center border-b border-red-100/50 pb-1 mb-1 last:border-0 last:pb-0 last:mb-0">
-                    <div>
-                        <span class="font-bold">${bill.month}</span> 
-                        <span class="text-[10px] text-red-500/70 ml-1">(${bill.usage} หน่วย x ${bill.price} บ.)</span>
-                    </div>
-                    <span class="font-bold">${Number(bill.amount).toLocaleString()} บ.</span>
-                </div>`;
-            });
-            container.innerHTML = html;
+            renderOverdueDetailsInModal();
+            const modal = document.getElementById('overdue-modal');
+            const box = document.getElementById('overdue-modal-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
         }
 
-        // เปิด/ปิด กล่องรายละเอียดค้างชำระ
-        function toggleOverdueDetails() {
-            const box = document.getElementById('overdue-details-box');
-            const icon = document.getElementById('icon-overdue-toggle');
-            if (box.classList.contains('hidden')) {
-                box.classList.remove('hidden');
-                icon.className = "fas fa-chevron-up text-[10px]";
-            } else {
-                box.classList.add('hidden');
-                icon.className = "fas fa-chevron-down text-[10px]";
-            }
+        // 2. ฟังก์ชันปิดหน้าต่างรายละเอียด
+        function closeOverdueModal() {
+            const modal = document.getElementById('overdue-modal');
+            const box = document.getElementById('overdue-modal-box');
+            modal.classList.add('opacity-0'); box.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        // 3. ฟังก์ชันวาดข้อมูลลงในหน้าต่าง Pop-up
+        function renderOverdueDetailsInModal() {
+            const container = document.getElementById('overdue-modal-content');
+            let html = '<div class="space-y-3">';
+            
+            currentBillState.overdueDetails.forEach((bill) => {
+                // หากบางฟิลด์เช่น collector ไม่มีค่า ให้ใช้ค่าเริ่มต้นป้องกัน error
+                const meterUnit = bill.meter || '-';
+                const collectorName = bill.collector || 'Admin';
+
+                html += `
+                <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-red-400"></div>
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-2 pl-2">
+                        <span class="font-bold text-slate-800"><i class="fas fa-calendar-alt text-slate-400 mr-1.5 text-sm"></i>รอบบิล: ${bill.month}</span>
+                        <span class="font-bold text-red-500 text-lg">${Number(bill.amount).toLocaleString()} บ.</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-y-1.5 gap-x-2 text-[13px] text-slate-600 pl-2">
+                        <div><span class="text-slate-400">เลขมิเตอร์:</span> <span class="font-medium text-slate-700">${meterUnit}</span></div>
+                        <div><span class="text-slate-400">ใช้น้ำ:</span> <span class="font-medium text-slate-700">${bill.usage} หน่วย</span></div>
+                        <div><span class="text-slate-400">ราคา/หน่วย:</span> <span class="font-medium text-slate-700">${bill.price} บ.</span></div>
+                        <div class="col-span-2 pt-1 border-t border-slate-50 mt-1">
+                            <span class="text-slate-400"><i class="fas fa-user-edit text-[10px] mr-1"></i>ผู้จดมิเตอร์:</span> 
+                            <span class="font-medium text-slate-700">${collectorName}</span>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
         }
 
         // 3. คำนวณค่าน้ำ
@@ -1772,6 +1795,7 @@ async function loadSettingsData() {
 
       <div class="p-6 -mt-6 relative z-0">
         <div id="bill-content" class="space-y-6 pt-4">
+          
           <div class="flex items-end justify-center gap-4 bg-purple-50/50 p-4 rounded-[1.5rem] border border-purple-100 shadow-inner">
             <div class="text-center">
               <div class="text-[13px] text-slate-500 mb-1 uppercase font-bold tracking-wide">เลขเดือนก่อน</div>
@@ -1795,16 +1819,11 @@ async function loadSettingsData() {
               <span>ค่าน้ำเดือนนี้</span><span class="text-base"><span id="calc-current-amount">0</span> บ.</span>
             </div>
             
-            <div class="flex justify-between text-sm text-red-500 font-bold items-center">
-              <span onclick="toggleOverdueDetails()" class="cursor-pointer hover:bg-red-50 px-2 py-1 -ml-2 rounded-lg transition-colors flex items-center gap-1 border border-transparent hover:border-red-100">
-                ยอดค้างชำระเดิม <i id="icon-overdue-toggle" class="fas fa-chevron-down text-[10px]"></i>
+            <div class="flex justify-between text-sm text-red-500 font-bold items-center pt-1">
+              <span onclick="openOverdueModal()" class="cursor-pointer bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 border border-red-200 shadow-sm active:scale-95 text-red-600">
+                <i class="fas fa-search"></i> ดูยอดค้างชำระ
               </span>
               <span class="text-base"><span id="calc-overdue">0</span> บ.</span>
-            </div>
-            
-            <div id="overdue-details-box" class="hidden bg-red-50 border border-red-100 rounded-lg p-3 text-xs text-red-700 mt-1">
-                <div id="overdue-details-content" class="space-y-1.5">
-                    </div>
             </div>
             
             <div class="border-t-2 border-dashed border-slate-200 pt-3 flex justify-between items-end mt-2">
@@ -1817,16 +1836,35 @@ async function loadSettingsData() {
           </div>
 
           <div class="pt-2 flex gap-3">
-              <button id="btn-save-waiting" onclick="saveBillingData('Waiting')" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
-                <i class="fas fa-save"></i> บันทึก
+              <button id="btn-save-waiting" onclick="saveBillingData('Waiting')" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2 border border-slate-200 shadow-sm">
+                <i class="fas fa-clock text-amber-500"></i> รอชำระ
               </button>
-              <button id="btn-save-paid" onclick="saveBillingData('Paid')" class="flex-[1.5] py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-purple-500/30 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
+              <button id="btn-save-paid" onclick="saveBillingData('Paid')" class="flex-1 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md shadow-purple-500/30 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
                 <i class="fas fa-hand-holding-usd text-lg"></i> ชำระเงิน
               </button>
           </div>
         </div>
       </div>
     </div>
+  </div>
+
+  <div id="overdue-modal" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+      <div id="overdue-modal-box" class="glass-card w-full sm:max-w-sm p-0 transform scale-95 transition-all duration-300 relative overflow-hidden bg-white rounded-[1.5rem] shadow-2xl border border-red-100">
+          
+          <div class="bg-gradient-to-r from-red-500 to-rose-500 p-4 text-center rounded-t-[1.5rem] relative">
+              <h3 class="text-lg font-bold text-white"><i class="fas fa-file-invoice-dollar mr-2"></i>รายละเอียดค้างชำระ</h3>
+              <button onclick="closeOverdueModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/10 text-white flex items-center justify-center hover:bg-black/20 transition-colors"><i class="fas fa-times"></i></button>
+          </div>
+          
+          <div class="p-4 max-h-[50vh] overflow-y-auto bg-slate-50" id="overdue-modal-content">
+              </div>
+          
+          <div class="p-4 border-t border-slate-100 bg-white">
+              <button onclick="closeOverdueModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all text-sm">
+                  ปิดหน้าต่าง
+              </button>
+          </div>
+      </div>
   </div>
 
 </body>
