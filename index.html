@@ -1519,15 +1519,17 @@ async function loadSettingsData() {
             let html = '<div class="space-y-3">';
             
             currentBillState.overdueDetails.forEach((bill) => {
-                // หากบางฟิลด์เช่น collector ไม่มีค่า ให้ใช้ค่าเริ่มต้นป้องกัน error
                 const meterUnit = bill.meter || '-';
                 const collectorName = bill.collector || 'Admin';
+                
+                // 🎯 เรียกใช้ฟังก์ชันแปลงชื่อเดือนตรงนี้!
+                const displayMonth = formatThaiMonth(bill.month);
 
                 html += `
                 <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-1 h-full bg-red-400"></div>
                     <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-2 pl-2">
-                        <span class="font-bold text-slate-800"><i class="fas fa-calendar-alt text-slate-400 mr-1.5 text-sm"></i>รอบบิล: ${bill.month}</span>
+                        <span class="font-bold text-slate-800"><i class="fas fa-calendar-alt text-slate-400 mr-1.5 text-sm"></i>รอบบิล: ${displayMonth}</span>
                         <span class="font-bold text-red-500 text-lg">${Number(bill.amount).toLocaleString()} บ.</span>
                     </div>
                     <div class="grid grid-cols-2 gap-y-1.5 gap-x-2 text-[13px] text-slate-600 pl-2">
@@ -1632,6 +1634,22 @@ async function loadSettingsData() {
                 btn.disabled = false;
                 btn.innerHTML = oldText;
             }
+        }
+
+        // ฟังก์ชันแปลงเลขเดือนเป็นชื่อย่อภาษาไทย
+        function formatThaiMonth(monthStr) {
+            if (!monthStr || !monthStr.includes('/')) return monthStr;
+            
+            const parts = monthStr.split('/');
+            const mNum = parseInt(parts[0], 10);
+            const year = parts[1];
+            
+            const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+            
+            if (mNum >= 1 && mNum <= 12) {
+                return `${thaiMonths[mNum - 1]} / ${year}`; // เช่น เม.ย. / 2569
+            }
+            return monthStr;
         }
 
   </script>
