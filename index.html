@@ -675,9 +675,11 @@
 
                 if (user.isOverdue || statusCode === 'overdue') totalOverdueUsers++;
 
+                // กำหนดค่าเริ่มต้นของสถานะ (สีเทา)
                 let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
                 let borderColor = "border-slate-200"; 
 
+                // กำหนดสีตามสถานะต่างๆ
                 if (statusCode === 'paid' || statusCode === 'free') {
                     sClass = "text-emerald-600"; sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
                     borderColor = "border-emerald-400 shadow-emerald-500/10";
@@ -708,9 +710,9 @@
 
                 let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
 
-                // 👇 แก้ไขตรงนี้: เปลี่ยน alert(...) เป็น openBillingModal(...) พร้อมส่งค่า 4 ตัวเข้าไป
+                // 👇 สังเกตตรงบรรทัด div class="user-card..." นี้นะครับ ผมใส่คลาส CSS คืนให้เต็มๆ แล้ว
                 htmlContent += `
-                    <div id="card-${houseNo}" class="user-card..." onclick="openBillingModal('${houseNo}')">
+                    <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="openBillingModal('${houseNo}')">
                         <div class="flex items-start gap-3 min-w-0 w-full">
                             <div class="avatar-box w-12 h-12 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border-2 border-white mt-0.5">
                                 ${avatarHtml}
