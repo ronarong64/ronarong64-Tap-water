@@ -652,6 +652,10 @@
                 const statusCode = user.statusCode || "none";
                 const amount = Number(user.amount || 0);
                 
+                // ดึงข้อมูลมิเตอร์เดือนก่อน และ ยอดค้างเดิม (ถ้าไม่มีให้เป็น 0)
+                const prevUnit = Number(user.prevUnit || 0);
+                const overdueAmount = Number(user.overdue || 0);
+                
                 let rawProfilePic = user.profilePic ? String(user.profilePic).trim() : "";
                 let fileId = "";
                 
@@ -678,10 +682,10 @@
                     sClass = "text-emerald-600"; sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
                     borderColor = "border-emerald-400 shadow-emerald-500/10";
                 } else if (statusCode === 'overdue') {
-                    sClass = "text-rose-600 font-bold"; sBg = "bg-rose-100"; sIcon = "fa-exclamation-circle"; sText = `ค้างชำระ ${amount.toLocaleString()}. บาท`;
+                    sClass = "text-rose-600 font-bold"; sBg = "bg-rose-100"; sIcon = "fa-exclamation-circle"; sText = `ค้างชำระ ${amount.toLocaleString()} บ.`;
                     borderColor = "border-rose-400 shadow-rose-500/10";
                 } else if (statusCode === 'waiting') {
-                    sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()}. บาท`;
+                    sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()} บ.`;
                     borderColor = "border-amber-400 shadow-amber-500/10";
                 }
 
@@ -704,9 +708,9 @@
 
                 let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
 
-                // 🌟 เพิ่ม id="card-${houseNo}" เพื่อให้เราหาเจอเวลาจะอัปเดตเฉพาะจุด
+                // 👇 แก้ไขตรงนี้: เปลี่ยน alert(...) เป็น openBillingModal(...) พร้อมส่งค่า 4 ตัวเข้าไป
                 htmlContent += `
-                    <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="alert('บ้านเลขที่: ${houseNo}')">
+                    <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="openBillingModal('${houseNo}', '${safeName}', ${prevUnit}, ${overdueAmount})">
                         <div class="flex items-start gap-3 min-w-0 w-full">
                             <div class="avatar-box w-12 h-12 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border-2 border-white mt-0.5">
                                 ${avatarHtml}
@@ -1419,6 +1423,123 @@ async function loadSettingsData() {
             }
         }
 
+        // ==========================================
+        // 💧 ระบบจดมิเตอร์น้ำ (Billing System)
+        // ==========================================
+        let currentBillState = { houseNo: '', prevUnit: 0, overdue: 0 };
+
+        // 1. เปิดหน้าต่างจดมิเตอร์
+        function openBillingModal(houseNo, name, prevUnit, overdueAmount) {
+            // เก็บข้อมูลไว้ในหน่วยความจำ
+            currentBillState.houseNo = houseNo;
+            currentBillState.prevUnit = parseInt(prevUnit) || 0;
+            currentBillState.overdue = parseFloat(overdueAmount) || 0;
+
+            // รีเซ็ตหน้าจอ
+            document.getElementById('bill-house-display').innerText = `บ้าน ${houseNo} (${name})`;
+            document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
+            document.getElementById('bill-curr-unit').value = '';
+            document.getElementById('calc-usage').innerText = '0';
+            document.getElementById('calc-current-amount').innerText = '0';
+            document.getElementById('calc-overdue').innerText = currentBillState.overdue;
+            document.getElementById('calc-total').innerText = currentBillState.overdue;
+            
+            // ดึงราคาจากช่องตั้งค่าระบบ (Settings) มาโชว์
+            const price = parseFloat(document.getElementById('set-price').value) || 0;
+            document.getElementById('calc-price').innerText = price;
+
+            // แสดง Modal
+            const modal = document.getElementById('billing-modal');
+            const box = document.getElementById('billing-modal-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeBillingModal() {
+            const modal = document.getElementById('billing-modal');
+            const box = document.getElementById('billing-modal-box');
+            modal.classList.add('opacity-0'); box.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        // 2. คำนวณค่าน้ำแบบ Real-time เมื่อพิมพ์ตัวเลข
+        function calculateBill() {
+            const currUnit = parseInt(document.getElementById('bill-curr-unit').value) || 0;
+            let usage = currUnit - currentBillState.prevUnit;
+
+            // ดึงการตั้งค่าจากระบบ
+            const price = parseFloat(document.getElementById('set-price').value) || 0;
+            const freeEnabled = document.getElementById('set-free-enabled') ? document.getElementById('set-free-enabled').checked : false;
+            const freeLimit = parseInt(document.getElementById('set-free-limit').value) || 0;
+            const btnSave = document.getElementById('btn-save-bill');
+
+            // กรณีเลขมิเตอร์น้อยกว่าเดือนก่อน (พิมพ์ผิด)
+            if (usage < 0) {
+                document.getElementById('calc-usage').innerHTML = '<span class="text-red-500"><i class="fas fa-times-circle"></i> เลขผิด</span>';
+                document.getElementById('calc-current-amount').innerText = '0';
+                document.getElementById('calc-total').innerText = currentBillState.overdue;
+                btnSave.disabled = true;
+                btnSave.classList.add('opacity-50', 'cursor-not-allowed');
+                return;
+            }
+
+            // คำนวณปกติ
+            document.getElementById('calc-usage').innerHTML = usage;
+            btnSave.disabled = false;
+            btnSave.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            let currentAmount = 0;
+            // เช็คสวัสดิการใช้น้ำฟรี
+            if (freeEnabled && usage <= freeLimit) {
+                currentAmount = 0;
+            } else {
+                currentAmount = usage * price;
+            }
+
+            document.getElementById('calc-current-amount').innerText = currentAmount.toLocaleString();
+            document.getElementById('calc-total').innerText = (currentAmount + currentBillState.overdue).toLocaleString();
+        }
+
+        // 3. บันทึกข้อมูลไปที่ Server
+        async function saveMeterReading() {
+            const currUnit = document.getElementById('bill-curr-unit').value;
+            if (!currUnit) {
+                showToast("กรุณากรอกเลขมิเตอร์เดือนนี้", "warning");
+                return;
+            }
+
+            const btn = document.getElementById('btn-save-bill');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> กำลังบันทึก...`;
+
+            const payload = {
+                action: "saveReading",
+                houseNo: currentBillState.houseNo,
+                newUnit: currUnit
+            };
+
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast("บันทึกหน่วยน้ำสำเร็จ!", "success");
+                    closeBillingModal();
+                    // รีโหลดข้อมูลหน้า Dashboard ใหม่
+                    if (typeof getUsersDataSafely === "function" || typeof loadDashboardData === "function") {
+                        loadDashboardData(); 
+                    }
+                } else {
+                    showToast(result.message, "error");
+                }
+            } catch (e) {
+                showToast("ข้อผิดพลาดในการเชื่อมต่อ", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-save text-lg"></i> บันทึกหน่วยน้ำ`;
+            }
+        }
+
   </script>
 
   <div id="toast-container" class="fixed top-5 right-5 z-[200] flex flex-col gap-3 pointer-events-none"></div>
@@ -1564,6 +1685,73 @@ async function loadSettingsData() {
           <button id="btn-save-bank" onclick="saveBankData()" class="flex-1 py-3.5 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
                         <i class="fas fa-save"></i> บันทึกข้อมูล
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="billing-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300 opacity-0">
+    <div id="billing-modal-box" class="glass-card w-full sm:max-w-sm p-0 transform scale-95 transition-all duration-300 relative overflow-hidden bg-white rounded-[2rem] shadow-2xl">
+      <button onclick="closeBillingModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/10 text-white flex items-center justify-center hover:bg-black/20 z-20 transition-colors"><i class="fas fa-times"></i></button>
+
+      <div class="bg-gradient-to-r from-purple-600 to-purple-400 p-4 text-center pt-5 pb-8 rounded-b-[1.5rem] shadow-md relative z-10">
+        <h3 class="text-2xl font-bold text-white mb-1">จดมิเตอร์</h3>
+        <p class="text-white font-bold bg-white/20 border border-white/30 inline-block px-4 py-1.5 rounded-full text-sm shadow-sm tracking-wide" id="bill-house-display">...</p>
+      </div>
+
+      <div class="p-6 -mt-6 relative z-0">
+        <div id="bill-loading" class="py-12 flex flex-col items-center justify-center hidden">
+          <div class="relative w-16 h-16 mb-4">
+            <div class="absolute inset-0 border-4 border-purple-100 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-purple-500 rounded-full border-t-transparent animate-spin"></div>
+            <div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-bolt text-yellow-400 text-lg animate-pulse"></i></div>
+          </div>
+          <div class="text-center">
+            <span class="text-purple-600 font-bold text-lg">กำลังประมวลผล</span>
+          </div>
+        </div>
+
+        <div id="bill-content" class="space-y-6 pt-4">
+          <div class="flex items-end justify-center gap-4 bg-purple-50/50 p-4 rounded-[1.5rem] border border-purple-100 shadow-inner">
+            <div class="text-center">
+              <div class="text-[13px] text-slate-500 mb-1 uppercase font-bold tracking-wide">เลขเดือนก่อน</div>
+              <div id="bill-prev-unit" class="text-2xl font-bold text-slate-400 font-mono">0</div>
+            </div>
+            <div class="pb-2 text-purple-300"><i class="fas fa-chevron-right text-xl"></i></div>
+            <div class="text-center w-28">
+              <div class="text-[13px] text-purple-600 font-bold mb-1 uppercase tracking-wide">เลขเดือนนี้</div>
+              <input type="number" id="bill-curr-unit" oninput="calculateBill()" class="text-3xl font-bold text-center w-full bg-white rounded-xl shadow-sm outline-none text-purple-600 font-mono border-2 border-purple-200 focus:border-purple-500 transition-colors p-1" placeholder="0">
+            </div>
+          </div>
+
+          <div class="space-y-2.5 px-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <div class="flex justify-between text-sm text-slate-600">
+              <span>ใช้น้ำไปทั้งหมด</span><span class="font-bold"><span id="calc-usage" class="text-lg text-slate-800">0</span> หน่วย</span>
+            </div>
+            <div class="flex justify-between text-sm text-slate-600">
+              <span>ราคาต่อหน่วย</span><span class="font-bold"><span id="calc-price">0</span> บ.</span>
+            </div>
+            <div class="flex justify-between text-sm text-purple-600 font-bold">
+              <span>ค่าน้ำเดือนนี้</span><span class="text-base"><span id="calc-current-amount">0</span> บ.</span>
+            </div>
+            <div class="flex justify-between text-sm text-red-500 font-bold">
+              <span>ยอดค้างชำระเดิม</span><span class="text-base"><span id="calc-overdue">0</span> บ.</span>
+            </div>
+            
+            <div class="border-t-2 border-dashed border-slate-200 pt-3 flex justify-between items-end mt-2">
+              <span class="text-slate-800 font-bold text-base">รวมสุทธิที่ต้องจ่าย</span>
+              <span class="text-2xl font-extrabold text-purple-600 tracking-tight">
+               <span id="calc-total">0</span>
+              <span class="text-sm text-slate-500 font-normal ml-1">บาท</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="pt-2">
+              <button id="btn-save-bill" onclick="saveMeterReading()" class="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-purple-500/30 active:scale-95 transition-all flex justify-center items-center gap-2">
+                <i class="fas fa-save text-lg"></i> บันทึกหน่วยน้ำ
+              </button>
+          </div>
         </div>
       </div>
     </div>
