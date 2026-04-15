@@ -1519,10 +1519,14 @@ async function loadSettingsData() {
             let html = '<div class="space-y-3">';
             
             currentBillState.overdueDetails.forEach((bill) => {
-                const meterUnit = bill.meter || '-';
-                const collectorName = bill.collector || 'Admin';
+                // 🎯 จับเลขเดิมกับเลขใหม่มาต่อกัน (ถ้าไม่มีข้อมูลเก่าให้แสดง -)
+                const prev = bill.prevMeter !== undefined ? bill.prevMeter : '-';
+                const curr = bill.currMeter !== undefined ? bill.currMeter : (bill.meter || '-');
                 
-                // 🎯 เรียกใช้ฟังก์ชันแปลงชื่อเดือนตรงนี้!
+                // ใช้ไอคอนลูกศรสวยๆ แทนเครื่องหมาย > ธรรมดา
+                const meterDisplay = `${prev} <i class="fas fa-chevron-right text-[10px] text-slate-300 mx-1"></i> ${curr}`;
+                
+                const collectorName = bill.collector || 'Admin';
                 const displayMonth = formatThaiMonth(bill.month);
 
                 html += `
@@ -1533,7 +1537,7 @@ async function loadSettingsData() {
                         <span class="font-bold text-red-500 text-lg">${Number(bill.amount).toLocaleString()} บ.</span>
                     </div>
                     <div class="grid grid-cols-2 gap-y-1.5 gap-x-2 text-[13px] text-slate-600 pl-2">
-                        <div><span class="text-slate-400">เลขมิเตอร์:</span> <span class="font-medium text-slate-700">${meterUnit}</span></div>
+                        <div><span class="text-slate-400">เลขมิเตอร์:</span> <span class="font-medium text-slate-700">${meterDisplay}</span></div>
                         <div><span class="text-slate-400">ใช้น้ำ:</span> <span class="font-medium text-slate-700">${bill.usage} หน่วย</span></div>
                         <div><span class="text-slate-400">ราคา/หน่วย:</span> <span class="font-medium text-slate-700">${bill.price} บ.</span></div>
                         <div class="col-span-2 pt-1 border-t border-slate-50 mt-1">
