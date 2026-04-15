@@ -550,8 +550,13 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // จำค่าไว้ในเครื่อง
+                    // จำค่า session รวมไว้ในเครื่อง (ของเดิมของคุณ)
                     sessionStorage.setItem('water_app_session', JSON.stringify(result));
+                    
+                    // 🎯 สิ่งที่เพิ่มเข้ามา: สั่งให้จำ "ชื่อผู้ล็อกอิน" แยกไว้ต่างหาก
+                    // (เพื่อส่งไปให้คอลัมน์ M ตอนจดมิเตอร์ได้ดึงไปใช้)
+                    localStorage.setItem("username", result.username);
+                    
                     showMainScreen(result);
                 } else {
                     errorText.innerText = result.message || "รหัส PIN ไม่ถูกต้อง";
@@ -1435,8 +1440,13 @@ async function loadSettingsData() {
             const user = window.globalUsersList.find(u => u.houseNo === houseNo);
             if (!user) return;
 
-            // ดึงราคาจากหน้า Settings (ID: set-price)
-            const priceVal = document.getElementById('set-price') ? document.getElementById('set-price').value : 0;
+            // 🎯 แก้ปัญหา NaN: ดึงค่าราคาอย่างปลอดภัย
+            const priceInput = document.getElementById('set-price');
+            let priceVal = 0;
+            if (priceInput && priceInput.value !== "") {
+                priceVal = parseFloat(priceInput.value);
+            }
+            if (isNaN(priceVal)) priceVal = 0; // บังคับให้เป็น 0 ถ้าดึงค่าไม่ได้ จะได้ไม่โชว์ NaN
 
             currentBillState = {
                 houseNo: user.houseNo,
@@ -1448,7 +1458,9 @@ async function loadSettingsData() {
             // แสดงข้อมูลบนฟอร์ม
             document.getElementById('bill-house-display').innerText = `บ้านเลขที่ ${user.houseNo}`;
             document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
-            document.getElementById('calc-price').innerText = priceVal; // 🎯 แสดงราคาต่อหน่วยทันที
+            
+            // 🎯 แสดงราคาต่อหน่วย
+            document.getElementById('calc-price').innerText = priceVal; 
             document.getElementById('calc-overdue').innerText = currentBillState.overdue.toLocaleString();
             
             // รีเซ็ตค่าอื่นๆ
@@ -1509,41 +1521,27 @@ async function loadSettingsData() {
             const currUnit = parseInt(document.getElementById('bill-curr-unit').value) || 0;
             let usage = currUnit - currentBillState.prevUnit;
 
-            // 🎯 ดึงราคา/หน่วย จากบนหน้าจอที่โชว์อยู่มาใช้คำนวณเลย
-            const price = parseFloat(document.getElementById('calc-price').innerText) || 0; 
-            
-            const freeEnabled = document.getElementById('set-free-enabled') ? document.getElementById('set-free-enabled').checked : false;
-            const freeLimit = parseInt(document.getElementById('set-free-limit').value) || 0;
+            // 🎯 ดึงราคามาคำนวณแบบปลอดภัย
+            let price = parseFloat(document.getElementById('calc-price').innerText);
+            if (isNaN(price)) price = 0;
             
             const btnWait = document.getElementById('btn-save-waiting');
             const btnPaid = document.getElementById('btn-save-paid');
 
-            // กรณีเลขมิเตอร์ใหม่ น้อยกว่าเดือนก่อน (พิมพ์ผิด)
             if (usage < 0) {
-                document.getElementById('calc-usage').innerHTML = '<span class="text-red-500"><i class="fas fa-times-circle"></i> เลขผิด</span>';
+                document.getElementById('calc-usage').innerHTML = '<span class="text-red-500"><i class="fas fa-times-circle"></i> ผิดพลาด</span>';
                 document.getElementById('calc-current-amount').innerText = '0';
                 document.getElementById('calc-total').innerText = currentBillState.overdue.toLocaleString();
-                
-                // ล็อคปุ่มไม่ให้กดบันทึก
-                if (btnWait) { btnWait.disabled = true; btnWait.classList.add('opacity-50', 'cursor-not-allowed'); }
-                if (btnPaid) { btnPaid.disabled = true; btnPaid.classList.add('opacity-50', 'cursor-not-allowed'); }
+                if (btnWait) { btnWait.disabled = true; btnWait.classList.add('opacity-50'); }
+                if (btnPaid) { btnPaid.disabled = true; btnPaid.classList.add('opacity-50'); }
                 return;
             }
 
-            // คืนสถานะปุ่มถ้าพิมพ์ถูก
-            if (btnWait) { btnWait.disabled = false; btnWait.classList.remove('opacity-50', 'cursor-not-allowed'); }
-            if (btnPaid) { btnPaid.disabled = false; btnPaid.classList.remove('opacity-50', 'cursor-not-allowed'); }
+            if (btnWait) { btnWait.disabled = false; btnWait.classList.remove('opacity-50'); }
+            if (btnPaid) { btnPaid.disabled = false; btnPaid.classList.remove('opacity-50'); }
 
             document.getElementById('calc-usage').innerHTML = usage;
-
-            // คำนวณค่าน้ำเดือนนี้ (เช็คสวัสดิการใช้น้ำฟรีด้วย)
-            let currentAmount = 0;
-            if (freeEnabled && usage <= freeLimit) {
-                currentAmount = 0;
-            } else {
-                currentAmount = usage * price;
-            }
-
+            let currentAmount = usage * price;
             document.getElementById('calc-current-amount').innerText = currentAmount.toLocaleString();
             document.getElementById('calc-total').innerText = (currentAmount + currentBillState.overdue).toLocaleString();
         }
@@ -1553,9 +1551,18 @@ async function loadSettingsData() {
             const currUnit = document.getElementById('bill-curr-unit').value;
             if (!currUnit) { showToast("กรุณากรอกเลขมิเตอร์", "warning"); return; }
 
-            // 🎯 ดึงชื่อผู้บันทึกจากจุดที่แสดงชื่อแอดมินในหน้าเว็บ
-            // สมมติว่ามี Element <span id="user-display-name">ชื่อคุณรณรงค์</span>
-            const adminName = document.getElementById('user-display-name') ? document.getElementById('user-display-name').innerText : "Admin";
+            // 🎯 1. วิธีดึงชื่อคนที่ล็อกอิน
+            // (ตอนที่คุณทำระบบล๊อกอิน น่าจะมีการโชว์ชื่อคนล็อกอินไว้บนหน้าจอ HTML หรือเก็บไว้ใน localStorage)
+            let loggedInName = "ไม่ระบุชื่อ"; 
+            
+            // ลองดึงจาก localStorage ก่อน (ถ้าตอนล็อกอินคุณเขียนคำสั่ง localStorage.setItem เอาไว้)
+            if (localStorage.getItem("username")) {
+                loggedInName = localStorage.getItem("username");
+            } 
+            // หรือถ้าคุณโชว์ชื่อคนล็อกอินไว้บนหน้าเว็บ ให้เปลี่ยน 'YOUR_NAME_ID' เป็น ID ของแท็กนั้น
+            else if (document.getElementById('YOUR_NAME_ID')) {
+                loggedInName = document.getElementById('YOUR_NAME_ID').innerText;
+            }
 
             const payload = {
                 action: "saveBilling",
@@ -1563,33 +1570,37 @@ async function loadSettingsData() {
                 prevUnit: currentBillState.prevUnit,
                 currUnit: currUnit,
                 usage: parseInt(currUnit) - currentBillState.prevUnit,
-                pricePerUnit: parseFloat(document.getElementById('calc-price').innerText),
-                currentAmount: parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, '')),
+                pricePerUnit: parseFloat(document.getElementById('calc-price').innerText) || 0,
+                currentAmount: parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, '')) || 0,
                 overdueAmount: currentBillState.overdue,
-                grandTotal: parseFloat(document.getElementById('calc-total').innerText.replace(/,/g, '')),
+                grandTotal: parseFloat(document.getElementById('calc-total').innerText.replace(/,/g, '')) || 0,
                 status: status,
-                collector: adminName, // 🎯 ส่งชื่อผู้บันทึกไป
-                paymentMethod: status === 'Paid' ? 'เงินสด' : '' // ส่ง "เงินสด" เพื่อบันทึกลงคอลัมน์ L
+                collector: loggedInName, // 🎯 ส่งชื่อที่ดึงมาได้ ไปบันทึกลงคอลัมน์ M 
+                paymentMethod: status === 'Paid' ? 'เงินสด' : ''
             };
+
+            // แสดงสถานะปุ่มโหลด...
+            const btn = status === 'Waiting' ? document.getElementById('btn-save-waiting') : document.getElementById('btn-save-paid');
+            const oldText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...`;
 
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
                 const result = await response.json();
                 
                 if (result.success) {
-                    showToast(status === 'Paid' ? "บันทึกและรับชำระเงินสำเร็จ!" : "บันทึกบิลสำเร็จ!", "success");
+                    showToast(status === 'Paid' ? "รับชำระเงินสำเร็จ!" : "บันทึกบิลสำเร็จ!", "success");
                     closeBillingModal();
-                    if (typeof renderUsers === "function" || typeof loadDashboardData === "function") loadDashboardData(); 
+                    if (typeof loadDashboardData === "function") loadDashboardData(); 
                 } else {
                     showToast(result.message, "error");
                 }
             } catch (e) {
                 showToast("ข้อผิดพลาดในการเชื่อมต่อ", "error");
             } finally {
-                // คืนค่าปุ่ม
-                btnWait.disabled = false; btnPaid.disabled = false;
-                btnWait.innerHTML = `<i class="fas fa-save"></i> บันทึก`;
-                btnPaid.innerHTML = `<i class="fas fa-hand-holding-usd text-lg"></i> ชำระเงิน`;
+                btn.disabled = false;
+                btn.innerHTML = oldText;
             }
         }
 
