@@ -1435,34 +1435,31 @@ async function loadSettingsData() {
             const user = window.globalUsersList.find(u => u.houseNo === houseNo);
             if (!user) return;
 
-            currentBillState.houseNo = user.houseNo;
-            currentBillState.prevUnit = parseInt(user.prevUnit) || 0;
-            currentBillState.overdue = parseFloat(user.overdue) || 0;
-            currentBillState.overdueDetails = user.overdueList || [];
+            // ดึงราคาจากหน้า Settings (ID: set-price)
+            const priceVal = document.getElementById('set-price') ? document.getElementById('set-price').value : 0;
 
-            // 🎯 ดึงราคาจากหน้าตั้งค่า (Settings) มาแสดงทันที
-            // ตรวจสอบว่า ID 'set-price' มีค่าหรือไม่
-            const priceInput = document.getElementById('set-price');
-            const price = priceInput ? parseFloat(priceInput.value) : 0;
+            currentBillState = {
+                houseNo: user.houseNo,
+                prevUnit: parseInt(user.prevUnit) || 0,
+                overdue: parseFloat(user.overdue) || 0,
+                overdueDetails: user.overdueList || []
+            };
 
-            document.getElementById('bill-house-display').innerText = `บ้าน ${user.houseNo} (${user.name || 'ไม่มีชื่อ'})`;
+            // แสดงข้อมูลบนฟอร์ม
+            document.getElementById('bill-house-display').innerText = `บ้านเลขที่ ${user.houseNo}`;
             document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
+            document.getElementById('calc-price').innerText = priceVal; // 🎯 แสดงราคาต่อหน่วยทันที
+            document.getElementById('calc-overdue').innerText = currentBillState.overdue.toLocaleString();
+            
+            // รีเซ็ตค่าอื่นๆ
             document.getElementById('bill-curr-unit').value = '';
-            
-            // 🎯 แสดงราคาต่อหน่วยในฟอร์มทันที
-            document.getElementById('calc-price').innerText = price;
-            
             document.getElementById('calc-usage').innerText = '0';
             document.getElementById('calc-current-amount').innerText = '0';
-            document.getElementById('calc-overdue').innerText = currentBillState.overdue.toLocaleString();
             document.getElementById('calc-total').innerText = currentBillState.overdue.toLocaleString();
 
-            renderOverdueDetails();
-
             const modal = document.getElementById('billing-modal');
-            const box = document.getElementById('billing-modal-box');
             modal.classList.remove('hidden');
-            setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
         }
 
         function closeBillingModal() {
@@ -1554,17 +1551,11 @@ async function loadSettingsData() {
         // 4. บันทึกข้อมูลและสถานะ (Waiting หรือ Paid)
         async function saveBillingData(status) {
             const currUnit = document.getElementById('bill-curr-unit').value;
-            if (!currUnit) {
-                showToast("กรุณากรอกเลขมิเตอร์เดือนนี้", "warning");
-                return;
-            }
+            if (!currUnit) { showToast("กรุณากรอกเลขมิเตอร์", "warning"); return; }
 
-            // 🎯 ดึงชื่อผู้ที่ล๊อกอิน (ตรวจสอบ ID ให้ตรงกับใน HTML ของคุณที่มีชื่อแอดมิน)
-            let collectorName = "Admin"; 
-            const adminNameEl = document.getElementById('admin-name'); // หรือ ID ที่คุณใช้โชว์ชื่อคนล๊อกอิน
-            if (adminNameEl) {
-                collectorName = adminNameEl.innerText || adminNameEl.value;
-            }
+            // 🎯 ดึงชื่อผู้บันทึกจากจุดที่แสดงชื่อแอดมินในหน้าเว็บ
+            // สมมติว่ามี Element <span id="user-display-name">ชื่อคุณรณรงค์</span>
+            const adminName = document.getElementById('user-display-name') ? document.getElementById('user-display-name').innerText : "Admin";
 
             const payload = {
                 action: "saveBilling",
@@ -1577,8 +1568,8 @@ async function loadSettingsData() {
                 overdueAmount: currentBillState.overdue,
                 grandTotal: parseFloat(document.getElementById('calc-total').innerText.replace(/,/g, '')),
                 status: status,
-                collector: collectorName, // 🎯 ส่งชื่อผู้บันทึกไปคอลัมน์ M
-                paymentMethod: status === 'Paid' ? 'เงินสด' : ''
+                collector: adminName, // 🎯 ส่งชื่อผู้บันทึกไป
+                paymentMethod: status === 'Paid' ? 'เงินสด' : '' // ส่ง "เงินสด" เพื่อบันทึกลงคอลัมน์ L
             };
 
             try {
