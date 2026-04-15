@@ -1667,8 +1667,8 @@ async function loadSettingsData() {
                 
                 // 3. สั่งให้ Render (วาด) รายการบ้านใหม่จากตัวแปรเดิมที่อัปเดตแล้ว
                 // หมายเหตุ: ฟังก์ชัน renderUserList คือฟังก์ชันที่คุณใช้วาดรายชื่อบ้านในหน้า Dashboard
-                if (typeof renderUserList === "function") {
-                    renderUserList(window.globalUsersList); 
+                if (typeof renderRealData(users) === "function") {
+                    renderRealData(users)(window.globalUsersList); 
                 }
                 
                 // 4. อัปเดตตัวเลขสรุปบน Dashboard (ถ้ามี)
