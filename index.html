@@ -1501,12 +1501,35 @@ async function loadSettingsData() {
             }
         }
 
-       // 1. เปิดหน้าต่างจดมิเตอร์ (ดึงข้อมูลจาก globalUsersList ทันที)
+       // ==========================================
+        // 💧 1. เปิดหน้าต่างจดมิเตอร์ หรือ ใบเสร็จ
+        // ==========================================
         function openBillingModal(houseNo) {
-            const user = window.globalUsersList.find(u => u.houseNo === houseNo);
+            // ค้นหาข้อมูลบ้านจากตัวแปรหลัก
+            const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
             if (!user) return;
 
-            // 🎯 ดึงราคาจากหน้าจอ Settings อย่างปลอดภัย
+            // 🎯 ด่านตรวจที่ 1: ถ้าสถานะคือ 'paid' (ชำระแล้ว) หรือ 'free' (ใช้น้ำฟรี)
+            // ให้ข้ามฟอร์มจดมิเตอร์ และเปิดใบเสร็จขึ้นมาให้ดูแทน
+            if (user.statusCode === 'paid' || user.statusCode === 'free') {
+                const receiptPayload = {
+                    houseNo: user.houseNo,
+                    prevUnit: user.oldUnit || "-",      // เลขเดิมก่อนจด (ถ้าเก็บไว้)
+                    currUnit: user.prevUnit || "-",     // เลขใหม่ที่จดไปแล้ว
+                    usage: user.usage || 0,
+                    pricePerUnit: user.price || document.getElementById('set-price').value || 0,
+                    currentAmount: user.amount || 0,
+                    overdueAmount: user.overdue || 0,
+                    grandTotal: (Number(user.amount) || 0) + (Number(user.overdue) || 0),
+                    collector: user.collector || "ระบบ"
+                };
+
+                showReceiptModal(receiptPayload);
+                return; // 🛑 หยุดการทำงานตรงนี้ ไม่ต้องไปเปิดฟอร์มจดมิเตอร์
+            }
+
+            // 🎯 ด่านตรวจที่ 2: สำหรับบ้านที่ยังไม่จดมิเตอร์ หรือ รอชำระ
+            // ดึงราคา/หน่วยจากหน้าจอ Settings อย่างปลอดภัย
             const priceInput = document.getElementById('set-price');
             let priceVal = 0;
             if (priceInput && priceInput.value !== "") {
@@ -1514,6 +1537,7 @@ async function loadSettingsData() {
             }
             if (isNaN(priceVal)) priceVal = 0;
 
+            // เตรียมตัวแปรสถานะบิลปัจจุบัน
             currentBillState = {
                 houseNo: user.houseNo,
                 prevUnit: parseInt(user.prevUnit) || 0,
@@ -1521,34 +1545,35 @@ async function loadSettingsData() {
                 overdueDetails: user.overdueList || []
             };
 
-            // แสดงข้อมูลในฟอร์ม
+            // โชว์ข้อมูลพื้นฐานลงในฟอร์มจดมิเตอร์
             document.getElementById('bill-house-display').innerText = `บ้านเลขที่ ${user.houseNo}`;
             document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
             document.getElementById('calc-price').innerText = priceVal;
             document.getElementById('calc-overdue').innerText = currentBillState.overdue.toLocaleString();
             
-            // 🎯 ส่วนที่เพิ่มใหม่: เช็กยอดค้างชำระเพื่อเปลี่ยนข้อความบนปุ่ม
+            // 🎯 อัปเดตปุ่ม "ดูยอดค้างชำระ" แบบ Dynamic
             const overdueBtn = document.querySelector('[onclick="openOverdueModal()"]');
             if (overdueBtn) {
                 if (currentBillState.overdue > 0) {
-                    // ✅ กรณีมีค้างชำระ
+                    // กรณีมีค้างชำระ: ปุ่มสีแดง กดดูป๊อปอัปรายละเอียดได้
                     overdueBtn.innerHTML = '<i class="fas fa-search"></i> ดูยอดค้างชำระ';
                     overdueBtn.className = "cursor-pointer bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 border border-red-200 shadow-sm active:scale-95 text-red-600";
-                    overdueBtn.style.pointerEvents = "auto"; // ให้กดได้
+                    overdueBtn.style.pointerEvents = "auto";
                 } else {
-                    // ❌ กรณีไม่มียอดค้างชำระ
+                    // กรณีไม่มีค้างชำระ: ปุ่มสีเทา และล็อกไม่ให้กด
                     overdueBtn.innerHTML = '<i class="fas fa-check-circle"></i> คุณไม่มียอดค้างชำระ';
                     overdueBtn.className = "cursor-default bg-slate-100 px-3 py-1.5 rounded-lg flex items-center gap-2 border border-slate-200 text-slate-400";
-                    overdueBtn.style.pointerEvents = "none"; // ปิดการกดปุ่ม
+                    overdueBtn.style.pointerEvents = "none";
                 }
             }
 
-            // รีเซ็ตค่าอื่นๆ
+            // รีเซ็ตช่องกรอกตัวเลข และผลรวมต่างๆ ให้เป็นค่าว่าง/ศูนย์
             document.getElementById('bill-curr-unit').value = '';
             document.getElementById('calc-usage').innerText = '0';
             document.getElementById('calc-current-amount').innerText = '0';
             document.getElementById('calc-total').innerText = currentBillState.overdue.toLocaleString();
 
+            // แสดงหน้าต่าง Pop-up จดมิเตอร์
             const modal = document.getElementById('billing-modal');
             modal.classList.remove('hidden');
             setTimeout(() => modal.classList.remove('opacity-0'), 10);
