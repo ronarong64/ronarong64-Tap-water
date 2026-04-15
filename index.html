@@ -74,6 +74,37 @@
         transform: translateY(0);
       }
     }
+
+    /* 🖨️ CSS สำหรับการสั่งพิมพ์ใบเสร็จ */
+        @media print {
+            body * {
+                visibility: hidden; /* ซ่อนทุกอย่างในหน้าเว็บ */
+            }
+            #receipt-modal, 
+            #receipt-modal .receipt-paper, 
+            #receipt-modal .receipt-paper * {
+                visibility: visible; /* โชว์เฉพาะกระดาษใบเสร็จ */
+            }
+            #receipt-modal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white !important;
+                padding: 0;
+            }
+            .glass-card {
+                box-shadow: none !important; /* เอาเงาออกตอนพิมพ์ */
+            }
+            .no-print {
+                display: none !important; /* ซ่อนปุ่มพิมพ์และปุ่มปิด */
+            }
+            @page {
+                margin: 0mm; /* ลดขอบกระดาษ */
+                size: 80mm auto; /* ตั้งขนาดกระดาษเป็นสลิป 80mm (ถ้าใช้เครื่องพิมพ์ใบเสร็จ) */
+            }
+        }
+
   </style>
 </head>
 
@@ -1668,9 +1699,21 @@ async function loadSettingsData() {
                 
                 if (result.success) {
                     showToast(status === 'Paid' ? "รับชำระเงินสำเร็จ!" : "บันทึกบิลสำเร็จ!", "success");
+                    
+                    // อัปเดตข้อมูลหน้าจอ
                     updateLocalUserData(payload.houseNo, payload.currUnit, status);
+                    
+                    // ปิดหน้าต่างจดมิเตอร์
                     closeBillingModal();
-                    //if (typeof loadDashboardData === "function") loadDashboardData(); 
+                    
+                    // 🎯 สิ่งที่ต้องเพิ่ม: เช็กว่าถ้าสถานะเป็น 'Paid' ให้เด้งใบเสร็จขึ้นมา!
+                    if (status === 'Paid') {
+                        // หน่วงเวลาเล็กน้อยให้หน้าจอจดมิเตอร์ปิดสนิทก่อน ค่อยเด้งใบเสร็จ
+                        setTimeout(() => {
+                            showReceiptModal(payload);
+                        }, 300);
+                    }
+                    
                 } else {
                     showToast(result.message, "error");
                 }
@@ -1726,6 +1769,50 @@ async function loadSettingsData() {
                 return `${thaiMonths[mNum - 1]} / ${year}`; // เช่น เม.ย. / 2569
             }
             return monthStr;
+        }
+
+        // ==========================================
+        // 🧾 ระบบใบเสร็จรับเงิน (Receipt System)
+        // ==========================================
+        function showReceiptModal(payload) {
+            // 1. ดึงชื่อเจ้าบ้านจากตัวแปรหลัก
+            const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(payload.houseNo).trim());
+            const houseName = user && user.name ? user.name : "ไม่ระบุชื่อ";
+
+            // 2. จัดการวันที่และเวลา (เป็น พ.ศ.)
+            const now = new Date();
+            const yearBE = now.getFullYear() + 543;
+            const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${yearBE} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            // 3. ดึงจำนวนเดือนที่ค้างชำระ (ถ้ามี)
+            const overdueCount = currentBillState.overdueDetails ? currentBillState.overdueDetails.length : 0;
+
+            // 4. หยอดข้อมูลลงใน HTML ใบเสร็จ
+            document.getElementById('rcp-date').innerText = dateStr;
+            document.getElementById('rcp-house').innerText = payload.houseNo;
+            document.getElementById('rcp-name').innerText = houseName;
+            
+            document.getElementById('rcp-prev').innerText = payload.prevUnit;
+            document.getElementById('rcp-curr').innerText = payload.currUnit;
+            document.getElementById('rcp-usage').innerText = payload.usage;
+            document.getElementById('rcp-price').innerText = payload.pricePerUnit;
+            
+            document.getElementById('rcp-current-amount').innerText = payload.currentAmount.toLocaleString();
+            
+            document.getElementById('rcp-overdue-count').innerText = overdueCount;
+            document.getElementById('rcp-overdue-total').innerText = payload.overdueAmount.toLocaleString();
+            
+            document.getElementById('rcp-total').innerText = payload.grandTotal.toLocaleString();
+            document.getElementById('rcp-receiver').innerText = payload.collector || "Admin";
+
+            // 5. แสดง Pop-up ใบเสร็จ
+            const modal = document.getElementById('receipt-modal');
+            modal.classList.remove('hidden');
+        }
+
+        // ฟังก์ชันสั่งพิมพ์ใบเสร็จ (เรียกใช้หน้าต่างพิมพ์ของเบราว์เซอร์)
+        function printReceipt() {
+            window.print();
         }
 
   </script>
@@ -1968,6 +2055,7 @@ async function loadSettingsData() {
       </div>
     </div>
   </div>
+  
 
 </body>
 
