@@ -710,7 +710,7 @@
 
                 // 👇 แก้ไขตรงนี้: เปลี่ยน alert(...) เป็น openBillingModal(...) พร้อมส่งค่า 4 ตัวเข้าไป
                 htmlContent += `
-                    <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="openBillingModal('${houseNo}', '${safeName}', ${prevUnit}, ${overdueAmount})">
+                    <div id="card-${houseNo}" class="user-card..." onclick="openBillingModal('${houseNo}')">
                         <div class="flex items-start gap-3 min-w-0 w-full">
                             <div class="avatar-box w-12 h-12 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border-2 border-white mt-0.5">
                                 ${avatarHtml}
@@ -1428,16 +1428,23 @@ async function loadSettingsData() {
         // ==========================================
         let currentBillState = { houseNo: '', prevUnit: 0, overdue: 0, overdueDetails: [] };
 
-        // 1. เปิดหน้าต่างจดมิเตอร์ (รองรับการรับค่า Array ของบิลที่ค้าง)
-        // overdueList = [{month: "ม.ค. 67", usage: 10, price: 10, amount: 100}, ...]
-        function openBillingModal(houseNo, name, prevUnit, overdueAmount, overdueList = []) {
-            currentBillState.houseNo = houseNo;
-            currentBillState.prevUnit = parseInt(prevUnit) || 0;
-            currentBillState.overdue = parseFloat(overdueAmount) || 0;
-            currentBillState.overdueDetails = overdueList;
+        // 1. เปิดหน้าต่างจดมิเตอร์ (ดึงข้อมูลจาก globalUsersList ทันที)
+        function openBillingModal(houseNo) {
+            // ค้นหาข้อมูลลูกบ้านจากรายการที่มีอยู่แล้วในระบบ
+            const user = window.globalUsersList.find(u => u.houseNo === houseNo);
+            if (!user) {
+                showToast("ไม่พบข้อมูลบ้านหลังนี้", "error");
+                return;
+            }
 
-            // รีเซ็ตหน้าจอ
-            document.getElementById('bill-house-display').innerText = `บ้าน ${houseNo} (${name})`;
+            // นำข้อมูลมาเก็บใน State จำลอง
+            currentBillState.houseNo = user.houseNo;
+            currentBillState.prevUnit = parseInt(user.prevUnit) || 0;
+            currentBillState.overdue = parseFloat(user.overdue) || 0;
+            currentBillState.overdueDetails = user.overdueList || [];
+
+            // รีเซ็ตหน้าจอ และโชว์ข้อมูลทันที
+            document.getElementById('bill-house-display').innerText = `บ้าน ${user.houseNo} (${user.name || 'ไม่มีชื่อ'})`;
             document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
             document.getElementById('bill-curr-unit').value = '';
             document.getElementById('calc-usage').innerText = '0';
@@ -1445,7 +1452,7 @@ async function loadSettingsData() {
             document.getElementById('calc-overdue').innerText = currentBillState.overdue.toLocaleString();
             document.getElementById('calc-total').innerText = currentBillState.overdue.toLocaleString();
             
-            // ดึงราคาจากหน้าตั้งค่า (Settings)
+            // 🎯 แสดงราคา/หน่วยทันที (ดึงค่าจากข้อมูลที่โหลดมาจาก Setting)
             const price = parseFloat(document.getElementById('set-price').value) || 0;
             document.getElementById('calc-price').innerText = price;
 
