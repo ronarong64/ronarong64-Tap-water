@@ -1736,7 +1736,7 @@ async function loadSettingsData() {
                     showToast(status === 'Paid' ? "รับชำระเงินสำเร็จ!" : "บันทึกบิลสำเร็จ!", "success");
                     
                     // อัปเดตข้อมูลหน้าจอ
-                    updateLocalUserData(payload.houseNo, payload.currUnit, status);
+                    updateLocalUserData(payload.houseNo, payload.currUnit, status, result.paidDate);
                     
                     // ปิดหน้าต่างจดมิเตอร์
                     closeBillingModal();
@@ -1760,33 +1760,49 @@ async function loadSettingsData() {
             }
         }
 
-        function updateLocalUserData(houseNo, newUnit, status) {
-            // 1. ค้นหาบ้านในรายการหลัก
+        /**
+         * 🎯 ฟังก์ชันอัปเดตข้อมูลในหน่วยความจำเครื่องทันที
+         * @param {string} houseNo - เลขที่บ้าน
+         * @param {number} newUnit - เลขมิเตอร์ใหม่ที่จดได้
+         * @param {string} status - สถานะ ('Paid' หรือ 'Waiting')
+         * @param {string} newPaidDate - วันที่บันทึกจากเซิร์ฟเวอร์ (คอลัมน์ K)
+         */
+        function updateLocalUserData(houseNo, newUnit, status, newPaidDate) {
+            // 1. ค้นหาบ้านในรายการหลัก (window.globalUsersList)
             const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
             
             if (user) {
-                // 🎯 จุดสำคัญ: ต้องอัปเดตที่ 'statusCode' เพราะฟังก์ชัน renderRealData ใช้ตัวนี้วาดหน้าจอ
-                user.statusCode = status.toLowerCase(); // 'paid' หรือ 'waiting'
-                user.prevUnit = parseInt(newUnit);      // อัปเดตเลขมิเตอร์เดือนก่อน (ให้กลายเป็นเลขล่าสุด)
+                // 🎯 เก็บค่าเลขมิเตอร์เดิมไว้ใน oldUnit ก่อนจะอัปเดตค่าใหม่ (สำคัญสำหรับใบเสร็จ)
+                user.oldUnit = user.prevUnit; 
                 
-                // คำนวณยอดเงินเบื้องต้น (ถ้าต้องการให้ตัวเลขในหน้าบัดจ์อัปเดตด้วย)
+                // 🎯 อัปเดตข้อมูลใหม่ลงในตัวแปร
+                user.statusCode = status.toLowerCase(); // 'paid' หรือ 'waiting'
+                user.prevUnit = parseInt(newUnit);      // เลขใหม่จะกลายเป็นเลขปัจจุบัน
+                user.paidDate = newPaidDate || "-";     // วันที่จากคอลัมน์ K
+                
+                // 🎯 ดึงราคาปัจจุบันมาคำนวณยอดเงินใหม่ เพื่อให้ Badge หน้า Dashboard อัปเดตตาม
                 const price = parseFloat(document.getElementById('set-price').value) || 0;
-                const usage = user.prevUnit - (parseInt(user.oldUnit) || 0); // สมมติคุณมีค่าเก่าเก็บไว้
+                const usage = user.prevUnit - (parseInt(user.oldUnit) || 0);
+                user.usage = usage;
+                user.price = price;
                 user.amount = usage * price; 
 
-                // หากชำระเงินแล้ว ให้ล้างค่าค้างชำระ
+                // 🎯 หากชำระเงินแล้ว ให้เคลียร์ยอดค้างชำระในหน่วยความจำออก
                 if (status.toLowerCase() === 'paid') {
                     user.overdue = 0;
                     user.isOverdue = false;
+                    user.overdueList = [];
                 }
 
-                console.log(`✅ อัปเดตบ้าน ${houseNo} สำเร็จ! กำลังวาดหน้าจอใหม่...`);
+                console.log(`✅ อัปเดตข้อมูลบ้าน ${houseNo} ในหน่วยความจำเรียบร้อย`);
 
-                // 🎯 เรียกใช้ฟังก์ชันของคุณเพื่อวาดหน้าจอใหม่ทันที
-                renderRealData(window.globalUsersList); 
+                // 🎯 สั่งให้ Render หน้า Dashboard ใหม่ด้วยข้อมูลที่อัปเดตแล้ว
+                if (typeof renderRealData === "function") {
+                    renderRealData(window.globalUsersList);
+                }
                 
             } else {
-                console.error("❌ ไม่พบข้อมูลบ้านเลขที่นี้ในรายการ");
+                console.error("❌ ไม่พบข้อมูลบ้านเลขที่นี้ในรายการเพื่ออัปเดต");
             }
         }
 
