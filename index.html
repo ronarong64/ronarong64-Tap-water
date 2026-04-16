@@ -1515,27 +1515,26 @@ async function loadSettingsData() {
         // 💧 1. เปิดหน้าต่างจดมิเตอร์ หรือ ใบเสร็จ
         // ==========================================
         function openBillingModal(houseNo) {
-            // ค้นหาข้อมูลบ้านจากตัวแปรหลัก
             const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
             if (!user) return;
 
-            // 🎯 ด่านตรวจที่ 1: ถ้าสถานะคือ 'paid' (ชำระแล้ว) หรือ 'free' (ใช้น้ำฟรี)
-            // ให้ข้ามฟอร์มจดมิเตอร์ และเปิดใบเสร็จขึ้นมาให้ดูแทน
+            // 🎯 ถ้าจ่ายแล้ว ให้เปิดสลิปใบเสร็จทันที
             if (user.statusCode === 'paid' || user.statusCode === 'free') {
                 const receiptPayload = {
                     houseNo: user.houseNo,
-                    prevUnit: user.oldUnit || "-",      // เลขเดิมก่อนจด (ถ้าเก็บไว้)
-                    currUnit: user.prevUnit || "-",     // เลขใหม่ที่จดไปแล้ว
-                    usage: user.usage || 0,
-                    pricePerUnit: user.price || document.getElementById('set-price').value || 0,
-                    currentAmount: user.amount || 0,
+                    paidDate: user.paidDate,          // ดึงวันที่จากคอลัมน์ K ที่เราแนบมา
+                    prevUnit: user.oldUnit,           // เลขเดิม (คอลัมน์ E)
+                    currUnit: user.prevUnit,          // เลขใหม่ (คอลัมน์ F)
+                    usage: user.usage,                // คอลัมน์ G
+                    pricePerUnit: user.price,         // คอลัมน์ H
+                    currentAmount: user.amount,       // คอลัมน์ I
                     overdueAmount: user.overdue || 0,
-                    grandTotal: (Number(user.amount) || 0) + (Number(user.overdue) || 0),
-                    collector: user.collector || "ระบบ"
+                    grandTotal: user.grandTotal,      // คอลัมน์ P
+                    collector: user.collector         // คอลัมน์ M
                 };
 
                 showReceiptModal(receiptPayload);
-                return; // 🛑 หยุดการทำงานตรงนี้ ไม่ต้องไปเปิดฟอร์มจดมิเตอร์
+                return; 
             }
 
             // 🎯 ด่านตรวจที่ 2: สำหรับบ้านที่ยังไม่จดมิเตอร์ หรือ รอชำระ
@@ -1731,8 +1730,6 @@ async function loadSettingsData() {
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
                 const result = await response.json();
-
-                console.log("ข้อมูลที่ได้จากเซิร์ฟเวอร์:", result);
                 
                 if (result.success) {
                     showToast(status === 'Paid' ? "รับชำระเงินสำเร็จ!" : "บันทึกบิลสำเร็จ!", "success");
