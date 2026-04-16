@@ -710,9 +710,9 @@
                 const houseNo = escapeHTML(user.houseNo || "-");
                 const safeName = escapeHTML(user.name || "ไม่มีชื่อเจ้าบ้าน");
                 const statusCode = user.statusCode || "none";
-                const amount = Number(user.amount || 0);
                 
-                // ดึงข้อมูลมิเตอร์เดือนก่อน และ ยอดค้างเดิม (ถ้าไม่มีให้เป็น 0)
+                // 🎯 ดึงข้อมูลยอดเงิน (ถ้าไม่มีให้เป็น 0)
+                const amount = Number(user.amount || 0);
                 const prevUnit = Number(user.prevUnit || 0);
                 const overdueAmount = Number(user.overdue || 0);
                 
@@ -728,6 +728,7 @@
                 const lineId = escapeHTML(user.lineId || "");
                 const phone = escapeHTML(user.phone || "");
 
+                // นับสถิติสำหรับ Dashboard
                 if (statusCode === 'none') stats.todo++;
                 else if (statusCode === 'waiting') stats.waiting++;
                 else if (statusCode === 'paid' || statusCode === 'free') stats.paid++;
@@ -739,15 +740,33 @@
                 let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
                 let borderColor = "border-slate-200"; 
 
-                // กำหนดสีตามสถานะต่างๆ
+                // 🎯 กำหนดสีและข้อความตามสถานะต่างๆ
                 if (statusCode === 'paid' || statusCode === 'free') {
-                    sClass = "text-emerald-600"; sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; sText = statusCode === 'free' ? "ใช้น้ำฟรี" : "ชำระแล้ว";
+                    sClass = "text-emerald-600"; 
+                    sBg = "bg-emerald-100"; 
+                    sIcon = "fa-check-circle"; 
+                    
+                    // 🌟 เพิ่มการแสดงยอดเงินในสถานะชำระแล้ว
+                    if (statusCode === 'free') {
+                        sText = "ใช้น้ำฟรี";
+                    } else {
+                        // โชว์ว่า "ชำระแล้ว X,XXX บ."
+                        sText = `ชำระแล้ว ${amount.toLocaleString()} บ.`;
+                    }
                     borderColor = "border-emerald-400 shadow-emerald-500/10";
+                    
                 } else if (statusCode === 'overdue') {
-                    sClass = "text-rose-600 font-bold"; sBg = "bg-rose-100"; sIcon = "fa-exclamation-circle"; sText = `ค้างชำระ ${amount.toLocaleString()} บ.`;
+                    sClass = "text-rose-600 font-bold"; 
+                    sBg = "bg-rose-100"; 
+                    sIcon = "fa-exclamation-circle"; 
+                    sText = `ค้างชำระ ${amount.toLocaleString()} บ.`;
                     borderColor = "border-rose-400 shadow-rose-500/10";
+                    
                 } else if (statusCode === 'waiting') {
-                    sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()} บ.`;
+                    sClass = "text-amber-600 font-bold"; 
+                    sBg = "bg-amber-100"; 
+                    sIcon = "fa-clock"; 
+                    sText = `รอชำระ ${amount.toLocaleString()} บ.`;
                     borderColor = "border-amber-400 shadow-amber-500/10";
                 }
 
@@ -770,7 +789,7 @@
 
                 let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
 
-                // 👇 สังเกตตรงบรรทัด div class="user-card..." นี้นะครับ ผมใส่คลาส CSS คืนให้เต็มๆ แล้ว
+                // สร้าง HTML การ์ด
                 htmlContent += `
                     <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="openBillingModal('${houseNo}')">
                         <div class="flex items-start gap-3 min-w-0 w-full">
