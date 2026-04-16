@@ -809,11 +809,13 @@
                     </div>`;
             });
 
-            listContainer.innerHTML = htmlContent;
-            document.getElementById('dash-count-todo').innerText = stats.todo + " หลัง";
-            document.getElementById('dash-count-waiting').innerText = stats.waiting + " หลัง";
-            document.getElementById('dash-count-paid').innerText = stats.paid + " หลัง";
-            document.getElementById('dash-count-overdue').innerText = stats.overdue + " หลัง";
+            // 🎯 สไตล์ Subtle Opacity: ลดขนาดตัวเลขลง (text-base) และดรอปความเข้มของหน่วย (opacity-60)
+const formatStat = (count) => `<span class="text-base">${count}</span><span class="text-[10px] font-normal opacity-60 ml-1">หลัง</span>`;
+
+document.getElementById('dash-count-todo').innerHTML = formatStat(stats.todo);
+document.getElementById('dash-count-waiting').innerHTML = formatStat(stats.waiting);
+document.getElementById('dash-count-paid').innerHTML = formatStat(stats.paid);
+document.getElementById('dash-count-overdue').innerHTML = formatStat(stats.overdue);
 
                  // 🎁 โค้ดสำหรับเปิดแถบแจ้งเตือนสีแดง (Banner) ด้านบน ถ้ายอดค้างชำระ >= MAX_OVERDUE
             const warningBanner = document.getElementById('overdue-warning-banner');
