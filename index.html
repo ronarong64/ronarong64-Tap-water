@@ -1710,7 +1710,7 @@ async function loadSettingsData() {
         // 4. บันทึกข้อมูลและสถานะ (Waiting หรือ Paid)
         async function saveBillingData(status) {
             const currUnit = document.getElementById('bill-curr-unit').value;
-            if (!currUnit) { showToast("กรุณากรอกเลขมิเตอร์เดือนนี้ด้วย", "warning"); return; }
+            if (!currUnit) { showToast("กรุณากรอกเลขมิเตอร์ด้วย", "warning"); return; }
 
             // 🎯 1. วิธีดึงชื่อคนที่ล็อกอิน
             // (ตอนที่คุณทำระบบล๊อกอิน น่าจะมีการโชว์ชื่อคนล็อกอินไว้บนหน้าจอ HTML หรือเก็บไว้ใน localStorage)
