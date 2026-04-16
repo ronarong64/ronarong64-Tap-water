@@ -706,16 +706,40 @@
             let totalOverdueUsers = 0;
             let htmlContent = "";
 
+            // 🎯 1. เตรียมเดือน/ปี ปัจจุบันเพื่อเอาไว้เทียบ
+            const now = new Date();
+            const currentM = now.getMonth() + 1;
+            const currentY = now.getFullYear() + 543;
+            // ดักไว้ 2 รูปแบบ เผื่อผู้ใช้พิมพ์ 04/2569 หรือ 4/2569
+            const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
+            const currentMonthStr2 = `${currentM}/${currentY}`; 
+
             users.forEach(user => {
                 const houseNo = escapeHTML(user.houseNo || "-");
                 const safeName = escapeHTML(user.name || "ไม่มีชื่อเจ้าบ้าน");
                 const statusCode = user.statusCode || "none";
                 
-                // 🎯 ดึงข้อมูลยอดเงิน (ถ้าไม่มีให้เป็น 0)
                 const amount = Number(user.amount || 0);
                 const prevUnit = Number(user.prevUnit || 0);
                 const overdueAmount = Number(user.overdue || 0);
                 
+                // 🎯 2. นับจำนวนเดือนที่ "ค้างชำระ" (บิลสถานะ Waiting ที่ไม่ใช่เดือนปัจจุบัน)
+                let overdueMonthsCount = 0;
+                if (user.overdueList && user.overdueList.length > 0) {
+                    overdueMonthsCount = user.overdueList.filter(bill => 
+                        bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2
+                    ).length;
+                }
+
+                // 🎯 3. สร้างแถบป้าย (Badge) ค้างชำระสีแดง (ถ้ามีค้างชำระเกิน 0 เดือน)
+                let overdueBadge = "";
+                if (overdueMonthsCount > 0) {
+                    overdueBadge = `
+                        <div class="bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm whitespace-nowrap">
+                            <i class="fas fa-exclamation-triangle text-[8px]"></i> ค้างชำระ ${overdueMonthsCount} เดือน
+                        </div>`;
+                }
+
                 let rawProfilePic = user.profilePic ? String(user.profilePic).trim() : "";
                 let fileId = "";
                 
@@ -728,7 +752,7 @@
                 const lineId = escapeHTML(user.lineId || "");
                 const phone = escapeHTML(user.phone || "");
 
-                // นับสถิติสำหรับ Dashboard
+                // นับสถิติ
                 if (statusCode === 'none') stats.todo++;
                 else if (statusCode === 'waiting') stats.waiting++;
                 else if (statusCode === 'paid' || statusCode === 'free') stats.paid++;
@@ -736,37 +760,19 @@
 
                 if (user.isOverdue || statusCode === 'overdue') totalOverdueUsers++;
 
-                // กำหนดค่าเริ่มต้นของสถานะ (สีเทา)
+                // กำหนดสีตามสถานะต่างๆ
                 let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
                 let borderColor = "border-slate-200"; 
 
-                // 🎯 กำหนดสีและข้อความตามสถานะต่างๆ
                 if (statusCode === 'paid' || statusCode === 'free') {
-                    sClass = "text-emerald-600"; 
-                    sBg = "bg-emerald-100"; 
-                    sIcon = "fa-check-circle"; 
-                    
-                    // 🌟 เพิ่มการแสดงยอดเงินในสถานะชำระแล้ว
-                    if (statusCode === 'free') {
-                        sText = "ใช้น้ำฟรี";
-                    } else {
-                        // โชว์ว่า "ชำระแล้ว X,XXX บ."
-                        sText = `ชำระแล้ว ${amount.toLocaleString()} บ.`;
-                    }
+                    sClass = "text-emerald-600"; sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; 
+                    sText = statusCode === 'free' ? "ใช้น้ำฟรี" : `ชำระแล้ว ${amount.toLocaleString()} บ.`;
                     borderColor = "border-emerald-400 shadow-emerald-500/10";
-                    
                 } else if (statusCode === 'overdue') {
-                    sClass = "text-rose-600 font-bold"; 
-                    sBg = "bg-rose-100"; 
-                    sIcon = "fa-exclamation-circle"; 
-                    sText = `ค้างชำระ ${amount.toLocaleString()} บ.`;
+                    sClass = "text-rose-600 font-bold"; sBg = "bg-rose-100"; sIcon = "fa-exclamation-circle"; sText = `ค้างชำระ ${amount.toLocaleString()} บ.`;
                     borderColor = "border-rose-400 shadow-rose-500/10";
-                    
                 } else if (statusCode === 'waiting') {
-                    sClass = "text-amber-600 font-bold"; 
-                    sBg = "bg-amber-100"; 
-                    sIcon = "fa-clock"; 
-                    sText = `รอชำระ ${amount.toLocaleString()} บ.`;
+                    sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()} บ.`;
                     borderColor = "border-amber-400 shadow-amber-500/10";
                 }
 
@@ -789,7 +795,7 @@
 
                 let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
 
-                // สร้าง HTML การ์ด
+                // 🎯 4. นำ overdueBadge ไปต่อท้ายบ้านเลขที่
                 htmlContent += `
                     <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="openBillingModal('${houseNo}')">
                         <div class="flex items-start gap-3 min-w-0 w-full">
@@ -798,10 +804,10 @@
                             </div>
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center justify-between mb-0">
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex items-center gap-2 flex-wrap">
                                         <h4 class="house-no-text text-[15px] font-bold text-slate-800 leading-none">${houseNo}</h4>
                                         ${lineIconHtml}
-                                    </div>
+                                        ${overdueBadge} </div>
                                     <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-400 hover:text-blue-500 active:scale-90 px-2 py-1">
                                         <i class="fas fa-edit text-[15px]"></i>
                                     </button>
