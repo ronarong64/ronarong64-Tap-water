@@ -1736,7 +1736,7 @@ async function loadSettingsData() {
                     showToast(status === 'Paid' ? "รับชำระเงินสำเร็จ!" : "บันทึกบิลสำเร็จ!", "success");
                     
                     // อัปเดตข้อมูลหน้าจอ
-                    updateLocalUserData(payload.houseNo, payload.currUnit, status, result.paidDate);
+                    updateLocalUserData(payload.houseNo, payload.currUnit, status, result.paidDate, payload.collector);
                     
                     // ปิดหน้าต่างจดมิเตอร์
                     closeBillingModal();
@@ -1761,42 +1761,52 @@ async function loadSettingsData() {
         }
 
         /**
-         * 🎯 ฟังก์ชันอัปเดตข้อมูลในหน่วยความจำเครื่องทันที
-         * @param {string} houseNo - เลขที่บ้าน
-         * @param {number} newUnit - เลขมิเตอร์ใหม่ที่จดได้
-         * @param {string} status - สถานะ ('Paid' หรือ 'Waiting')
-         * @param {string} newPaidDate - วันที่บันทึกจากเซิร์ฟเวอร์ (คอลัมน์ K)
+         * 🎯 ฟังก์ชันอัปเดตข้อมูลในหน่วยความจำเครื่องทันที (ฉบับอุดรอยรั่ว)
          */
-        function updateLocalUserData(houseNo, newUnit, status, newPaidDate) {
+        function updateLocalUserData(houseNo, newUnit, status, newPaidDate, collectorName) {
             // 1. ค้นหาบ้านในรายการหลัก (window.globalUsersList)
             const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
             
             if (user) {
-                // 🎯 เก็บค่าเลขมิเตอร์เดิมไว้ใน oldUnit ก่อนจะอัปเดตค่าใหม่ (สำคัญสำหรับใบเสร็จ)
+                // 🎯 1. เก็บค่าเลขมิเตอร์เดิมไว้ก่อน
                 user.oldUnit = user.prevUnit; 
                 
-                // 🎯 อัปเดตข้อมูลใหม่ลงในตัวแปร
+                // 🎯 2. อัปเดตข้อมูลสถานะและเลขใหม่
                 user.statusCode = status.toLowerCase(); // 'paid' หรือ 'waiting'
-                user.prevUnit = parseInt(newUnit);      // เลขใหม่จะกลายเป็นเลขปัจจุบัน
-                user.paidDate = newPaidDate || "-";     // วันที่จากคอลัมน์ K
+                user.prevUnit = parseInt(newUnit);      
                 
-                // 🎯 ดึงราคาปัจจุบันมาคำนวณยอดเงินใหม่ เพื่อให้ Badge หน้า Dashboard อัปเดตตาม
+                // 🎯 3. จัดการเรื่องวันที่ (แบบมีแผนสำรอง)
+                if (newPaidDate && newPaidDate !== "") {
+                    user.paidDate = newPaidDate; // ใช้วันที่จาก Server
+                } else if (status.toLowerCase() === 'paid') {
+                    // แผนสำรอง: ถ้า Server ไม่ส่งมา ให้ดึงเวลาปัจจุบันของเครื่องมือถือมาใช้แทน (ป้องกันการขึ้นเครื่องหมาย -)
+                    const now = new Date();
+                    const yearBE = now.getFullYear() + 543;
+                    user.paidDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${yearBE} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                }
+
+                // 🎯 4. อัปเดตชื่อผู้รับเงิน
+                if (collectorName) {
+                    user.collector = collectorName;
+                }
+                
+                // 🎯 5. ดึงราคาปัจจุบันมาคำนวณยอดเงินใหม่
                 const price = parseFloat(document.getElementById('set-price').value) || 0;
                 const usage = user.prevUnit - (parseInt(user.oldUnit) || 0);
                 user.usage = usage;
                 user.price = price;
                 user.amount = usage * price; 
 
-                // 🎯 หากชำระเงินแล้ว ให้เคลียร์ยอดค้างชำระในหน่วยความจำออก
+                // 🎯 6. หากชำระเงินแล้ว ให้เคลียร์ยอดค้างชำระ
                 if (status.toLowerCase() === 'paid') {
                     user.overdue = 0;
                     user.isOverdue = false;
                     user.overdueList = [];
                 }
 
-                console.log(`✅ อัปเดตข้อมูลบ้าน ${houseNo} ในหน่วยความจำเรียบร้อย`);
+                console.log(`✅ อัปเดตบ้าน ${houseNo} เสร็จสิ้น | วันที่: ${user.paidDate}`);
 
-                // 🎯 สั่งให้ Render หน้า Dashboard ใหม่ด้วยข้อมูลที่อัปเดตแล้ว
+                // สั่งให้ Render หน้า Dashboard ใหม่
                 if (typeof renderRealData === "function") {
                     renderRealData(window.globalUsersList);
                 }
