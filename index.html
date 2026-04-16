@@ -810,11 +810,10 @@
             });
 
             listContainer.innerHTML = htmlContent;
-            document.getElementById('dash-count-todo').innerText = stats.todo;
-            document.getElementById('dash-count-waiting').innerText = stats.waiting;
-            document.getElementById('dash-count-paid').innerText = stats.paid;
-             // ✨ [เพิ่มโค้ดบรรทัดนี้] ส่งค่าไปแสดงที่กล่องค้างชำระ
-            document.getElementById('dash-count-overdue').innerText = stats.overdue;
+            document.getElementById('dash-count-todo').innerText = stats.todo + " หลัง";
+            document.getElementById('dash-count-waiting').innerText = stats.waiting + " หลัง";
+            document.getElementById('dash-count-paid').innerText = stats.paid + " หลัง";
+            document.getElementById('dash-count-overdue').innerText = stats.overdue + " หลัง";
 
                  // 🎁 โค้ดสำหรับเปิดแถบแจ้งเตือนสีแดง (Banner) ด้านบน ถ้ายอดค้างชำระ >= MAX_OVERDUE
             const warningBanner = document.getElementById('overdue-warning-banner');
