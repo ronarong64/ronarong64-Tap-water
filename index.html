@@ -1528,9 +1528,8 @@ async function loadSettingsData() {
                 btn.disabled = false;
                 btn.innerHTML = `<i class="fas fa-save"></i> บันทึกข้อมูล`;
             }
-        }
-
-       // ==========================================
+        }      
+        // ==========================================
         // 💧 เปิดหน้าต่างจดมิเตอร์ หรือ ใบเสร็จ
         // ==========================================
         function openBillingModal(houseNo) {
@@ -1568,7 +1567,7 @@ async function loadSettingsData() {
                 const previousOverdue = (parseFloat(user.overdue) || 0) - (parseFloat(user.amount) || 0);
 
                 currentBillState = {
-                    billingId: user.billingId, // 🎯 เก็บ ID ไว้เพื่อใช้อัปเดต
+                    billingId: user.billingId || "", // 🎯 เก็บ ID ไว้เพื่อใช้อัปเดต
                     houseNo: user.houseNo,                    
                     prevUnit: parseInt(user.oldUnit) || 0, // กลับไปใช้เลขก่อนจดเป็นตัวตั้งต้น
                     overdue: previousOverdue > 0 ? previousOverdue : 0,
@@ -1595,6 +1594,7 @@ async function loadSettingsData() {
             // 🎯 กรณีที่ 3: สถานะ "ยังไม่จด" (None)
             else {
                 currentBillState = {
+                    billingId: "", // 🌟 เพิ่มบรรทัดนี้: แจ้งระบบว่านี่คือบิลใหม่ ไม่มี ID
                     houseNo: user.houseNo,
                     prevUnit: parseInt(user.prevUnit) || 0, // ใช้เลขล่าสุดเป็นตัวตั้งต้น
                     overdue: parseFloat(user.overdue) || 0,
