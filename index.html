@@ -719,17 +719,17 @@
                 const amount = Number(user.amount || 0);
                 
                 // 🎯 1. นับจำนวนบิลค้างชำระ (ที่ไม่ใช่ของเดือนปัจจุบัน)
-let overdueMonthsCount = 0;
-if (user.overdueList && user.overdueList.length > 0) {
-    overdueMonthsCount = user.overdueList.filter(bill => 
-        bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2
-    ).length;
-}
+                let overdueMonthsCount = 0;
+                if (user.overdueList && user.overdueList.length > 0) {
+                overdueMonthsCount = user.overdueList.filter(bill => 
+                bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2
+                ).length;
+                }
 
-// ✨ [เพิ่มโค้ด 3 บรรทัดนี้] เพื่อบวกสถิติบ้านที่ค้างชำระ
-if (overdueMonthsCount > 0) {
-    stats.overdue++;
-}
+                // ✨ [เพิ่มโค้ด 3 บรรทัดนี้] เพื่อบวกสถิติบ้านที่ค้างชำระ
+                if (overdueMonthsCount > 0) {
+                    stats.overdue++;
+                }
 
                 // 🎯 2. สร้างแถบป้าย (Badge) ค้างชำระสีแดง
                 let overdueBadge = "";
@@ -816,14 +816,20 @@ if (overdueMonthsCount > 0) {
              // ✨ [เพิ่มโค้ดบรรทัดนี้] ส่งค่าไปแสดงที่กล่องค้างชำระ
             document.getElementById('dash-count-overdue').innerText = stats.overdue;
 
-            // 🎁 โค้ดสำหรับเปิดแถบแจ้งเตือนสีแดง (Banner) ด้านบน ถ้ายอดค้างชำระ > 0
+                 // 🎁 โค้ดสำหรับเปิดแถบแจ้งเตือนสีแดง (Banner) ด้านบน ถ้ายอดค้างชำระ >= MAX_OVERDUE
             const warningBanner = document.getElementById('overdue-warning-banner');
-            if (stats.overdue > 0) {
+            
+            // 🎯 ดึงค่า MAX_OVERDUE จากช่อง Input ในหน้าตั้งค่า (ถ้ายังไม่ได้ตั้งค่า ให้ถือว่าเป็น 1)
+            const maxOverdueInput = document.getElementById('set-max-overdue').value;
+            const maxLimit = parseInt(maxOverdueInput) || 1;
+
+            // เช็คเงื่อนไข: ถ้ายอดค้างชำระ เท่ากับ หรือ มากกว่าค่าที่ตั้งไว้
+            if (stats.overdue >= maxLimit) {
              warningBanner.classList.remove('hidden');
              document.getElementById('overdue-warning-count').innerText = stats.overdue;
             } else {
-            warningBanner.classList.add('hidden');
-            }         
+             warningBanner.classList.add('hidden');
+            }    
         }
 
         // ==========================================
