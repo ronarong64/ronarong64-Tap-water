@@ -719,15 +719,17 @@
                 const amount = Number(user.amount || 0);
                 
                 // 🎯 1. นับจำนวนบิลค้างชำระ (ที่ไม่ใช่ของเดือนปัจจุบัน)
-                let overdueMonthsCount = 0;
-                if (user.overdueList && user.overdueList.length > 0) {
-                    overdueMonthsCount = user.overdueList.filter(bill => 
-                        bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2
-                    ).length;
-                }
-                if (overdueMonthsCount > 0) {
-                stats.overdue++;
-                }
+let overdueMonthsCount = 0;
+if (user.overdueList && user.overdueList.length > 0) {
+    overdueMonthsCount = user.overdueList.filter(bill => 
+        bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2
+    ).length;
+}
+
+// ✨ [เพิ่มโค้ด 3 บรรทัดนี้] เพื่อบวกสถิติบ้านที่ค้างชำระ
+if (overdueMonthsCount > 0) {
+    stats.overdue++;
+}
 
                 // 🎯 2. สร้างแถบป้าย (Badge) ค้างชำระสีแดง
                 let overdueBadge = "";
