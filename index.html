@@ -725,6 +725,9 @@
                         bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2
                     ).length;
                 }
+                if (overdueMonthsCount > 0) {
+                stats.overdue++;
+                }
 
                 // 🎯 2. สร้างแถบป้าย (Badge) ค้างชำระสีแดง
                 let overdueBadge = "";
@@ -808,7 +811,17 @@
             document.getElementById('dash-count-todo').innerText = stats.todo;
             document.getElementById('dash-count-waiting').innerText = stats.waiting;
             document.getElementById('dash-count-paid').innerText = stats.paid;
+             // ✨ [เพิ่มโค้ดบรรทัดนี้] ส่งค่าไปแสดงที่กล่องค้างชำระ
             document.getElementById('dash-count-overdue').innerText = stats.overdue;
+
+            // 🎁 โค้ดสำหรับเปิดแถบแจ้งเตือนสีแดง (Banner) ด้านบน ถ้ายอดค้างชำระ > 0
+            const warningBanner = document.getElementById('overdue-warning-banner');
+            if (stats.overdue > 0) {
+             warningBanner.classList.remove('hidden');
+             document.getElementById('overdue-warning-count').innerText = stats.overdue;
+            } else {
+            warningBanner.classList.add('hidden');
+            }         
         }
 
         // ==========================================
