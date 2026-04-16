@@ -1568,7 +1568,8 @@ async function loadSettingsData() {
                 const previousOverdue = (parseFloat(user.overdue) || 0) - (parseFloat(user.amount) || 0);
 
                 currentBillState = {
-                    houseNo: user.houseNo,
+                    billingId: user.billingId, // 🎯 เก็บ ID ไว้เพื่อใช้อัปเดต
+                    houseNo: user.houseNo,                    
                     prevUnit: parseInt(user.oldUnit) || 0, // กลับไปใช้เลขก่อนจดเป็นตัวตั้งต้น
                     overdue: previousOverdue > 0 ? previousOverdue : 0,
                     overdueDetails: user.overdueList || []
@@ -1760,6 +1761,7 @@ async function loadSettingsData() {
 
             const payload = {
                 action: "saveBilling",
+                billingId: currentBillState.billingId || "", // 🎯 ส่ง ID ไป (ถ้ามี)
                 houseNo: currentBillState.houseNo,
                 prevUnit: currentBillState.prevUnit,
                 currUnit: currUnit,
