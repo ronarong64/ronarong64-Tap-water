@@ -703,14 +703,12 @@
             window.globalUsersList = users;
             const listContainer = document.getElementById('user-list');
             let stats = { todo: 0, waiting: 0, paid: 0, overdue: 0 };
-            let totalOverdueUsers = 0;
             let htmlContent = "";
 
-            // 🎯 1. เตรียมเดือน/ปี ปัจจุบันเพื่อเอาไว้เทียบ
+            // หาเดือนปัจจุบัน (ฝั่งหน้าเว็บ)
             const now = new Date();
             const currentM = now.getMonth() + 1;
             const currentY = now.getFullYear() + 543;
-            // ดักไว้ 2 รูปแบบ เผื่อผู้ใช้พิมพ์ 04/2569 หรือ 4/2569
             const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
             const currentMonthStr2 = `${currentM}/${currentY}`; 
 
@@ -718,12 +716,9 @@
                 const houseNo = escapeHTML(user.houseNo || "-");
                 const safeName = escapeHTML(user.name || "ไม่มีชื่อเจ้าบ้าน");
                 const statusCode = user.statusCode || "none";
-                
                 const amount = Number(user.amount || 0);
-                const prevUnit = Number(user.prevUnit || 0);
-                const overdueAmount = Number(user.overdue || 0);
                 
-                // 🎯 2. นับจำนวนเดือนที่ "ค้างชำระ" (บิลสถานะ Waiting ที่ไม่ใช่เดือนปัจจุบัน)
+                // 🎯 1. นับจำนวนบิลค้างชำระ (ที่ไม่ใช่ของเดือนปัจจุบัน)
                 let overdueMonthsCount = 0;
                 if (user.overdueList && user.overdueList.length > 0) {
                     overdueMonthsCount = user.overdueList.filter(bill => 
@@ -731,23 +726,20 @@
                     ).length;
                 }
 
-                // 🎯 3. สร้างแถบป้าย (Badge) ค้างชำระสีแดง (ถ้ามีค้างชำระเกิน 0 เดือน)
+                // 🎯 2. สร้างแถบป้าย (Badge) ค้างชำระสีแดง
                 let overdueBadge = "";
                 if (overdueMonthsCount > 0) {
                     overdueBadge = `
-                        <div class="bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm whitespace-nowrap">
-                            <i class="fas fa-exclamation-triangle text-[8px]"></i> ค้างชำระ ${overdueMonthsCount} เดือน
+                        <div class="bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm whitespace-nowrap ml-1">
+                            <i class="fas fa-exclamation-triangle text-[8px]"></i> ค้าง ${overdueMonthsCount} เดือน
                         </div>`;
                 }
 
+                // โค้ดดึงรูปโปรไฟล์... (เหมือนเดิม)
                 let rawProfilePic = user.profilePic ? String(user.profilePic).trim() : "";
                 let fileId = "";
-                
-                if (rawProfilePic.includes("id=")) {
-                    fileId = rawProfilePic.split('id=')[1].split('&')[0];
-                } else if (rawProfilePic.includes("/d/")) {
-                    fileId = rawProfilePic.split('/d/')[1].split('/')[0];
-                }
+                if (rawProfilePic.includes("id=")) fileId = rawProfilePic.split('id=')[1].split('&')[0];
+                else if (rawProfilePic.includes("/d/")) fileId = rawProfilePic.split('/d/')[1].split('/')[0];
 
                 const lineId = escapeHTML(user.lineId || "");
                 const phone = escapeHTML(user.phone || "");
@@ -756,28 +748,22 @@
                 if (statusCode === 'none') stats.todo++;
                 else if (statusCode === 'waiting') stats.waiting++;
                 else if (statusCode === 'paid' || statusCode === 'free') stats.paid++;
-                else if (statusCode === 'overdue') stats.overdue++;
 
-                if (user.isOverdue || statusCode === 'overdue') totalOverdueUsers++;
-
-                // กำหนดสีตามสถานะต่างๆ
+                // กำหนดค่าเริ่มต้นของสถานะ
                 let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
                 let borderColor = "border-slate-200"; 
 
+                // กำหนดสีและข้อความตามสถานะต่างๆ
                 if (statusCode === 'paid' || statusCode === 'free') {
                     sClass = "text-emerald-600"; sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; 
                     sText = statusCode === 'free' ? "ใช้น้ำฟรี" : `ชำระแล้ว ${amount.toLocaleString()} บ.`;
                     borderColor = "border-emerald-400 shadow-emerald-500/10";
-                } else if (statusCode === 'overdue') {
-                    sClass = "text-rose-600 font-bold"; sBg = "bg-rose-100"; sIcon = "fa-exclamation-circle"; sText = `ค้างชำระ ${amount.toLocaleString()} บ.`;
-                    borderColor = "border-rose-400 shadow-rose-500/10";
                 } else if (statusCode === 'waiting') {
                     sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()} บ.`;
                     borderColor = "border-amber-400 shadow-amber-500/10";
                 }
 
                 let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`; 
-
                 if (fileId) {
                     const mainImage = "https://lh3.googleusercontent.com/d/" + fileId;
                     const backupImage = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w200";
@@ -787,15 +773,11 @@
                 }
 
                 let phoneDisplayHtml = phone
-                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[11px] font-medium text-slate-500 flex items-center gap-1">
-                           <div class="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-phone-alt text-[7px]"></i></div>
-                           <span class="phone-text">${phone}</span>
-                       </a>`
+                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[11px] font-medium text-slate-500 flex items-center gap-1"><div class="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-phone-alt text-[7px]"></i></div><span class="phone-text">${phone}</span></a>`
                     : `<span class="text-[11px] text-slate-400 italic">ไม่มีเบอร์โทร</span>`;
-
                 let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
 
-                // 🎯 4. นำ overdueBadge ไปต่อท้ายบ้านเลขที่
+                // 🎯 3. นำ overdueBadge ไปใส่ต่อท้ายบ้านเลขที่ (ข้างๆ ไอคอนไลน์)
                 htmlContent += `
                     <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="openBillingModal('${houseNo}')">
                         <div class="flex items-start gap-3 min-w-0 w-full">
@@ -825,9 +807,7 @@
             listContainer.innerHTML = htmlContent;
             document.getElementById('dash-count-todo').innerText = stats.todo;
             document.getElementById('dash-count-waiting').innerText = stats.waiting;
-            document.getElementById('dash-count-paid').innerText = stats.paid;
-            document.getElementById('dash-count-overdue').innerText = stats.overdue;
-            document.getElementById('search-count').innerText = users.length + "  หลัง";
+            document.getElementById('dash-count-paid').innerText = stats.paid;          
         }
 
         // ==========================================
