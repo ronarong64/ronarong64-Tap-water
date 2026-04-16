@@ -700,138 +700,135 @@
         }
 
         function renderRealData(users) {
-            window.globalUsersList = users;
-            const listContainer = document.getElementById('user-list');
-            let stats = { todo: 0, waiting: 0, paid: 0, overdue: 0 };
-            let htmlContent = "";
+    window.globalUsersList = users;
+    const listContainer = document.getElementById('user-list');
+    let stats = { todo: 0, waiting: 0, paid: 0, overdue: 0 };
+    let htmlContent = "";
 
-            // หาเดือนปัจจุบัน (ฝั่งหน้าเว็บ)
-            const now = new Date();
-            const currentM = now.getMonth() + 1;
-            const currentY = now.getFullYear() + 543;
-            const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
-            const currentMonthStr2 = `${currentM}/${currentY}`; 
+    // 1. เตรียมข้อมูลเดือนปัจจุบันเพื่อใช้กรอง (ไม่นับเป็นยอดค้าง)
+    const now = new Date();
+    const currentM = now.getMonth() + 1;
+    const currentY = now.getFullYear() + 543;
+    const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
+    const currentMonthStr2 = `${currentM}/${currentY}`; 
 
-            users.forEach(user => {
-                const houseNo = escapeHTML(user.houseNo || "-");
-                const safeName = escapeHTML(user.name || "ไม่มีชื่อเจ้าบ้าน");
-                const statusCode = user.statusCode || "none";
-                const amount = Number(user.amount || 0);
-                
-                // 🎯 1. นับจำนวนบิลค้างชำระ (ที่ไม่ใช่ของเดือนปัจจุบัน)
-                let overdueMonthsCount = 0;
-                if (user.overdueList && user.overdueList.length > 0) {
-                overdueMonthsCount = user.overdueList.filter(bill => 
+    users.forEach(user => {
+        const houseNo = escapeHTML(user.houseNo || "-");
+        const safeName = escapeHTML(user.name || "ไม่มีชื่อเจ้าบ้าน");
+        const statusCode = user.statusCode || "none";
+        const amount = Number(user.amount || 0);
+        
+        // 🎯 นับจำนวนบิลค้างชำระ (กรองเดือนปัจจุบันออกตามที่ต้องการ)
+        let overdueMonthsCount = 0;
+        if (user.overdueList && user.overdueList.length > 0) {
+            overdueMonthsCount = user.overdueList.filter(bill => 
                 bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2
-                ).length;
-                }
-
-                // ✨ [เพิ่มโค้ด 3 บรรทัดนี้] เพื่อบวกสถิติบ้านที่ค้างชำระ
-                if (overdueMonthsCount > 0) {
-                    stats.overdue++;
-                }
-
-                // 🎯 2. สร้างแถบป้าย (Badge) ค้างชำระสีแดง
-                let overdueBadge = "";
-                if (overdueMonthsCount > 0) {
-                    overdueBadge = `
-                        <div class="bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm whitespace-nowrap ml-1">
-                            <i class="fas fa-exclamation-triangle text-[8px]"></i> ค้าง ${overdueMonthsCount} เดือน
-                        </div>`;
-                }
-
-                // โค้ดดึงรูปโปรไฟล์... (เหมือนเดิม)
-                let rawProfilePic = user.profilePic ? String(user.profilePic).trim() : "";
-                let fileId = "";
-                if (rawProfilePic.includes("id=")) fileId = rawProfilePic.split('id=')[1].split('&')[0];
-                else if (rawProfilePic.includes("/d/")) fileId = rawProfilePic.split('/d/')[1].split('/')[0];
-
-                const lineId = escapeHTML(user.lineId || "");
-                const phone = escapeHTML(user.phone || "");
-
-                // นับสถิติ
-                if (statusCode === 'none') stats.todo++;
-                else if (statusCode === 'waiting') stats.waiting++;
-                else if (statusCode === 'paid' || statusCode === 'free') stats.paid++;
-
-                // กำหนดค่าเริ่มต้นของสถานะ
-                let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
-                let borderColor = "border-slate-200"; 
-
-                // กำหนดสีและข้อความตามสถานะต่างๆ
-                if (statusCode === 'paid' || statusCode === 'free') {
-                    sClass = "text-emerald-600"; sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; 
-                    sText = statusCode === 'free' ? "ใช้น้ำฟรี" : `ชำระแล้ว ${amount.toLocaleString()} บ.`;
-                    borderColor = "border-emerald-400 shadow-emerald-500/10";
-                } else if (statusCode === 'waiting') {
-                    sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()} บ.`;
-                    borderColor = "border-amber-400 shadow-amber-500/10";
-                }
-
-                let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`; 
-                if (fileId) {
-                    const mainImage = "https://lh3.googleusercontent.com/d/" + fileId;
-                    const backupImage = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w200";
-                    avatarHtml = `<img src="${mainImage}" alt="profile" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.src='${backupImage}';">`;
-                } else if (rawProfilePic && (rawProfilePic.startsWith("http") || rawProfilePic.startsWith("data:"))) {
-                    avatarHtml = `<img src="${rawProfilePic}" alt="profile" class="w-full h-full object-cover rounded-full">`;
-                }
-
-                let phoneDisplayHtml = phone
-                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[11px] font-medium text-slate-500 flex items-center gap-1"><div class="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-phone-alt text-[7px]"></i></div><span class="phone-text">${phone}</span></a>`
-                    : `<span class="text-[11px] text-slate-400 italic">ไม่มีเบอร์โทร</span>`;
-                let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
-
-                // 🎯 3. นำ overdueBadge ไปใส่ต่อท้ายบ้านเลขที่ (ข้างๆ ไอคอนไลน์)
-                htmlContent += `
-                    <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="openBillingModal('${houseNo}')">
-                        <div class="flex items-start gap-3 min-w-0 w-full">
-                            <div class="avatar-box w-12 h-12 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border-2 border-white mt-0.5">
-                                ${avatarHtml}
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center justify-between mb-0">
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <h4 class="house-no-text text-[15px] font-bold text-slate-800 leading-none">${houseNo}</h4>
-                                        ${lineIconHtml}
-                                        ${overdueBadge} </div>
-                                    <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-400 hover:text-blue-500 active:scale-90 px-2 py-1">
-                                        <i class="fas fa-edit text-[15px]"></i>
-                                    </button>
-                                </div>
-                                <p class="name-text text-[14px] font-medium text-slate-500 truncate leading-none mt-1 mb-2">${safeName}</p>
-                                <div class="flex items-center justify-between pt-1 border-t border-slate-100">
-                                    <div class="phone-box">${phoneDisplayHtml}</div>
-                                    <div class="status-badge text-[12px] font-bold ${sClass} ${sBg} px-2 py-1 rounded-md border border-white shadow-sm shrink-0 leading-none">${sText}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
-            });
-
-            // 🎯 สไตล์ Subtle Opacity: ลดขนาดตัวเลขลง (text-base) และดรอปความเข้มของหน่วย (opacity-60)
-const formatStat = (count) => `<span class="text-base">${count}</span><span class="text-[10px] font-normal opacity-60 ml-1">หลัง</span>`;
-
-document.getElementById('dash-count-todo').innerHTML = formatStat(stats.todo);
-document.getElementById('dash-count-waiting').innerHTML = formatStat(stats.waiting);
-document.getElementById('dash-count-paid').innerHTML = formatStat(stats.paid);
-document.getElementById('dash-count-overdue').innerHTML = formatStat(stats.overdue);
-
-                 // 🎁 โค้ดสำหรับเปิดแถบแจ้งเตือนสีแดง (Banner) ด้านบน ถ้ายอดค้างชำระ >= MAX_OVERDUE
-            const warningBanner = document.getElementById('overdue-warning-banner');
-            
-            // 🎯 ดึงค่า MAX_OVERDUE จากช่อง Input ในหน้าตั้งค่า (ถ้ายังไม่ได้ตั้งค่า ให้ถือว่าเป็น 1)
-            const maxOverdueInput = document.getElementById('set-max-overdue').value;
-            const maxLimit = parseInt(maxOverdueInput) || 1;
-
-            // เช็คเงื่อนไข: ถ้ายอดค้างชำระ เท่ากับ หรือ มากกว่าค่าที่ตั้งไว้
-            if (stats.overdue >= maxLimit) {
-             warningBanner.classList.remove('hidden');
-             document.getElementById('overdue-warning-count').innerText = stats.overdue;
-            } else {
-             warningBanner.classList.add('hidden');
-            }    
+            ).length;
         }
+
+        // เพิ่มสถิติบ้านที่ค้างชำระ (เฉพาะหนี้เก่า)
+        if (overdueMonthsCount > 0) {
+            stats.overdue++;
+        }
+
+        // สร้าง Badge ค้างชำระ
+        let overdueBadge = "";
+        if (overdueMonthsCount > 0) {
+            overdueBadge = `
+                <div class="bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm whitespace-nowrap ml-1">
+                    <i class="fas fa-exclamation-triangle text-[8px]"></i> ค้าง ${overdueMonthsCount} เดือน
+                </div>`;
+        }
+
+        // จัดการรูปโปรไฟล์
+        let rawProfilePic = user.profilePic ? String(user.profilePic).trim() : "";
+        let fileId = "";
+        if (rawProfilePic.includes("id=")) fileId = rawProfilePic.split('id=')[1].split('&')[0];
+        else if (rawProfilePic.includes("/d/")) fileId = rawProfilePic.split('/d/')[1].split('/')[0];
+
+        const lineId = escapeHTML(user.lineId || "");
+        const phone = escapeHTML(user.phone || "");
+
+        // นับสถิติ 3 กล่องแรก
+        if (statusCode === 'none') stats.todo++;
+        else if (statusCode === 'waiting') stats.waiting++;
+        else if (statusCode === 'paid' || statusCode === 'free') stats.paid++;
+
+        // กำหนดสีและไอคอนตามสถานะ
+        let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
+        let borderColor = "border-slate-200"; 
+
+        if (statusCode === 'paid' || statusCode === 'free') {
+            sClass = "text-emerald-600"; sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; 
+            sText = statusCode === 'free' ? "ใช้น้ำฟรี" : `ชำระแล้ว ${amount.toLocaleString()} บ.`;
+            borderColor = "border-emerald-400 shadow-emerald-500/10";
+        } else if (statusCode === 'waiting') {
+            sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()} บ.`;
+            borderColor = "border-amber-400 shadow-amber-500/10";
+        }
+
+        let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`; 
+        if (fileId) {
+            const mainImage = "https://lh3.googleusercontent.com/d/" + fileId;
+            const backupImage = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w200";
+            avatarHtml = `<img src="${mainImage}" alt="profile" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.src='${backupImage}';">`;
+        } else if (rawProfilePic && (rawProfilePic.startsWith("http") || rawProfilePic.startsWith("data:"))) {
+            avatarHtml = `<img src="${rawProfilePic}" alt="profile" class="w-full h-full object-cover rounded-full">`;
+        }
+
+        let phoneDisplayHtml = phone
+            ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[11px] font-medium text-slate-500 flex items-center gap-1"><div class="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-phone-alt text-[7px]"></i></div><span class="phone-text">${phone}</span></a>`
+            : `<span class="text-[11px] text-slate-400 italic">ไม่มีเบอร์โทร</span>`;
+        let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
+
+        htmlContent += `
+            <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="openBillingModal('${houseNo}')">
+                <div class="flex items-start gap-3 min-w-0 w-full">
+                    <div class="avatar-box w-12 h-12 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border-2 border-white mt-0.5">
+                        ${avatarHtml}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between mb-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h4 class="house-no-text text-[15px] font-bold text-slate-800 leading-none">${houseNo}</h4>
+                                ${lineIconHtml}
+                                ${overdueBadge}
+                            </div>
+                            <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-400 hover:text-blue-500 active:scale-90 px-2 py-1">
+                                <i class="fas fa-edit text-[15px]"></i>
+                            </button>
+                        </div>
+                        <p class="name-text text-[14px] font-medium text-slate-500 truncate leading-none mt-1 mb-2">${safeName}</p>
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-100">
+                            <div class="phone-box">${phoneDisplayHtml}</div>
+                            <div class="status-badge text-[12px] font-bold ${sClass} ${sBg} px-2 py-1 rounded-md border border-white shadow-sm shrink-0 leading-none">${sText}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    });
+
+    listContainer.innerHTML = htmlContent;
+
+    const formatStat = (count) => `<span class="text-base font-bold">${count}</span><span class="text-[10px] font-normal opacity-60 ml-1">หลัง</span>`;
+
+    document.getElementById('dash-count-todo').innerHTML = formatStat(stats.todo);
+    document.getElementById('dash-count-waiting').innerHTML = formatStat(stats.waiting);
+    document.getElementById('dash-count-paid').innerHTML = formatStat(stats.paid);
+    document.getElementById('dash-count-overdue').innerHTML = formatStat(stats.overdue);
+
+    // 🎁 3. จัดการ Banner แจ้งเตือนค้างชำระ
+    const warningBanner = document.getElementById('overdue-warning-banner');
+    const maxOverdueInput = document.getElementById('set-max-overdue').value;
+    const maxLimit = parseInt(maxOverdueInput) || 1;
+
+    if (stats.overdue >= maxLimit) {
+        warningBanner.classList.remove('hidden');
+        document.getElementById('overdue-warning-count').innerText = stats.overdue;
+    } else {
+        warningBanner.classList.add('hidden');
+    }     
+}
 
         // ==========================================
         // ระบบจัดการแก้ไขข้อมูลสมาชิก (Edit Member)
