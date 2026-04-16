@@ -675,7 +675,7 @@
             listContainer.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-10 opacity-50">
                     <i class="fas fa-circle-notch fa-spin text-2xl text-blue-500 mb-2"></i>
-                    <p class="text-[14px] font-medium">กำลังโหลดข้อมูลบ้าน...</p>
+                    <p class="text-xs font-medium">กำลังโหลดข้อมูลบ้าน...</p>
                 </div>`;
 
             fetch(API_URL + "?action=getUsersData")
@@ -727,16 +727,12 @@
                 }
 
                 // 🎯 2. สร้างแถบป้าย (Badge) ค้างชำระสีแดง
+                let overdueBadge = "";
                 if (overdueMonthsCount > 0) {
-                    stats.overdue++; // 🚩 ถ้ามีบิลเดือนเก่าค้างอยู่ ให้นับลงกล่อง "ค้างชำระ"
-                }
-
-                if (statusCode === 'none') {
-                    stats.todo++;    // กล่อง "ยังไม่จด"
-                } else if (statusCode === 'waiting') {
-                    stats.waiting++; // กล่อง "รอชำระ" (เฉพาะของเดือนปัจจุบัน)
-                } else if (statusCode === 'paid' || statusCode === 'free') {
-                    stats.paid++;    // กล่อง "ชำระแล้ว"
+                    overdueBadge = `
+                        <div class="bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm whitespace-nowrap ml-1">
+                            <i class="fas fa-exclamation-triangle text-[8px]"></i> ค้าง ${overdueMonthsCount} เดือน
+                        </div>`;
                 }
 
                 // โค้ดดึงรูปโปรไฟล์... (เหมือนเดิม)
@@ -811,16 +807,7 @@
             listContainer.innerHTML = htmlContent;
             document.getElementById('dash-count-todo').innerText = stats.todo;
             document.getElementById('dash-count-waiting').innerText = stats.waiting;
-            document.getElementById('dash-count-paid').innerText = stats.paid;
-
-                 // 🌟 อัปเดตกล่องที่ 4 (ค้างชำระ) ให้โชว์จำนวนบ้านที่มีบิลเดือนเก่าค้างอยู่
-            const overdueCountEl = document.getElementById('dash-count-overdue');
-            if (overdueCountEl) {
-                overdueCountEl.innerText = stats.overdue;
-            }
-
-            listContainer.innerHTML = htmlContent;
-            document.getElementById('search-count').innerText = users.length + " หลัง";     
+            document.getElementById('dash-count-paid').innerText = stats.paid;          
         }
 
         // ==========================================
