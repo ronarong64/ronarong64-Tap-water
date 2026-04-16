@@ -1538,7 +1538,7 @@ async function loadSettingsData() {
 
             // 🎯 กรณีที่ 1: ถ้าชำระแล้ว หรือ ใช้น้ำฟรี -> เปิดสลิปใบเสร็จทันที
             if (user.statusCode === 'paid' || user.statusCode === 'free') {
-                const receiptPayload = {
+                const receiptPayload = {                    
                     houseNo: user.houseNo,
                     paidDate: user.paidDate,
                     prevUnit: user.oldUnit,           
