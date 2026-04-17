@@ -1575,6 +1575,7 @@ async function loadSettingsData() {
             const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
             if (!user) return;
 
+            // 🎯 ถ้ายอดถูกจ่ายแล้ว ให้เปิดหน้าใบเสร็จ
             if (user.statusCode === 'paid' || user.statusCode === 'free') {
                 const receiptPayload = { 
                     houseNo: user.houseNo, 
@@ -1584,8 +1585,8 @@ async function loadSettingsData() {
                     usage: user.usage, 
                     pricePerUnit: user.price, 
                     currentAmount: user.amount, 
-                    overdueAmount: user.overdueAmount || 0, // ปรับให้ตรงกับตัวแปรใน user
-                    paidMonthsText: user.paidMonthsText || "", // ✨ [เพิ่มบรรทัดนี้]
+                    overdueAmount: user.overdueAmount || 0, // ✨ ดึงยอดมาแล้ว
+                    paidMonthsText: user.paidMonthsText || "", // ✨ ดึงชื่อเดือน
                     grandTotal: user.grandTotal, 
                     collector: user.collector 
                 };
@@ -1751,13 +1752,14 @@ async function loadSettingsData() {
                 loggedInName = localStorage.getItem("username");
             }
 
-            // ✨ ดึงรายชื่อเดือนที่ถูกติ๊กเลือก (เช่น "ม.ค. / 2569, ก.พ. / 2569")
+            // ✨ ดึงรายชื่อเดือนและจำนวนเงินที่ถูกติ๊กเลือก
             let paidMonthsText = "";
             if (currentBillState.selectedOverdueIds && currentBillState.selectedOverdueIds.length > 0) {
                 const selectedBills = currentBillState.overdueDetails.filter(b => 
                     currentBillState.selectedOverdueIds.includes(b.billingId)
                 );
-                paidMonthsText = selectedBills.map(b => formatThaiMonth(b.month)).join(', ');
+                // สร้างรูปแบบ "ก.พ. 67|150, เม.ย. 67|200"
+                paidMonthsText = selectedBills.map(b => `${formatThaiMonth(b.month)}|${b.amount}`).join(',');
             }
 
             const payload = {
@@ -1805,7 +1807,9 @@ async function loadSettingsData() {
                         u.amount = parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, ''));
                         if (result.paidDate) u.paidDate = result.paidDate;
                         u.collector = loggedInName;
-                        u.paidMonthsText = paidMonthsText; // ✨ [เพิ่มบรรทัดนี้] บันทึกชื่อเดือนลงในหน่วยความจำทันที
+                        
+                        u.paidMonthsText = paidMonthsText; // ✨ บันทึกเดือนในเครื่อง
+                        u.overdueAmount = currentBillState.selectedOverdueAmount; // ✨ บันทึกยอดเงินลงเครื่อง
                         
                         // 🎯 จัดการยอดค้าง: ลบเฉพาะบิลเก่าที่ถูกติ๊กจ่ายไปแล้วออกจากรายการ
                         if (status.toLowerCase() === 'paid' && currentBillState.selectedOverdueIds && currentBillState.selectedOverdueIds.length > 0) {
@@ -1952,29 +1956,46 @@ async function loadSettingsData() {
                 document.getElementById('rcp-date').innerText = payload.paidDate || "-";
                 document.getElementById('rcp-house').innerText = payload.houseNo || "-";
                 document.getElementById('rcp-name').innerText = houseName;
-                
                 document.getElementById('rcp-prev').innerText = payload.prevUnit || 0;
                 document.getElementById('rcp-curr').innerText = payload.currUnit || 0;
                 document.getElementById('rcp-usage').innerText = payload.usage || 0;
                 document.getElementById('rcp-price').innerText = payload.pricePerUnit || 0;
-                
                 document.getElementById('rcp-current-amount').innerText = Number(payload.currentAmount || 0).toLocaleString();
                 
-                // ✨ ระบบเปลี่ยนข้อความแจ้งยอดค้างชำระในใบเสร็จ
-                const overdueLabel = document.getElementById('rcp-overdue-label');
-                if (overdueLabel) {
+                // ✨ ระบบวาดรายการค้างชำระแบบแยกบรรทัด
+                const overdueContainer = document.getElementById('rcp-overdue-container');
+                if (overdueContainer) {
+                    overdueContainer.innerHTML = ''; // ล้างของเก่า
+                    
                     if (payload.paidMonthsText && payload.paidMonthsText !== "") {
-                        // ถ้ามีการจ่ายยอดค้าง ให้วงเล็บชื่อเดือนบอกไว้ด้วย
-                        overdueLabel.innerHTML = `ค้างชำระ <span class="text-[10px] text-red-400">(${payload.paidMonthsText})</span>:`;
+                        // แยกเดือนด้วยลูกน้ำ
+                        const monthsArr = payload.paidMonthsText.split(',');
+                        monthsArr.forEach((item, index) => {
+                            const parts = item.split('|'); // แยกชื่อเดือน กับ ยอดเงิน
+                            const mName = parts[0];
+                            const mAmt = parts[1] ? Number(parts[1]).toLocaleString() : Number(payload.overdueAmount || 0).toLocaleString();
+                            
+                            // ถ้าเป็นบรรทัดแรกเขียนว่า "ค้างชำระ" ถ้าบรรทัดต่อไปเว้นว่างให้ตรงกัน
+                            const label = index === 0 ? "ค้างชำระ" : "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                            
+                            overdueContainer.innerHTML += `
+                            <div class="flex justify-between items-center mt-0.5">
+                                <span>${label} <span class="text-[10px] text-red-500">(${mName})</span>:</span>
+                                <span>${mAmt} บ.</span>
+                            </div>`;
+                        });
                     } else {
-                        // ถ้าไม่มีค้างเลย หรือเป็นแค่บิลเดือนปัจจุบัน
-                        overdueLabel.innerText = `ค้างชำระ:`;
+                        // แบบไม่มีค้าง หรือมีแค่ยอดรวม
+                        const oAmt = Number(payload.overdueAmount || 0);
+                        overdueContainer.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span>ค้างชำระ:</span>
+                            <span>${oAmt.toLocaleString()} บ.</span>
+                        </div>`;
                     }
                 }
 
-                document.getElementById('rcp-overdue-total').innerText = Number(payload.overdueAmount || 0).toLocaleString();
                 document.getElementById('rcp-total').innerText = Number(payload.grandTotal || 0).toLocaleString();
-                
                 document.getElementById('rcp-receiver').innerText = payload.collector || "Admin";
 
                 const modal = document.getElementById('receipt-modal');
@@ -2280,10 +2301,15 @@ async function loadSettingsData() {
           <span><span id="rcp-current-amount">0</span> บ.</span>
         </div>
 
-        <div class="flex justify-between text-xs text-red-500 mt-1">
-          <span id="rcp-overdue-label">ค้างชำระ:</span>
-          <span><span id="rcp-overdue-total">0</span> บ.</span>
+        <div class="flex justify-between text-sm text-slate-700 mt-2 font-bold">
+          <span>ค่าน้ำเดือนนี้:</span>
+          <span><span id="rcp-current-amount">0</span> บ.</span>
         </div>
+
+        <div id="rcp-overdue-container" class="w-full text-xs text-red-500 mt-1 space-y-0.5">
+        </div>
+
+        <div class="border-b-2 border-dashed border-slate-300 my-3"></div>
 
         <div class="border-b-2 border-dashed border-slate-300 my-3"></div>
 
