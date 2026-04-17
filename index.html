@@ -1931,19 +1931,19 @@ function showActualBillingForm(user, overdueOnly = false) {
             const price = parseFloat(document.getElementById('calc-price').innerText) || 0;
             const overdueAmount = currentBillState.selectedOverdueAmount || 0;
             
-            // ✨ [ส่วนที่เพิ่มใหม่] ดึงปุ่มทั้งสองมาเตรียมจัดการ
             const btnWaiting = document.getElementById('btn-save-waiting');
             const btnPaid = document.getElementById('btn-save-paid');
+            const warningBox = document.getElementById('high-usage-warning'); // ✨ ดึงกล่องเตือนมาใช้งาน
 
-            // 1. ถ้ายังไม่ได้กรอกเลขมิเตอร์ (ค่าว่าง) 
+            // 1. ถ้ายังไม่ได้กรอกเลขมิเตอร์ 
             if (currUnitInput === "") {
                 document.getElementById('calc-usage').innerText = "0";
                 document.getElementById('calc-current-amount').innerText = "0";
                 document.getElementById('calc-total').innerText = overdueAmount.toLocaleString();
-                
-                // ให้ปุ่มใช้งานได้ตามปกติ (เผื่อเป็นกรณีชำระแค่หนี้เก่าอย่างเดียว)
+                // เตือนใช้น้ำเกิน 50 หน่วย
                 if (btnWaiting) { btnWaiting.disabled = false; btnWaiting.classList.remove('opacity-50', 'cursor-not-allowed'); }
                 if (btnPaid) { btnPaid.disabled = false; btnPaid.classList.remove('opacity-50', 'cursor-not-allowed'); }
+                if (warningBox) warningBox.classList.add('hidden'); // ✨ ซ่อนคำเตือน
                 return;
             }
 
@@ -1951,17 +1951,18 @@ function showActualBillingForm(user, overdueOnly = false) {
             const currUnit = parseInt(currUnitInput);
             const usage = currUnit - prevUnit;
 
-            // ตรวจสอบกรณีเลขใหม่น้อยกว่าเลขเดิม (เกิดข้อผิดพลาด)
+            // 🛑 กรณีที่ 1: เลขใหม่น้อยกว่าเลขเดิม (ผิดพลาดขั้นรุนแรง)
             if (isNaN(usage) || usage < 0) {
                 document.getElementById('calc-usage').innerText = "ผิดพลาด";
                 document.getElementById('calc-current-amount').innerText = "0";
                 document.getElementById('calc-total').innerText = overdueAmount.toLocaleString();
                 
-                // 🛑 ล็อกปุ่ม! เปลี่ยนสีให้จางลง และไม่ให้กดได้
                 if (btnWaiting) { btnWaiting.disabled = true; btnWaiting.classList.add('opacity-50', 'cursor-not-allowed'); }
                 if (btnPaid) { btnPaid.disabled = true; btnPaid.classList.add('opacity-50', 'cursor-not-allowed'); }
+                if (warningBox) warningBox.classList.add('hidden'); // ✨ ซ่อนคำเตือน (เพราะขึ้น "ผิดพลาด" แทนแล้ว)
                 
             } else {
+                // ✅ กรณีที่ 2: เลขถูกต้อง ให้คำนวณเงิน
                 const currentAmount = usage * price;
                 const total = currentAmount + overdueAmount;
 
@@ -1969,9 +1970,17 @@ function showActualBillingForm(user, overdueOnly = false) {
                 document.getElementById('calc-current-amount').innerText = currentAmount.toLocaleString();
                 document.getElementById('calc-total').innerText = total.toLocaleString();
                 
-                // ✅ ปลดล็อกปุ่ม! หากตัวเลขถูกต้องแล้ว
                 if (btnWaiting) { btnWaiting.disabled = false; btnWaiting.classList.remove('opacity-50', 'cursor-not-allowed'); }
                 if (btnPaid) { btnPaid.disabled = false; btnPaid.classList.remove('opacity-50', 'cursor-not-allowed'); }
+
+                // ✨ กรณีที่ 3: เช็คว่าใช้น้ำเกิน 50 หน่วยหรือไม่
+                if (warningBox) {
+                    if (usage > 50) {
+                        warningBox.classList.remove('hidden'); // โชว์คำเตือน ใช้น้ำผิดปกติ
+                    } else {
+                        warningBox.classList.add('hidden'); // ซ่อนคำเตือน
+                    }
+                }
             }
         }
 
@@ -2416,9 +2425,12 @@ function showActualBillingForm(user, overdueOnly = false) {
               <div id="bill-prev-unit" class="text-2xl font-bold text-slate-400 font-mono">0</div>
             </div>
             <div class="pb-2 text-purple-300"><i class="fas fa-chevron-right text-xl"></i></div>
-            <div class="text-center w-28">
-              <div class="text-[13px] text-purple-600 font-bold mb-1 uppercase tracking-wide">เลขเดือนนี้</div>
+            <div class="text-center w-28 relative"> <div class="text-[13px] text-purple-600 font-bold mb-1 uppercase tracking-wide">เลขเดือนนี้</div>
               <input type="number" id="bill-curr-unit" oninput="calculateBill()" class="text-3xl font-bold text-center w-full bg-white rounded-xl shadow-sm outline-none text-purple-600 font-mono border-2 border-purple-200 focus:border-purple-500 transition-colors p-1" placeholder="0">
+              
+              <div id="high-usage-warning" class="hidden absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-[120%] text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 shadow-sm whitespace-nowrap animate-bounce">
+                <i class="fas fa-exclamation-triangle mr-1"></i>ใช้น้ำผิดปกติ ตรวจสอบตัวเลข!
+              </div>
             </div>
           </div>
 
