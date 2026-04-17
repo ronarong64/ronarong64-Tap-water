@@ -759,7 +759,10 @@
             criticalOverdueCount++; // นับเข้ากลุ่มเตรียมงดจ่ายน้ำ
         }
 
-        // แก้ไขบรรทัด overdueBadge ให้ใส่ onclick และ cursor-pointer
+        // 🎯 [แก้ปัญหาตรงนี้] สั่งล้างค่าป้ายแจ้งเตือนเป็นค่าว่างทุกครั้ง เพื่อไม่ให้ไปจำค่าของบ้านหลังก่อนหน้า!
+        let overdueBadge = "";
+
+        // ถ้าบ้านนี้มีหนี้ค้างจริง ถึงจะสร้างป้ายแจ้งเตือน
         if (overdueMonthsCount > 0) {
             overdueBadge = `
                 <div onclick="event.stopPropagation(); openOverdueOnly('${houseNo}')" class="cursor-pointer hover:scale-105 active:scale-95 transition-transform bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm whitespace-nowrap ml-1">
