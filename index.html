@@ -1930,24 +1930,37 @@ function showActualBillingForm(user, overdueOnly = false) {
             const currUnitInput = document.getElementById('bill-curr-unit').value;
             const price = parseFloat(document.getElementById('calc-price').innerText) || 0;
             const overdueAmount = currentBillState.selectedOverdueAmount || 0;
+            
+            // ✨ [ส่วนที่เพิ่มใหม่] ดึงปุ่มทั้งสองมาเตรียมจัดการ
+            const btnWaiting = document.getElementById('btn-save-waiting');
+            const btnPaid = document.getElementById('btn-save-paid');
 
-            // ✨ 1. ถ้ายังไม่ได้กรอกเลขมิเตอร์ (ค่าว่าง) ให้เซตค่าเริ่มต้นเป็น 0 แล้วหยุดการทำงาน
+            // 1. ถ้ายังไม่ได้กรอกเลขมิเตอร์ (ค่าว่าง) 
             if (currUnitInput === "") {
                 document.getElementById('calc-usage').innerText = "0";
                 document.getElementById('calc-current-amount').innerText = "0";
                 document.getElementById('calc-total').innerText = overdueAmount.toLocaleString();
+                
+                // ให้ปุ่มใช้งานได้ตามปกติ (เผื่อเป็นกรณีชำระแค่หนี้เก่าอย่างเดียว)
+                if (btnWaiting) { btnWaiting.disabled = false; btnWaiting.classList.remove('opacity-50', 'cursor-not-allowed'); }
+                if (btnPaid) { btnPaid.disabled = false; btnPaid.classList.remove('opacity-50', 'cursor-not-allowed'); }
                 return;
             }
 
-            // ✨ 2. ถ้ามีการกรอกข้อมูลแล้ว ให้ทำการคำนวณปกติ
+            // 2. ถ้ามีการกรอกข้อมูลแล้ว ให้ทำการคำนวณปกติ
             const currUnit = parseInt(currUnitInput);
             const usage = currUnit - prevUnit;
 
-            // ตรวจสอบกรณีเลขใหม่น้อยกว่าเลขเดิม
+            // ตรวจสอบกรณีเลขใหม่น้อยกว่าเลขเดิม (เกิดข้อผิดพลาด)
             if (isNaN(usage) || usage < 0) {
                 document.getElementById('calc-usage').innerText = "ผิดพลาด";
                 document.getElementById('calc-current-amount').innerText = "0";
                 document.getElementById('calc-total').innerText = overdueAmount.toLocaleString();
+                
+                // 🛑 ล็อกปุ่ม! เปลี่ยนสีให้จางลง และไม่ให้กดได้
+                if (btnWaiting) { btnWaiting.disabled = true; btnWaiting.classList.add('opacity-50', 'cursor-not-allowed'); }
+                if (btnPaid) { btnPaid.disabled = true; btnPaid.classList.add('opacity-50', 'cursor-not-allowed'); }
+                
             } else {
                 const currentAmount = usage * price;
                 const total = currentAmount + overdueAmount;
@@ -1955,6 +1968,10 @@ function showActualBillingForm(user, overdueOnly = false) {
                 document.getElementById('calc-usage').innerText = usage.toLocaleString();
                 document.getElementById('calc-current-amount').innerText = currentAmount.toLocaleString();
                 document.getElementById('calc-total').innerText = total.toLocaleString();
+                
+                // ✅ ปลดล็อกปุ่ม! หากตัวเลขถูกต้องแล้ว
+                if (btnWaiting) { btnWaiting.disabled = false; btnWaiting.classList.remove('opacity-50', 'cursor-not-allowed'); }
+                if (btnPaid) { btnPaid.disabled = false; btnPaid.classList.remove('opacity-50', 'cursor-not-allowed'); }
             }
         }
 
