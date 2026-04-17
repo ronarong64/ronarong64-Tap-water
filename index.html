@@ -1576,7 +1576,19 @@ async function loadSettingsData() {
             if (!user) return;
 
             if (user.statusCode === 'paid' || user.statusCode === 'free') {
-                const receiptPayload = { houseNo: user.houseNo, paidDate: user.paidDate, prevUnit: user.oldUnit, currUnit: user.prevUnit, usage: user.usage, pricePerUnit: user.price, currentAmount: user.amount, overdueAmount: user.overdue || 0, grandTotal: user.grandTotal, collector: user.collector };
+                const receiptPayload = { 
+                    houseNo: user.houseNo, 
+                    paidDate: user.paidDate, 
+                    prevUnit: user.oldUnit, 
+                    currUnit: user.prevUnit, 
+                    usage: user.usage, 
+                    pricePerUnit: user.price, 
+                    currentAmount: user.amount, 
+                    overdueAmount: user.overdueAmount || 0, // ปรับให้ตรงกับตัวแปรใน user
+                    paidMonthsText: user.paidMonthsText || "", // ✨ [เพิ่มบรรทัดนี้]
+                    grandTotal: user.grandTotal, 
+                    collector: user.collector 
+                };
                 showReceiptModal(receiptPayload);
                 return; 
             }
@@ -1793,6 +1805,7 @@ async function loadSettingsData() {
                         u.amount = parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, ''));
                         if (result.paidDate) u.paidDate = result.paidDate;
                         u.collector = loggedInName;
+                        u.paidMonthsText = paidMonthsText; // ✨ [เพิ่มบรรทัดนี้] บันทึกชื่อเดือนลงในหน่วยความจำทันที
                         
                         // 🎯 จัดการยอดค้าง: ลบเฉพาะบิลเก่าที่ถูกติ๊กจ่ายไปแล้วออกจากรายการ
                         if (status.toLowerCase() === 'paid' && currentBillState.selectedOverdueIds && currentBillState.selectedOverdueIds.length > 0) {
