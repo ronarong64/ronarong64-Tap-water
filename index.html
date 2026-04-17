@@ -1235,69 +1235,77 @@ function showPage(pageId) {
         }
 
        // ==========================================
-        // 🌟 ระบบแจ้งเตือน (Toast Notification - พื้นหลังสี)
+        // 🌟 ระบบแจ้งเตือนแบบ Modern Minimal (Top-Center)
         // ==========================================
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             
+            // ตั้งค่าเริ่มต้น (สีเขียว - Success)
             let icon = 'fa-check-circle';
-            let bgClass = 'bg-emerald-500'; // พื้นสีเขียว
-            let progressColor = 'bg-emerald-700';
+            let iconColor = 'text-emerald-500';
+            let bgLight = 'bg-emerald-50';
+            let progressColor = 'bg-emerald-500';
 
             if (type === 'error') {
                 icon = 'fa-times-circle';
-                bgClass = 'bg-rose-500'; // พื้นสีแดง
-                progressColor = 'bg-rose-700';
-            } else if (type === 'warning') {
-                icon = 'fa-exclamation-triangle';
-                bgClass = 'bg-amber-500'; // พื้นสีส้ม
-                progressColor = 'bg-amber-700';
+                iconColor = 'text-rose-500';
+                bgLight = 'bg-rose-50';
+                progressColor = 'bg-rose-500';
+            } else if (type === 'warning' || type === 'info') {
+                icon = type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+                iconColor = type === 'warning' ? 'text-amber-500' : 'text-blue-500';
+                bgLight = type === 'warning' ? 'bg-amber-50' : 'bg-blue-50';
+                progressColor = type === 'warning' ? 'bg-amber-500' : 'bg-blue-500';
             }
 
-            // ใช้พื้นหลังเป็นสีล้วน (bgClass) และตัวอักษรสีขาว
-            toast.className = `${bgClass} text-white rounded-2xl shadow-2xl flex flex-col transform translate-x-full opacity-0 transition-all duration-500 ease-out pointer-events-auto w-fit overflow-hidden border border-white/20`;
+            // สไตล์การ์ดสีขาวกึ่งโปร่งใส (Glassmorphism)
+            toast.className = `bg-white/95 backdrop-blur-md text-slate-700 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] flex flex-col transform -translate-y-10 opacity-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] pointer-events-auto w-fit min-w-[280px] max-w-sm overflow-hidden border border-slate-100`;
             
             toast.innerHTML = `
-                <div class="p-4 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center shrink-0 shadow-inner">
-                        <i class="fas ${icon} text-xl text-white drop-shadow-md"></i>
+                <div class="p-3.5 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full ${bgLight} flex items-center justify-center shrink-0">
+                        <i class="fas ${icon} text-lg ${iconColor}"></i>
                     </div>
-                    <div class="font-bold text-white text-[15px] flex-1 leading-tight drop-shadow-sm">
+                    <div class="font-bold text-[14px] flex-1 leading-snug text-slate-800">
                         ${message}
                     </div>
-                    <button onclick="this.closest('.flex-col').remove()" class="text-white/70 hover:text-white bg-black/10 hover:bg-black/20 w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90">
-                        <i class="fas fa-times"></i>
+                    <button onclick="this.closest('.flex-col').remove()" class="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90">
+                        <i class="fas fa-times text-sm"></i>
                     </button>
                 </div>
-                <div class="w-full h-1 bg-black/10">
-                    <div class="h-full ${progressColor} transition-all duration-3000 ease-linear" style="width: 100%;"></div>
+                <div class="w-full h-1 bg-slate-50">
+                    <div class="h-full ${progressColor} transition-all duration-[3000ms] ease-linear rounded-r-full" style="width: 100%;"></div>
                 </div>
             `;
-
+            
             container.appendChild(toast);
 
-            // Animate เข้ามา
+            // Animate เด้งลงมา
             setTimeout(() => {
-                toast.classList.remove('translate-x-full', 'opacity-0');
-                // เริ่มให้หลอดเวลาหดลงเหลือ 0%
+                toast.classList.remove('-translate-y-10', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+                
+                // ให้หลอดเวลาเริ่มหด
                 setTimeout(() => {
-                    toast.querySelector('div.h-full').style.width = '0%';
+                    const progressBar = toast.querySelector('div.h-full');
+                    if (progressBar) progressBar.style.width = '0%';
                 }, 50);
             }, 10);
 
-            // Animate ออกและลบทิ้งอัตโนมัติหลัง 3 วินาที
+            // Animate หายไปอัตโนมัติ
             setTimeout(() => {
-                toast.classList.add('translate-x-full', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('-translate-y-10', 'opacity-0');
                 setTimeout(() => toast.remove(), 500);
             }, 3000);
         }
 
         // ==========================================
-        // 🌟 ระบบยืนยันการทำงาน (Confirm Dialog - พื้นหลังสี)
+        // 🌟 ระบบยืนยันการทำงานแบบ Modern & Clean
         // ==========================================
-        let currentConfirmCallback = null; 
-
+        let currentConfirmCallback = null;
+        
         function openConfirmModal(title, message, confirmText, callback, isDanger = true) {
             document.getElementById('confirm-title').innerText = title;
             document.getElementById('confirm-message').innerText = message;
@@ -1305,26 +1313,30 @@ function showPage(pageId) {
             const actionBtn = document.getElementById('confirm-btn-action');
             actionBtn.innerText = confirmText;
             
-            const box = document.getElementById('confirm-modal-box');
             const iconBox = document.getElementById('confirm-icon-box');
+            const iconRing = document.getElementById('confirm-icon-ring');
             const iconElement = document.getElementById('confirm-icon');
             
-            // เปลี่ยนสีพื้นหลังหน้าต่าง Modal ตามประเภท!
+            // 🎨 เปลี่ยนลูกเล่นสีตามประเภทการยืนยัน
             if(isDanger) {
-                // พื้นหลังสีแดงเข้ม สำหรับการลบข้อมูล
-                box.className = "bg-gradient-to-br from-red-500 to-rose-600 rounded-[2rem] p-8 w-full max-w-sm shadow-2xl shadow-red-500/40 transform scale-95 translate-y-4 transition-all duration-300 border border-red-400";
-                actionBtn.className = "flex-1 bg-white text-rose-600 hover:bg-rose-50 font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm";
-                iconElement.className = "fas fa-exclamation-triangle text-4xl animate-pulse text-white drop-shadow-lg";
+                // สีแดง (สำหรับการลบ/อันตราย)
+                iconBox.className = "w-24 h-24 rounded-full flex items-center justify-center mb-6 relative bg-rose-50";
+                iconRing.className = "absolute inset-0 border-[3px] rounded-full border-rose-500 animate-ping opacity-20";
+                iconElement.className = "fas fa-trash-alt text-4xl text-rose-500 drop-shadow-sm";
+                actionBtn.className = "flex-1 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-500/30 transition-all active:scale-95 text-sm";
             } else {
-                // พื้นหลังสีน้ำเงิน สำหรับการยืนยันทั่วไป
-                box.className = "bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2rem] p-8 w-full max-w-sm shadow-2xl shadow-blue-500/40 transform scale-95 translate-y-4 transition-all duration-300 border border-blue-400";
-                actionBtn.className = "flex-1 bg-white text-blue-600 hover:bg-blue-50 font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm";
-                iconElement.className = "fas fa-question-circle text-4xl animate-pulse text-white drop-shadow-lg";
+                // สีน้ำเงิน (สำหรับการยืนยันทั่วไป/บันทึก)
+                iconBox.className = "w-24 h-24 rounded-full flex items-center justify-center mb-6 relative bg-blue-50";
+                iconRing.className = "absolute inset-0 border-[3px] rounded-full border-blue-500 animate-pulse opacity-30";
+                iconElement.className = "fas fa-question-circle text-4xl text-blue-500 drop-shadow-sm";
+                actionBtn.className = "flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 text-sm";
             }
 
-            currentConfirmCallback = callback; 
+            currentConfirmCallback = callback;
             
             const modal = document.getElementById('confirm-modal');
+            const box = document.getElementById('confirm-modal-box');
+            
             modal.classList.remove('hidden');
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
@@ -2101,34 +2113,30 @@ function showActualBillingForm(user, overdueOnly = false) {
 
   </script>
 
-  <div id="toast-container" class="fixed top-5 right-5 z-[200] flex flex-col gap-3 pointer-events-none"></div>
+  <div id="toast-container" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[200] flex flex-col items-center gap-3 pointer-events-none"></div>
 
   <div id="confirm-modal"
-    class="fixed inset-0 z-[250] bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
-    <div
-      class="rounded-[2rem] p-8 w-full max-w-sm shadow-2xl transform scale-95 translate-y-4 transition-all duration-300"
-      id="confirm-modal-box">
+    class="fixed inset-0 z-[250] bg-slate-900/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+    <div class="bg-white/95 backdrop-blur-xl rounded-[2rem] p-8 w-full max-w-sm shadow-[0_20px_50px_rgba(0,0,0,0.15)] transform scale-95 translate-y-4 transition-all duration-300 border border-white" id="confirm-modal-box">
       <div class="flex flex-col items-center text-center">
 
-        <div id="confirm-icon-box"
-          class="w-20 h-20 bg-black/10 rounded-full flex items-center justify-center mb-4 shadow-inner relative">
-          <div class="absolute inset-0 border-4 border-white/30 rounded-full"></div>
-          <i id="confirm-icon" class="fas fa-exclamation-triangle text-4xl animate-pulse text-white drop-shadow-md"></i>
+        <div id="confirm-icon-box" class="w-24 h-24 rounded-full flex items-center justify-center mb-6 relative">
+          <div id="confirm-icon-ring" class="absolute inset-0 border-[3px] rounded-full opacity-30"></div>
+          <i id="confirm-icon" class="text-4xl drop-shadow-sm transition-transform hover:scale-110 duration-300"></i>
         </div>
 
-        <h3 id="confirm-title" class="text-xl font-bold text-white mb-2 tracking-tight drop-shadow-sm">
-          ยืนยันการทำรายการ?</h3>
-        <p id="confirm-message" class="text-sm text-white/90 mb-8 font-medium leading-relaxed drop-shadow-sm">
-          คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้ ข้อมูลที่ลบจะไม่สามารถกู้คืนได้</p>
+        <h3 id="confirm-title" class="text-xl font-extrabold text-slate-800 mb-2 tracking-tight">ยืนยันการทำรายการ?</h3>
+        <p id="confirm-message" class="text-sm text-slate-500 mb-8 font-medium leading-relaxed">คุณแน่ใจหรือไม่ว่าต้องการดำเนินการนี้?</p>
 
         <div class="flex items-center gap-3 w-full">
-          <button onclick="closeConfirmModal()" class="flex-1 bg-black/10 hover:bg-black/20 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 text-sm border border-white/20">
-                        ยกเลิก
-                    </button>
-          <button id="confirm-btn-action" onclick="executeConfirmAction()" class="flex-1 bg-white text-rose-600 font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm">
-                        ยืนยัน
-                    </button>
+          <button onclick="closeConfirmModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-xl transition-all active:scale-95 text-sm">
+            ยกเลิก
+          </button>
+          <button id="confirm-btn-action" onclick="executeConfirmAction()" class="flex-1 font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm text-white">
+            ยืนยัน
+          </button>
         </div>
+
       </div>
     </div>
   </div>
