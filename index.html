@@ -2051,7 +2051,21 @@ function showActualBillingForm(user, overdueOnly = false) {
                 showToast("บ้านหลังนี้ไม่มียอดค้างชำระ", "info");
                 return;
             }
+            
             renderOverdueDetailsInModal();
+
+            // ✨ [ส่วนที่เพิ่มใหม่] ตรวจสอบว่าจะโชว์หรือซ่อนปุ่ม "ยืนยันชำระยอดค้าง"
+            const payOverdueBtn = document.getElementById('btn-pay-overdue-only');
+            if (payOverdueBtn) {
+                if (currentBillState.isOverdueOnly === true) {
+                    // ถ้ามาจาก "ป้ายแจ้งเตือนสีแดง" (ชำระหนี้เก่าอย่างเดียว) -> ให้โชว์ปุ่ม
+                    payOverdueBtn.classList.remove('hidden');
+                } else {
+                    // ถ้ามาจาก "หน้าจดมิเตอร์" (กดปุ่ม จัดการยอดค้าง) -> ให้ซ่อนปุ่ม
+                    payOverdueBtn.classList.add('hidden');
+                }
+            }
+
             const modal = document.getElementById('overdue-modal');
             const box = document.getElementById('overdue-modal-box');
             modal.classList.remove('hidden');
