@@ -2425,12 +2425,15 @@ function showActualBillingForm(user, overdueOnly = false) {
               <div id="bill-prev-unit" class="text-2xl font-bold text-slate-400 font-mono">0</div>
             </div>
             <div class="pb-2 text-purple-300"><i class="fas fa-chevron-right text-xl"></i></div>
-            <div class="text-center w-28 relative"> <div class="text-[13px] text-purple-600 font-bold mb-1 uppercase tracking-wide">เลขเดือนนี้</div>
+            <div class="text-center w-28">
+              <div class="text-[13px] text-purple-600 font-bold mb-1 uppercase tracking-wide">เลขเดือนนี้</div>
               <input type="number" id="bill-curr-unit" oninput="calculateBill()" class="text-3xl font-bold text-center w-full bg-white rounded-xl shadow-sm outline-none text-purple-600 font-mono border-2 border-purple-200 focus:border-purple-500 transition-colors p-1" placeholder="0">
-              
-              <div id="high-usage-warning" class="hidden absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-[120%] text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 shadow-sm whitespace-nowrap animate-bounce">
-                <i class="fas fa-exclamation-triangle mr-1"></i>ใช้น้ำผิดปกติ ตรวจสอบตัวเลข!
-              </div>
+            </div>
+          </div>
+
+          <div id="high-usage-warning" class="hidden flex justify-center -mt-3 mb-1 relative z-10">
+            <div class="text-[11.5px] font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 shadow-sm animate-bounce flex items-center gap-1.5">
+              <i class="fas fa-exclamation-triangle"></i> ใช้น้ำผิดปกติ โปรดตรวจสอบเลขอีกครั้ง!
             </div>
           </div>
 
