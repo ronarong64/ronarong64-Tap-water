@@ -1779,8 +1779,36 @@ async function loadSettingsData() {
                 
                 if (result.success) {
                     showToast(status === 'Paid' ? "รับชำระเงินสำเร็จ!" : "บันทึกบิลสำเร็จ!", "success");
-                    loadDashboardData(); 
+                    
+                    // ✨ 1. อัปเดตข้อมูลในตัวแปร Global ทันทีโดยไม่ต้องโหลด Server ใหม่ (Local Update)
+                    const userIndex = window.globalUsersList.findIndex(u => String(u.houseNo).trim() === String(currentBillState.houseNo).trim());
+                    if (userIndex !== -1) {
+                        let u = window.globalUsersList[userIndex];
+                        
+                        // อัปเดตสถานะและข้อมูลปัจจุบัน
+                        u.statusCode = status.toLowerCase(); // 'waiting' หรือ 'paid'
+                        u.oldUnit = u.prevUnit;
+                        u.prevUnit = parseInt(currUnit);
+                        u.usage = parseInt(currUnit) - currentBillState.prevUnit;
+                        u.amount = parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, ''));
+                        if (result.paidDate) u.paidDate = result.paidDate;
+                        u.collector = loggedInName;
+                        
+                        // 🎯 จัดการยอดค้าง: ลบเฉพาะบิลเก่าที่ถูกติ๊กจ่ายไปแล้วออกจากรายการ
+                        if (status.toLowerCase() === 'paid' && currentBillState.selectedOverdueIds && currentBillState.selectedOverdueIds.length > 0) {
+                            u.overdueList = (u.overdueList || []).filter(bill => !currentBillState.selectedOverdueIds.includes(bill.billingId));
+                            // คำนวณยอดเงินค้างชำระคงเหลือใหม่
+                            u.overdue = u.overdueList.reduce((sum, bill) => sum + Number(bill.amount), 0);
+                        }
+
+                        // อัปเดตกลับไปที่ Global และสั่งวาดการ์ดใหม่
+                        window.globalUsersList[userIndex] = u;
+                        renderRealData(window.globalUsersList); 
+                    }
+
                     closeBillingModal();
+                    
+                    // ✨ 2. โชว์ใบเสร็จรับเงิน (ถ้ากดชำระเงิน)
                     if (status === 'Paid' || status.toLowerCase() === 'paid') {
                       payload.paidDate = result.paidDate;
                       setTimeout(() => { showReceiptModal(payload); }, 400);
