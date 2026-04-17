@@ -862,18 +862,30 @@
     }
 }
 
-        // ฟังก์ชันเปิด Modal จาก Badge
+        // ฟังก์ชันเปิด Modal จาก Badge ป้ายแจ้งเตือนในบ้าน
         function openOverdueOnly(houseNo) {
             const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
             if (!user) return;
 
-            // ตั้งค่า State เบื้องต้น
+            // ✨ 1. หาวันที่ปัจจุบันเพื่อนำมากรอง "บิลเดือนนี้" ออกจากหน้าสรุปยอดค้าง
+            const now = new Date();
+            const currentM = now.getMonth() + 1;
+            const currentY = now.getFullYear() + 543;
+            const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
+            const currentMonthStr2 = `${currentM}/${currentY}`; 
+
+            // ✨ 2. คัดกรองเอาเฉพาะ "บิลค้างชำระเก่า" จริงๆ
+            const actualOverdueList = (user.overdueList || []).filter(bill => 
+                bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2
+            );
+
+            // ✨ 3. ตั้งค่า State สำหรับการชำระหนี้เก่าอย่างเดียว
             currentBillState = {
                 houseNo: user.houseNo,
-                overdueDetails: user.overdueList || [],
-                selectedOverdueIds: (user.overdueList || []).map(b => b.billingId),
-                selectedOverdueAmount: (user.overdueList || []).reduce((sum, b) => sum + Number(b.amount), 0),
-                isOverdueOnly: true // บอกระบบว่าจ่ายแค่หนี้เก่า
+                overdueDetails: actualOverdueList,
+                selectedOverdueIds: actualOverdueList.map(b => b.billingId),
+                selectedOverdueAmount: actualOverdueList.reduce((sum, b) => sum + Number(b.amount), 0),
+                isOverdueOnly: true 
             };
 
             document.getElementById('overdue-summary-total').innerText = currentBillState.selectedOverdueAmount.toLocaleString();
@@ -886,21 +898,29 @@
             if (isChecked) {
                 currentBillState.selectedOverdueIds.push(billingId);
                 currentBillState.selectedOverdueAmount += parseFloat(amount);
-                card.classList.remove('opacity-60');
-                card.classList.add('ring-2', 'ring-red-400');
+                card.classList.remove('opacity-70');
+                card.classList.add('ring-2', 'ring-red-400', 'bg-red-50/50');
             } else {
                 currentBillState.selectedOverdueIds = currentBillState.selectedOverdueIds.filter(id => id !== billingId);
                 currentBillState.selectedOverdueAmount -= parseFloat(amount);
-                card.classList.remove('ring-2', 'ring-red-400');
-                card.classList.add('opacity-60');
+                card.classList.remove('ring-2', 'ring-red-400', 'bg-red-50/50');
+                card.classList.add('opacity-70');
             }
             
-            // อัปเดตยอดสรุปใน Modal รายละเอียดค้างชำระ
-            document.getElementById('overdue-summary-total').innerText = currentBillState.selectedOverdueAmount.toLocaleString();
-            // อัปเดตยอดในหน้าหลัก (ถ้าเปิดคู่อยู่)
-            if(document.getElementById('calc-overdue')) {
-                document.getElementById('calc-overdue').innerText = currentBillState.selectedOverdueAmount.toLocaleString();
-                calculateBill();
+            // ✨ อัปเดตยอดรวมในหน้า "รายละเอียดค้างชำระ" (ตัวเลขด้านล่างฟอร์ม)
+            const summaryEl = document.getElementById('overdue-summary-total');
+            if (summaryEl) {
+                summaryEl.innerText = currentBillState.selectedOverdueAmount.toLocaleString();
+            }
+
+            // ✨ อัปเดตยอดค้างในหน้า "จดมิเตอร์" (ถ้าเปิดใช้งานอยู่)
+            const calcOverdueEl = document.getElementById('calc-overdue');
+            if (calcOverdueEl) {
+                calcOverdueEl.innerText = currentBillState.selectedOverdueAmount.toLocaleString();
+                // ตรวจสอบว่าหน้าต่างจดมิเตอร์เปิดอยู่ไหม ถึงจะเรียกคำนวณบิลรวม
+                if (typeof calculateBill === "function" && !document.getElementById('billing-modal').classList.contains('hidden')) {
+                    calculateBill();
+                }
             }
         }
 
