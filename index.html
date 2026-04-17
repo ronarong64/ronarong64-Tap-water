@@ -1739,6 +1739,15 @@ async function loadSettingsData() {
                 loggedInName = localStorage.getItem("username");
             }
 
+            // ✨ ดึงรายชื่อเดือนที่ถูกติ๊กเลือก (เช่น "ม.ค. / 2569, ก.พ. / 2569")
+            let paidMonthsText = "";
+            if (currentBillState.selectedOverdueIds && currentBillState.selectedOverdueIds.length > 0) {
+                const selectedBills = currentBillState.overdueDetails.filter(b => 
+                    currentBillState.selectedOverdueIds.includes(b.billingId)
+                );
+                paidMonthsText = selectedBills.map(b => formatThaiMonth(b.month)).join(', ');
+            }
+
             const payload = {
                 action: "saveBilling",
                 billingId: currentBillState.billingId || "", 
@@ -1749,9 +1758,9 @@ async function loadSettingsData() {
                 pricePerUnit: parseFloat(document.getElementById('calc-price').innerText) || 0,
                 currentAmount: parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, '')) || 0,
                 
-                // 🎯 ส่งข้อมูลที่ติ๊กไว้ไปให้หลังบ้าน
                 overdueAmount: currentBillState.selectedOverdueAmount, 
                 payOverdueIds: currentBillState.selectedOverdueIds,
+                paidMonthsText: paidMonthsText, // ✨ ส่งข้อมูลชื่อเดือนไปที่ใบเสร็จด้วย
 
                 grandTotal: parseFloat(document.getElementById('calc-total').innerText.replace(/,/g, '')) || 0,
                 status: status,
@@ -1770,9 +1779,7 @@ async function loadSettingsData() {
                 
                 if (result.success) {
                     showToast(status === 'Paid' ? "รับชำระเงินสำเร็จ!" : "บันทึกบิลสำเร็จ!", "success");
-                    // 🎯 บังคับรีโหลดข้อมูลใหม่ทั้งหมดเพื่อให้กล่องสถิติและสถานะค้างชำระอัปเดต
                     loadDashboardData(); 
-                    
                     closeBillingModal();
                     if (status === 'Paid' || status.toLowerCase() === 'paid') {
                       payload.paidDate = result.paidDate;
@@ -1900,10 +1907,8 @@ async function loadSettingsData() {
             try {
                 const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(payload.houseNo).trim());
                 const houseName = user && user.name ? user.name : "ไม่ระบุชื่อ";
-
-                // 🎯 แสดงวันที่จ่ายเงิน: ใช้ค่าที่ส่งมาจาก payload (คอลัมน์ K) โดยตรง
-                document.getElementById('rcp-date').innerText = payload.paidDate || "-";
                 
+                document.getElementById('rcp-date').innerText = payload.paidDate || "-";
                 document.getElementById('rcp-house').innerText = payload.houseNo || "-";
                 document.getElementById('rcp-name').innerText = houseName;
                 
@@ -1913,10 +1918,22 @@ async function loadSettingsData() {
                 document.getElementById('rcp-price').innerText = payload.pricePerUnit || 0;
                 
                 document.getElementById('rcp-current-amount').innerText = Number(payload.currentAmount || 0).toLocaleString();
+                
+                // ✨ ระบบเปลี่ยนข้อความแจ้งยอดค้างชำระในใบเสร็จ
+                const overdueLabel = document.getElementById('rcp-overdue-label');
+                if (overdueLabel) {
+                    if (payload.paidMonthsText && payload.paidMonthsText !== "") {
+                        // ถ้ามีการจ่ายยอดค้าง ให้วงเล็บชื่อเดือนบอกไว้ด้วย
+                        overdueLabel.innerHTML = `ค้างชำระ <span class="text-[10px] text-red-400">(${payload.paidMonthsText})</span>:`;
+                    } else {
+                        // ถ้าไม่มีค้างเลย หรือเป็นแค่บิลเดือนปัจจุบัน
+                        overdueLabel.innerText = `ค้างชำระ:`;
+                    }
+                }
+
                 document.getElementById('rcp-overdue-total').innerText = Number(payload.overdueAmount || 0).toLocaleString();
                 document.getElementById('rcp-total').innerText = Number(payload.grandTotal || 0).toLocaleString();
                 
-                // 🎯 แสดงชื่อผู้รับเงิน: ใช้ชื่อจากคอลัมน์ M (หรือชื่อคนล็อกอิน)
                 document.getElementById('rcp-receiver').innerText = payload.collector || "Admin";
 
                 const modal = document.getElementById('receipt-modal');
@@ -2223,7 +2240,7 @@ async function loadSettingsData() {
         </div>
 
         <div class="flex justify-between text-xs text-red-500 mt-1">
-          <span>ค้างชำระ (<span id="rcp-overdue-count">0</span> เดือน):</span>
+          <span id="rcp-overdue-label">ค้างชำระ:</span>
           <span><span id="rcp-overdue-total">0</span> บ.</span>
         </div>
 
