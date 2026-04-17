@@ -892,34 +892,51 @@
             openOverdueModal();
         }
 
-        // ปรับปรุงฟังก์ชันเดิมให้ทำสรุปยอดด้วย [cite: 504-508]
+        // 🎯 ฟังก์ชันจัดการเมื่อติ๊กเลือกเดือนค้างชำระ (ฉบับคำนวณใหม่กันเพี้ยน 100%)
         function toggleOverdueBill(billingId, amount, isChecked, element) {
+            // 1. จัดการเรื่องสีและกรอบของการ์ดที่ถูกเลือก
             const card = element.closest('.bg-white');
-            if (isChecked) {
-                currentBillState.selectedOverdueIds.push(billingId);
-                currentBillState.selectedOverdueAmount += parseFloat(amount);
-                card.classList.remove('opacity-70');
-                card.classList.add('ring-2', 'ring-red-400', 'bg-red-50/50');
-            } else {
-                currentBillState.selectedOverdueIds = currentBillState.selectedOverdueIds.filter(id => id !== billingId);
-                currentBillState.selectedOverdueAmount -= parseFloat(amount);
-                card.classList.remove('ring-2', 'ring-red-400', 'bg-red-50/50');
-                card.classList.add('opacity-70');
+            if (card) {
+                if (isChecked) {
+                    card.classList.remove('opacity-70');
+                    card.classList.add('ring-2', 'ring-red-400', 'bg-red-50/50');
+                } else {
+                    card.classList.remove('ring-2', 'ring-red-400', 'bg-red-50/50');
+                    card.classList.add('opacity-70');
+                }
             }
-            
-            // ✨ อัปเดตยอดรวมในหน้า "รายละเอียดค้างชำระ" (ตัวเลขด้านล่างฟอร์ม)
+
+            // 2. จัดการเพิ่ม/ลบ ID ออกจากรายการที่เลือกไว้
+            if (isChecked) {
+                // ถ้าติ๊กถูก และในระบบยังไม่มี ID นี้ ให้เพิ่มเข้าไป
+                if (!currentBillState.selectedOverdueIds.includes(billingId)) {
+                    currentBillState.selectedOverdueIds.push(billingId);
+                }
+            } else {
+                // ถ้าเอาติ๊กออก ให้กรอง ID นี้ทิ้งไป
+                currentBillState.selectedOverdueIds = currentBillState.selectedOverdueIds.filter(id => id !== billingId);
+            }
+
+            // ✨ 3. พระเอกของเรา: คำนวณยอดเงินใหม่ทั้งหมดจากบิลที่ถูกติ๊กเลือก (กันการบวกลบเพี้ยน)
+            const selectedBills = currentBillState.overdueDetails.filter(bill => 
+                currentBillState.selectedOverdueIds.includes(bill.billingId)
+            );
+            currentBillState.selectedOverdueAmount = selectedBills.reduce((sum, bill) => sum + Number(bill.amount), 0);
+
+            // 🎯 4. อัปเดตตัวเลขหน้า "รายละเอียดค้างชำระ" (ตัวเลขด้านล่างปุ่ม)
             const summaryEl = document.getElementById('overdue-summary-total');
             if (summaryEl) {
                 summaryEl.innerText = currentBillState.selectedOverdueAmount.toLocaleString();
             }
 
-            // ✨ อัปเดตยอดค้างในหน้า "จดมิเตอร์" (ถ้าเปิดใช้งานอยู่)
+            // 🎯 5. อัปเดตตัวเลขหน้า "จดมิเตอร์" (ถ้าหน้าต่างจดมิเตอร์กำลังเปิดอยู่)
             const calcOverdueEl = document.getElementById('calc-overdue');
-            if (calcOverdueEl) {
+            const billingModal = document.getElementById('billing-modal');
+            if (calcOverdueEl && billingModal && !billingModal.classList.contains('hidden')) {
                 calcOverdueEl.innerText = currentBillState.selectedOverdueAmount.toLocaleString();
-                // ตรวจสอบว่าหน้าต่างจดมิเตอร์เปิดอยู่ไหม ถึงจะเรียกคำนวณบิลรวม
-                if (typeof calculateBill === "function" && !document.getElementById('billing-modal').classList.contains('hidden')) {
-                    calculateBill();
+                // สั่งให้หน้าต่างจดมิเตอร์คำนวณยอดรวมสุทธิใหม่ด้วย
+                if (typeof calculateBill === "function") {
+                    calculateBill(); 
                 }
             }
         }
@@ -1917,26 +1934,7 @@ function showActualBillingForm(user, overdueOnly = false) {
             html += '</div>';
             container.innerHTML = html;
         }
-
-        // 🎯 ฟังก์ชันใหม่: จัดการเมื่อติ๊ก Checkbox
-        function toggleOverdueBill(billingId, amount, isChecked, element) {
-            const card = element.closest('.bg-white');
-            if (isChecked) {
-                currentBillState.selectedOverdueIds.push(billingId);
-                currentBillState.selectedOverdueAmount += parseFloat(amount);
-                card.classList.remove('opacity-60');
-                card.classList.add('ring-2', 'ring-red-400');
-            } else {
-                currentBillState.selectedOverdueIds = currentBillState.selectedOverdueIds.filter(id => id !== billingId);
-                currentBillState.selectedOverdueAmount -= parseFloat(amount);
-                card.classList.remove('ring-2', 'ring-red-400');
-                card.classList.add('opacity-60');
-            }
-            
-            document.getElementById('calc-overdue').innerText = currentBillState.selectedOverdueAmount.toLocaleString();
-            calculateBill(); 
-        }
-
+       
         function calculateBill() {
             const prevUnit = parseInt(document.getElementById('bill-prev-unit').innerText) || 0;
             const currUnitInput = document.getElementById('bill-curr-unit').value;
