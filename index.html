@@ -828,17 +828,23 @@
     document.getElementById('dash-count-paid').innerHTML = formatStat(stats.paid);
     document.getElementById('dash-count-overdue').innerHTML = formatStat(stats.overdue);
 
-    // 🎁 3. จัดการ Banner แจ้งเตือนค้างชำระ
+        // 🎁 3. จัดการ Banner แจ้งเตือนค้างชำระ (ปรับปรุงใหม่)
     const warningBanner = document.getElementById('overdue-warning-banner');
     const maxOverdueInput = document.getElementById('set-max-overdue').value;
-    const maxLimit = parseInt(maxOverdueInput) || 1;
+    
+    // ตรวจสอบค่า: ถ้ายังไม่โหลดหรือว่าง ให้ใช้ค่า 1 เป็นค่าเริ่มต้น
+    let maxLimit = parseInt(maxOverdueInput);
+    if (isNaN(maxLimit)) maxLimit = 1; 
 
-    if (stats.overdue >= maxLimit) {
+    // Debug: ดูค่าใน Console (F12) เพื่อเช็คความถูกต้อง
+    console.log(`Current Overdue: ${stats.overdue}, Max Limit: ${maxLimit}`);
+
+    if (stats.overdue >= maxLimit && stats.overdue > 0) {
         warningBanner.classList.remove('hidden');
         document.getElementById('overdue-warning-count').innerText = stats.overdue;
     } else {
         warningBanner.classList.add('hidden');
-    }     
+    }
 }
 
         // ==========================================
@@ -1399,6 +1405,11 @@ async function loadSettingsData() {
                 toggleOption('free-limit-box', freeEnabled.checked);
             }
             if(document.getElementById('set-free-limit')) document.getElementById('set-free-limit').value = d.FREE_LIMIT || "";
+
+            if (window.globalUsersList && window.globalUsersList.length > 0) {
+                console.log("Settings loaded, refreshing dashboard...");
+                renderRealData(window.globalUsersList);
+            }
         }
     } catch (err) {
         console.error("Load Settings Error:", err);
