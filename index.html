@@ -1585,8 +1585,8 @@ async function loadSettingsData() {
                     usage: user.usage, 
                     pricePerUnit: user.price, 
                     currentAmount: user.amount, 
-                    overdueAmount: user.overdueAmount || 0, // ✨ ดึงยอดมาแล้ว
-                    paidMonthsText: user.paidMonthsText || "", // ✨ ดึงชื่อเดือน
+                    overdueAmount: user.overdueAmount || 0,
+                    paidMonthsText: user.paidMonthsText || "",
                     grandTotal: user.grandTotal, 
                     collector: user.collector 
                 };
@@ -1599,20 +1599,28 @@ async function loadSettingsData() {
             const priceInput = document.getElementById('set-price');
             let priceVal = parseFloat(priceInput && priceInput.value !== "" ? priceInput.value : 0) || 0;
 
-            // 🎯 คำนวณยอดค้าง และ สร้าง State เพื่อเก็บข้อมูลการติ๊กเลือก
-            let previousOverdue = (parseFloat(user.overdue) || 0);
-            if (user.statusCode === 'waiting') {
-                previousOverdue = previousOverdue - (parseFloat(user.amount) || 0);
-            }
+            // ✨ 1. หาวันที่ปัจจุบันเพื่อนำมากรอง "บิลเดือนนี้" ออก
+            const now = new Date();
+            const currentM = now.getMonth() + 1;
+            const currentY = now.getFullYear() + 543;
+            const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
+            const currentMonthStr2 = `${currentM}/${currentY}`; 
 
+            // ✨ 2. คัดกรองเอาเฉพาะ "บิลค้างชำระเก่า" (ไม่รวมบิลของเดือนปัจจุบันที่กำลังจะเก็บ)
+            const actualOverdueList = (user.overdueList || []).filter(bill => 
+                bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2
+            );
+            // รวมเงินเฉพาะหนี้เก่าจริงๆ
+            const actualOverdueAmount = actualOverdueList.reduce((sum, bill) => sum + Number(bill.amount), 0);
+
+            // ✨ 3. สร้าง State ของบิล โดยอิงจากหนี้เก่าเท่านั้น
             currentBillState = {
                 billingId: user.statusCode === 'waiting' ? (user.billingId || "") : "",
                 houseNo: user.houseNo,
                 prevUnit: user.statusCode === 'waiting' ? (parseInt(user.oldUnit) || 0) : (parseInt(user.prevUnit) || 0),
-                overdueDetails: user.overdueList || [],
-                // กำหนดค่าเริ่มต้นให้ "ติ๊กเลือกจ่ายบิลค้างทั้งหมด"
-                selectedOverdueIds: (user.overdueList || []).map(b => b.billingId), 
-                selectedOverdueAmount: previousOverdue > 0 ? previousOverdue : 0 
+                overdueDetails: actualOverdueList, 
+                selectedOverdueIds: actualOverdueList.map(b => b.billingId),
+                selectedOverdueAmount: actualOverdueAmount
             };
 
             document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
@@ -2301,15 +2309,8 @@ async function loadSettingsData() {
           <span><span id="rcp-current-amount">0</span> บ.</span>
         </div>
 
-        <div class="flex justify-between text-sm text-slate-700 mt-2 font-bold">
-          <span>ค่าน้ำเดือนนี้:</span>
-          <span><span id="rcp-current-amount">0</span> บ.</span>
-        </div>
-
         <div id="rcp-overdue-container" class="w-full text-xs text-red-500 mt-1 space-y-0.5">
         </div>
-
-        <div class="border-b-2 border-dashed border-slate-300 my-3"></div>
 
         <div class="border-b-2 border-dashed border-slate-300 my-3"></div>
 
