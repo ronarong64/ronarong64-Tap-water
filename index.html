@@ -282,37 +282,41 @@
       </div>
     </aside>
 
-    <header class="bg-gradient-to-r from-purple-700 via-indigo-600 to-blue-600 z-50 px-5 py-4 shrink-0 flex items-center justify-between shadow-lg shadow-indigo-500/20 sticky top-0 rounded-b-xl relative overflow-hidden">
-    <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mt-10 -mr-10"></div>
-    <div class="absolute bottom-0 left-0 w-24 h-24 bg-blue-400/20 rounded-full blur-xl -mb-10 -ml-10"></div>
+    <header
+      class="bg-gradient-to-r from-purple-700 via-indigo-600 to-blue-600 z-50 px-5 py-4 shrink-0 flex items-center justify-between shadow-lg shadow-indigo-500/20 sticky top-0 rounded-b-xl relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mt-10 -mr-10"></div>
+      <div class="absolute bottom-0 left-0 w-24 h-24 bg-blue-400/20 rounded-full blur-xl -mb-10 -ml-10"></div>
 
-    <div class="flex items-center gap-3.5 relative z-10">
+      <div class="flex items-center gap-3.5 relative z-10">
         <button onclick="toggleMenu()" class="w-10 h-10 bg-white/20 backdrop-blur-md border border-white/30 text-white hover:bg-white/30 rounded-xl flex items-center justify-center active:scale-95 transition-all shadow-sm">
             <i class="fas fa-bars text-lg"></i>
         </button>
         <div>
-            <h2 class="font-bold text-white text-[18px] leading-tight drop-shadow-sm">ระบบประปา</h2>
-            <p class="text-[11px] text-blue-100 font-medium tracking-wide flex items-center gap-1">
-                <i class="fas fa-map-marker-alt text-[9px]"></i> ม.2 บ้านหนองบัว
-            </p>
+          <h2 class="font-bold text-white text-[18px] leading-tight drop-shadow-sm">ระบบประปา</h2>
+          <p class="text-[11px] text-blue-100 font-medium tracking-wide flex items-center gap-1">
+            <i class="fas fa-map-marker-alt text-[9px]"></i> ม.2 บ้านหนองบัว
+          </p>
         </div>
-    </div>
+      </div>
 
-    <div class="flex items-center gap-2.5 relative z-10">
+      <div class="flex items-center gap-2.5 relative z-10">
         <div class="flex flex-col items-end text-right">
-            <span id="display-username" class="text-sm font-bold text-white drop-shadow-sm">...</span>
-            <span id="display-role" class="text-[9px] bg-white/20 text-white px-2 py-0.5 rounded-md font-bold uppercase mt-0.5 backdrop-blur-sm border border-white/20 shadow-sm">...</span>
+          <span id="display-username" class="text-sm font-bold text-white drop-shadow-sm">...</span>
+          <span id="display-role" class="text-[9px] bg-white/20 text-white px-2 py-0.5 rounded-md font-bold uppercase mt-0.5 backdrop-blur-sm border border-white/20 shadow-sm">...</span>
         </div>
         <div class="relative shrink-0">
-            <div class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-md p-0.5 border border-white/40">
-                <div class="w-full h-full bg-white rounded-full flex items-center justify-center text-indigo-600">
-                     <i class="fas fa-user-circle text-2xl drop-shadow-sm"></i>
-                </div>
+          <div
+            class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-md p-0.5 border border-white/40">
+            <div class="w-full h-full bg-white rounded-full flex items-center justify-center text-indigo-600">
+              <i class="fas fa-user-circle text-2xl drop-shadow-sm"></i>
             </div>
-            <div class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-[2px] border-indigo-600 animate-pulse"></div>
+          </div>
+          <div
+            class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-[2px] border-indigo-600 animate-pulse">
+          </div>
         </div>
-    </div>
-</header>
+      </div>
+    </header>
 
     <main class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-4 pb-24">
 
@@ -1973,23 +1977,26 @@ async function loadSettingsData() {
                 // ✨ ระบบวาดรายการค้างชำระแบบแยกบรรทัด
                 const overdueContainer = document.getElementById('rcp-overdue-container');
                 if (overdueContainer) {
-                    overdueContainer.innerHTML = ''; // ล้างของเก่า
+                    overdueContainer.innerHTML = ''; 
                     
                     if (payload.paidMonthsText && payload.paidMonthsText !== "") {
-                        // แยกเดือนด้วยลูกน้ำ
                         const monthsArr = payload.paidMonthsText.split(',');
                         monthsArr.forEach((item, index) => {
-                            const parts = item.split('|'); // แยกชื่อเดือน กับ ยอดเงิน
+                            const parts = item.split('|'); 
                             const mName = parts[0];
-                            const mAmt = parts[1] ? Number(parts[1]).toLocaleString() : Number(payload.overdueAmount || 0).toLocaleString();
+                            const mAmt = parts[1] ? Number(parts[1]).toLocaleString() : "0";
                             
-                            // ถ้าเป็นบรรทัดแรกเขียนว่า "ค้างชำระ" ถ้าบรรทัดต่อไปเว้นว่างให้ตรงกัน
-                            const label = index === 0 ? "ค้างชำระ" : "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                            // 🎯 เทคนิค: กำหนดให้หัวแถวมีความกว้างคงที่ (w-[60px]) 
+                            // บรรทัดแรกโชว์คำว่า "ค้างชำระ" บรรทัดต่อมาเป็นช่องว่างแต่ขนาดเท่าเดิม
+                            const label = index === 0 ? "ค้างชำระ" : ""; 
                             
                             overdueContainer.innerHTML += `
-                            <div class="flex justify-between items-center mt-0.5">
-                                <span>${label} <span class="text-[10px] text-red-500">(${mName})</span>:</span>
-                                <span>${mAmt} บ.</span>
+                            <div class="flex justify-between items-baseline mt-0.5">
+                                <div class="flex items-baseline min-w-0">
+                                    <span class="w-[60px] shrink-0 text-slate-400 text-left text-[11px]">${label}</span>
+                                    <span class="text-[10px] text-red-600 font-bold truncate">(${mName}):</span>
+                                </div>
+                                <span class="font-bold ml-2 text-red-500 whitespace-nowrap">${mAmt} บ.</span>
                             </div>`;
                         });
                     } else {
