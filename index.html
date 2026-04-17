@@ -1809,31 +1809,36 @@ function showActualBillingForm(user, overdueOnly = false) {
         }
 
         function calculateBill() {
-            const currUnit = parseInt(document.getElementById('bill-curr-unit').value) || 0;
-            let usage = currUnit - currentBillState.prevUnit;
-            let price = parseFloat(document.getElementById('calc-price').innerText);
-            if (isNaN(price)) price = 0;
-            
-            const btnWait = document.getElementById('btn-save-waiting');
-            const btnPaid = document.getElementById('btn-save-paid');
+            const prevUnit = parseInt(document.getElementById('bill-prev-unit').innerText) || 0;
+            const currUnitInput = document.getElementById('bill-curr-unit').value;
+            const price = parseFloat(document.getElementById('calc-price').innerText) || 0;
+            const overdueAmount = currentBillState.selectedOverdueAmount || 0;
 
-            if (usage < 0) {
-                document.getElementById('calc-usage').innerHTML = '<span class="text-red-500"><i class="fas fa-times-circle"></i> ผิดพลาด</span>';
-                document.getElementById('calc-current-amount').innerText = '0';
-                document.getElementById('calc-total').innerText = currentBillState.selectedOverdueAmount.toLocaleString();
-                if (btnWait) { btnWait.disabled = true; btnWait.classList.add('opacity-50'); }
-                if (btnPaid) { btnPaid.disabled = true; btnPaid.classList.add('opacity-50'); }
+            // ✨ 1. ถ้ายังไม่ได้กรอกเลขมิเตอร์ (ค่าว่าง) ให้เซตค่าเริ่มต้นเป็น 0 แล้วหยุดการทำงาน
+            if (currUnitInput === "") {
+                document.getElementById('calc-usage').innerText = "0";
+                document.getElementById('calc-current-amount').innerText = "0";
+                document.getElementById('calc-total').innerText = overdueAmount.toLocaleString();
                 return;
             }
 
-            if (btnWait) { btnWait.disabled = false; btnWait.classList.remove('opacity-50'); }
-            if (btnPaid) { btnPaid.disabled = false; btnPaid.classList.remove('opacity-50'); }
+            // ✨ 2. ถ้ามีการกรอกข้อมูลแล้ว ให้ทำการคำนวณปกติ
+            const currUnit = parseInt(currUnitInput);
+            const usage = currUnit - prevUnit;
 
-            document.getElementById('calc-usage').innerHTML = usage;
-            let currentAmount = usage * price;
-            document.getElementById('calc-current-amount').innerText = currentAmount.toLocaleString();
-            // 🎯 ใช้ตัวแปร selectedOverdueAmount
-            document.getElementById('calc-total').innerText = (currentAmount + currentBillState.selectedOverdueAmount).toLocaleString();
+            // ตรวจสอบกรณีเลขใหม่น้อยกว่าเลขเดิม
+            if (isNaN(usage) || usage < 0) {
+                document.getElementById('calc-usage').innerText = "ผิดพลาด";
+                document.getElementById('calc-current-amount').innerText = "0";
+                document.getElementById('calc-total').innerText = overdueAmount.toLocaleString();
+            } else {
+                const currentAmount = usage * price;
+                const total = currentAmount + overdueAmount;
+
+                document.getElementById('calc-usage').innerText = usage.toLocaleString();
+                document.getElementById('calc-current-amount').innerText = currentAmount.toLocaleString();
+                document.getElementById('calc-total').innerText = total.toLocaleString();
+            }
         }
 
         async function saveBillingData(status) {
