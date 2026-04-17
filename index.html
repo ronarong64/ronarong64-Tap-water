@@ -1595,9 +1595,10 @@ function openBillingModal(houseNo) {
     const currentPaid = (user.statusCode === 'paid' || user.statusCode === 'free');
     const hasRemainingOverdue = actualOverdueList.length > 0;
 
-    // 🎯 กรณีที่ 1: จ่ายของเดือนปัจจุบันแล้ว แต่ยังมี "หนี้เก่า" เหลืออยู่ -> เปิดกล่องให้เลือก
+    // 🎯 กรณีที่ 1: จ่ายของเดือนปัจจุบันแล้ว แต่ยังมี "หนี้เก่า" เหลืออยู่ 
+    // -> เปิดหน้าจัดการหนี้เก่าให้เลย (ล็อกช่องมิเตอร์ของเดือนนี้ไว้ เพราะจ่ายแล้ว)
     if (currentPaid && hasRemainingOverdue) {
-        showActionChoice(user);
+        showActualBillingForm(user, true); // ✨ [แก้ไขตรงนี้: เปลี่ยนมาเรียกฟอร์มจัดการหนี้โดยตรง]
         return;
     }
 
@@ -2375,30 +2376,6 @@ function showActualBillingForm(user, overdueOnly = false) {
         <button onclick="printReceipt()" class="flex-[1.5] py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
             <i class="fas fa-print"></i> พิมพ์ใบเสร็จ
         </button>
-      </div>
-    </div>
-  </div>
-
-  <div id="action-choice-modal"
-    class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 opacity-0">
-    <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl transform transition-all scale-95">
-      <div class="p-6 text-center">
-        <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <i class="fas fa-hand-holding-dollar text-2xl"></i>
-        </div>
-        <h3 class="text-xl font-bold text-slate-800 mb-2">พบยอดค้างชำระที่เหลือ</h3>
-        <p class="text-slate-500 text-sm mb-6">บ้านหลังนี้ชำระค่าน้ำเดือนปัจจุบันแล้ว
-          แต่ยังมียอดค้างชำระของเดือนก่อนหน้า คุณต้องการทำสิ่งใด?</p>
-
-        <div class="space-y-3">
-          <button id="choice-receipt" class="w-full py-3 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-2xl hover:bg-slate-50 active:scale-95 transition-all flex items-center justify-center gap-2">
-          <i class="fas fa-file-invoice text-blue-500"></i> ดูใบเสร็จเดือนปัจจุบัน
-        </button>
-          <button id="choice-overdue" class="w-full py-3 bg-rose-600 text-white font-bold rounded-2xl shadow-lg shadow-rose-200 active:scale-95 transition-all flex items-center justify-center gap-2">
-          <i class="fas fa-clock-rotate-left"></i> จัดการยอดค้างชำระ
-        </button>
-          <button onclick="closeActionChoice()" class="w-full py-2 text-slate-400 text-sm font-medium">ยกเลิก</button>
-        </div>
       </div>
     </div>
   </div>
