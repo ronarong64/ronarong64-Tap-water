@@ -2040,6 +2040,9 @@ function showActualBillingForm(user, overdueOnly = false) {
                         u.usage = parseInt(currUnit) - currentBillState.prevUnit;
                         u.amount = parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, ''));
                         if (result.paidDate) u.paidDate = result.paidDate;
+                        if (result.billingId) {
+                            u.billingId = result.billingId;
+                        }
                         u.collector = loggedInName;
                         u.paidMonthsText = paidMonthsText;
                         u.overdueAmount = currentBillState.selectedOverdueAmount;
