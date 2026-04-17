@@ -759,11 +759,10 @@
             criticalOverdueCount++; // นับเข้ากลุ่มเตรียมงดจ่ายน้ำ
         }
 
-        // สร้าง Badge ค้างชำระ
-        let overdueBadge = "";
+        // แก้ไขบรรทัด overdueBadge ให้ใส่ onclick และ cursor-pointer
         if (overdueMonthsCount > 0) {
             overdueBadge = `
-                <div class="bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm whitespace-nowrap ml-1">
+                <div onclick="event.stopPropagation(); openOverdueOnly('${houseNo}')" class="cursor-pointer hover:scale-105 active:scale-95 transition-transform bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm whitespace-nowrap ml-1">
                     <i class="fas fa-exclamation-triangle text-[8px]"></i> ค้าง ${overdueMonthsCount} เดือน
                 </div>`;
         }
@@ -859,6 +858,99 @@
         warningBanner.classList.add('hidden');
     }
 }
+
+        // ฟังก์ชันเปิด Modal จาก Badge
+        function openOverdueOnly(houseNo) {
+            const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
+            if (!user) return;
+
+            // ตั้งค่า State เบื้องต้น
+            currentBillState = {
+                houseNo: user.houseNo,
+                overdueDetails: user.overdueList || [],
+                selectedOverdueIds: (user.overdueList || []).map(b => b.billingId),
+                selectedOverdueAmount: (user.overdueList || []).reduce((sum, b) => sum + Number(b.amount), 0),
+                isOverdueOnly: true // บอกระบบว่าจ่ายแค่หนี้เก่า
+            };
+
+            document.getElementById('overdue-summary-total').innerText = currentBillState.selectedOverdueAmount.toLocaleString();
+            openOverdueModal();
+        }
+
+        // ปรับปรุงฟังก์ชันเดิมให้ทำสรุปยอดด้วย [cite: 504-508]
+        function toggleOverdueBill(billingId, amount, isChecked, element) {
+            const card = element.closest('.bg-white');
+            if (isChecked) {
+                currentBillState.selectedOverdueIds.push(billingId);
+                currentBillState.selectedOverdueAmount += parseFloat(amount);
+                card.classList.remove('opacity-60');
+                card.classList.add('ring-2', 'ring-red-400');
+            } else {
+                currentBillState.selectedOverdueIds = currentBillState.selectedOverdueIds.filter(id => id !== billingId);
+                currentBillState.selectedOverdueAmount -= parseFloat(amount);
+                card.classList.remove('ring-2', 'ring-red-400');
+                card.classList.add('opacity-60');
+            }
+            
+            // อัปเดตยอดสรุปใน Modal รายละเอียดค้างชำระ
+            document.getElementById('overdue-summary-total').innerText = currentBillState.selectedOverdueAmount.toLocaleString();
+            // อัปเดตยอดในหน้าหลัก (ถ้าเปิดคู่อยู่)
+            if(document.getElementById('calc-overdue')) {
+                document.getElementById('calc-overdue').innerText = currentBillState.selectedOverdueAmount.toLocaleString();
+                calculateBill();
+            }
+        }
+
+        // ฟังก์ชันบันทึกการชำระหนี้เก่าอย่างเดียว
+        async function saveOverduePayment() {
+            if (currentBillState.selectedOverdueIds.length === 0) {
+                showToast("กรุณาเลือกอย่างน้อย 1 เดือน", "warning"); return;
+            }
+
+            const btn = document.getElementById('btn-pay-overdue-only');
+            const oldText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...`;
+
+            let loggedInName = localStorage.getItem("username") || "Admin";
+            const selectedBills = currentBillState.overdueDetails.filter(b => currentBillState.selectedOverdueIds.includes(b.billingId));
+            const paidMonthsText = selectedBills.map(b => `${formatThaiMonth(b.month)}|${b.amount}`).join(',');
+
+            const payload = {
+                action: "saveBilling",
+                isOverdueOnly: true,
+                houseNo: currentBillState.houseNo,
+                payOverdueIds: currentBillState.selectedOverdueIds,
+                overdueAmount: currentBillState.selectedOverdueAmount,
+                grandTotal: currentBillState.selectedOverdueAmount,
+                paidMonthsText: paidMonthsText,
+                status: "Paid",
+                collector: loggedInName,
+                paymentMethod: "เงินสด"
+            };
+
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const result = await res.json();
+                if (result.success) {
+                    showToast("ชำระยอดค้างสำเร็จ!", "success");
+                    
+                    // อัปเดตข้อมูลในหน้าจอทันที
+                    const u = window.globalUsersList.find(u => u.houseNo === currentBillState.houseNo);
+                    if (u) {
+                        u.overdueList = u.overdueList.filter(b => !currentBillState.selectedOverdueIds.includes(b.billingId));
+                        u.overdue = u.overdueList.reduce((sum, b) => sum + Number(b.amount), 0);
+                        renderRealData(window.globalUsersList);
+                    }
+                    
+                    closeOverdueModal();
+                    // สร้าง Payload สำหรับใบเสร็จ (แบบไม่มีค่าน้ำเดือนปัจจุบัน)
+                    const receiptData = { ...payload, currentAmount: 0, usage: 0, paidDate: result.paidDate };
+                    showReceiptModal(receiptData);
+                }
+            } catch (e) { showToast("เกิดข้อผิดพลาด", "error"); }
+            finally { btn.disabled = false; btn.innerHTML = oldText; }
+        }
 
         // ==========================================
         // ระบบจัดการแก้ไขข้อมูลสมาชิก (Edit Member)
@@ -2337,13 +2429,20 @@ function showActualBillingForm(user, overdueOnly = false) {
         <button onclick="closeOverdueModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/10 text-white flex items-center justify-center hover:bg-black/20 transition-colors"><i class="fas fa-times"></i></button>
       </div>
 
-      <div class="p-4 max-h-[50vh] overflow-y-auto bg-slate-50" id="overdue-modal-content">
-      </div>
+      <div class="p-4 max-h-[50vh] overflow-y-auto bg-slate-50" id="overdue-modal-content"></div>
 
-      <div class="p-4 border-t border-slate-100 bg-white">
-        <button onclick="closeOverdueModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all text-sm">
-                  ปิดหน้าต่าง
-              </button>
+      <div class="p-4 border-t border-slate-100 bg-white space-y-3">
+        <div class="flex justify-between items-center px-2">
+          <span class="text-sm font-bold text-slate-500">รวมยอดที่เลือกชำระ:</span>
+          <span class="text-xl font-extrabold text-rose-600"><span id="overdue-summary-total">0</span> บ.</span>
+        </div>
+        
+        <div class="flex gap-2">
+          <button onclick="closeOverdueModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm">ปิด</button>
+          <button id="btn-pay-overdue-only" onclick="saveOverduePayment()" class="flex-[1.5] py-3 bg-rose-600 text-white font-bold rounded-xl shadow-lg shadow-rose-200 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm">
+            <i class="fas fa-check-circle"></i> ยืนยันชำระยอดค้าง
+          </button>
+        </div>
       </div>
     </div>
   </div>
