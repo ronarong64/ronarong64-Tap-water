@@ -716,7 +716,15 @@
     let stats = { todo: 0, waiting: 0, paid: 0, overdue: 0 };
     let htmlContent = "";
 
-    // 1. เตรียมข้อมูลเดือนปัจจุบันเพื่อใช้กรอง (ไม่นับเป็นยอดค้าง)
+    // ✨ 1. ดึงค่า MAX_OVERDUE (ตัดค้าง ด.) มาเตรียมไว้ก่อนเลย 
+    const maxOverdueInput = document.getElementById('set-max-overdue').value;
+    let maxLimit = parseInt(maxOverdueInput);
+    if (isNaN(maxLimit)) maxLimit = 1; 
+
+    // ✨ 2. สร้างตัวแปรใหม่เพื่อนับ "จำนวนบ้านที่ค้างเกินกำหนด" (เตรียมงดจ่ายน้ำ)
+    let criticalOverdueCount = 0;
+
+    // เตรียมข้อมูลเดือนปัจจุบันเพื่อใช้กรอง (ไม่นับเป็นยอดค้าง)
     const now = new Date();
     const currentM = now.getMonth() + 1;
     const currentY = now.getFullYear() + 543;
@@ -737,9 +745,14 @@
             ).length;
         }
 
-        // เพิ่มสถิติบ้านที่ค้างชำระ (เฉพาะหนี้เก่า)
+        // เพิ่มสถิติบ้านที่ค้างชำระเข้ากล่องสถิติรวมด้านบน
         if (overdueMonthsCount > 0) {
             stats.overdue++;
+        }
+
+        // ✨ 3. ตรวจสอบว่า "เดือนที่ค้าง" >= "เกณฑ์ที่ตั้งไว้" หรือไม่ 
+        if (overdueMonthsCount >= maxLimit && overdueMonthsCount > 0) {
+            criticalOverdueCount++; // นับเข้ากลุ่มเตรียมงดจ่ายน้ำ
         }
 
         // สร้าง Badge ค้างชำระ
@@ -828,20 +841,16 @@
     document.getElementById('dash-count-paid').innerHTML = formatStat(stats.paid);
     document.getElementById('dash-count-overdue').innerHTML = formatStat(stats.overdue);
 
-        // 🎁 3. จัดการ Banner แจ้งเตือนค้างชำระ (ปรับปรุงใหม่)
+    // 🎁 4. จัดการ Banner แจ้งเตือนค้างชำระ (ใช้ตัวแปร criticalOverdueCount แทน)
     const warningBanner = document.getElementById('overdue-warning-banner');
-    const maxOverdueInput = document.getElementById('set-max-overdue').value;
     
-    // ตรวจสอบค่า: ถ้ายังไม่โหลดหรือว่าง ให้ใช้ค่า 1 เป็นค่าเริ่มต้น
-    let maxLimit = parseInt(maxOverdueInput);
-    if (isNaN(maxLimit)) maxLimit = 1; 
+    // Debug: พิมพ์ตรวจสอบใน Console F12 ได้
+    console.log(`ทั้งหมดค้าง: ${stats.overdue} หลัง | ค้างเกินกำหนด(${maxLimit}เดือน): ${criticalOverdueCount} หลัง`);
 
-    // Debug: ดูค่าใน Console (F12) เพื่อเช็คความถูกต้อง
-    console.log(`Current Overdue: ${stats.overdue}, Max Limit: ${maxLimit}`);
-
-    if (stats.overdue >= maxLimit && stats.overdue > 0) {
+    // ✨ ถ้ามีคนค้างเกินกำหนดแม้แต่ 1 หลัง ให้โชว์ Banner ทันที
+    if (criticalOverdueCount > 0) {
         warningBanner.classList.remove('hidden');
-        document.getElementById('overdue-warning-count').innerText = stats.overdue;
+        document.getElementById('overdue-warning-count').innerText = criticalOverdueCount;
     } else {
         warningBanner.classList.add('hidden');
     }
