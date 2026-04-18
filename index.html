@@ -806,20 +806,20 @@
         if (fileId) {
             const mainImage = "https://lh3.googleusercontent.com/d/" + fileId;
             const backupImage = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w200";
-            // ✨ เปลี่ยนตรงนี้ 1
-            avatarHtml = `<img src="${mainImage}" alt="profile" class="w-full h-full object-cover rounded-xl" onerror="this.onerror=null; this.src='${backupImage}';">`;
+            avatarHtml = `<img src="${mainImage}" alt="profile" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.src='${backupImage}';">`;
         } else if (rawProfilePic && (rawProfilePic.startsWith("http") || rawProfilePic.startsWith("data:"))) {
-            // ✨ เปลี่ยนตรงนี้ 2
-            avatarHtml = `<img src="${rawProfilePic}" alt="profile" class="w-full h-full object-cover rounded-xl">`;
+            avatarHtml = `<img src="${rawProfilePic}" alt="profile" class="w-full h-full object-cover rounded-full">`;
         }
 
-        let phoneDisplayHtml = ...
-        let lineIconHtml = ...
+        let phoneDisplayHtml = phone
+            ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[11px] font-medium text-slate-500 flex items-center gap-1"><div class="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-phone-alt text-[7px]"></i></div><span class="phone-text">${phone}</span></a>`
+            : `<span class="text-[11px] text-slate-400 italic">ไม่มีเบอร์โทร</span>`;
+        let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
 
         htmlContent += `
-            <div id="card-${houseNo}" class="user-card ...">
+            <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="openBillingModal('${houseNo}')">
                 <div class="flex items-start gap-3 min-w-0 w-full">
-                    <div class="avatar-box w-12 h-12 rounded-xl ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border border-white mt-0.5">
+                    <div class="avatar-box w-12 h-12 rounded-full ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border-2 border-white mt-0.5">
                         ${avatarHtml}
                     </div>
                     <div class="min-w-0 flex-1">
