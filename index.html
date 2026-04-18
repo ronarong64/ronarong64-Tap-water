@@ -986,6 +986,10 @@
                         u.overdueList = u.overdueList.filter(b => !currentBillState.selectedOverdueIds.includes(b.billingId));
                         u.overdue = u.overdueList.reduce((sum, b) => sum + Number(b.amount), 0);
                         renderRealData(window.globalUsersList);
+                        const searchBox = document.getElementById('search-input');
+                        if (searchBox && searchBox.value.trim() !== "") {
+                            handleSearch(searchBox.value);
+                        }
                     }
                     
                     closeOverdueModal();
@@ -2054,7 +2058,11 @@ function showActualBillingForm(user, overdueOnly = false) {
                         }
 
                         window.globalUsersList[userIndex] = u;
-                        renderRealData(window.globalUsersList); 
+                        renderRealData(window.globalUsersList);
+                         const searchBox = document.getElementById('search-input');
+                        if (searchBox && searchBox.value.trim() !== "") {
+                            handleSearch(searchBox.value);
+                        }
                     }
 
                     closeBillingModal();
