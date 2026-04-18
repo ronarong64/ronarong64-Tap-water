@@ -719,7 +719,7 @@
             });
         }
 
-        function renderRealData(users) {
+       function renderRealData(users) {
     window.globalUsersList = users;
     const listContainer = document.getElementById('user-list');
     let stats = { todo: 0, waiting: 0, paid: 0, overdue: 0 };
@@ -764,7 +764,7 @@
             criticalOverdueCount++; // นับเข้ากลุ่มเตรียมงดจ่ายน้ำ
         }
 
-        // 🎯 [แก้ปัญหาตรงนี้] สั่งล้างค่าป้ายแจ้งเตือนเป็นค่าว่างทุกครั้ง เพื่อไม่ให้ไปจำค่าของบ้านหลังก่อนหน้า!
+        // 🎯 สั่งล้างค่าป้ายแจ้งเตือนเป็นค่าว่างทุกครั้ง เพื่อไม่ให้ไปจำค่าของบ้านหลังก่อนหน้า
         let overdueBadge = "";
 
         // ถ้าบ้านนี้มีหนี้ค้างจริง ถึงจะสร้างป้ายแจ้งเตือน
@@ -852,18 +852,20 @@
     document.getElementById('dash-count-paid').innerHTML = formatStat(stats.paid);
     document.getElementById('dash-count-overdue').innerHTML = formatStat(stats.overdue);
 
-    // 🎁 4. จัดการ Banner แจ้งเตือนค้างชำระ (ใช้ตัวแปร criticalOverdueCount แทน)
+    // 🎁 4. จัดการ Banner แจ้งเตือนค้างชำระ
     const warningBanner = document.getElementById('overdue-warning-banner');
     
-    // Debug: พิมพ์ตรวจสอบใน Console F12 ได้
-    console.log(`ทั้งหมดค้าง: ${stats.overdue} หลัง | ค้างเกินกำหนด(${maxLimit}เดือน): ${criticalOverdueCount} หลัง`);
-
-    // ✨ ถ้ามีคนค้างเกินกำหนดแม้แต่ 1 หลัง ให้โชว์ Banner ทันที
     if (criticalOverdueCount > 0) {
         warningBanner.classList.remove('hidden');
         document.getElementById('overdue-warning-count').innerText = criticalOverdueCount;
     } else {
         warningBanner.classList.add('hidden');
+    }
+
+    // ✨ 5. [เพิ่มใหม่] อัปเดตตัวเลขจำนวนหลังในช่องค้นหาทันทีที่โหลดข้อมูลเสร็จ
+    const searchCountSpan = document.getElementById('search-count');
+    if (searchCountSpan) {
+        searchCountSpan.innerText = users.length + " หลัง";
     }
 }
 
