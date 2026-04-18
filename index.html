@@ -2002,6 +2002,16 @@ function showActualBillingForm(user, overdueOnly = false) {
                 paidMonthsText = selectedBills.map(b => `${formatThaiMonth(b.month)}|${b.amount}`).join(',');
             }
 
+            // ✨ [ส่วนที่ 1] ค้นหาข้อมูลบ้านนี้ เพื่อนำมาคำนวณหนี้ที่เหลือ
+            const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(currentBillState.houseNo).trim());
+            
+            // ✨ [ส่วนที่ 2] คัดกรองบิลที่ "ยังไม่ได้จ่าย" ในรอบนี้ เพื่อส่งไปแจ้งเตือนใน LINE
+            const remainingOverdueList = (user && user.overdueList ? user.overdueList : []).filter(b => 
+                !(currentBillState.selectedOverdueIds || []).includes(b.billingId)
+            );
+            const remainingOverdueText = remainingOverdueList.map(b => `${b.month}|${b.amount}`).join(',');
+            const remainingOverdueAmount = user ? (currentBillState.isOverdueOnly ? 0 : (user.overdue - currentBillState.selectedOverdueAmount)) : 0;
+
             const payload = {
                 action: "saveBilling",
                 billingId: currentBillState.billingId || "", 
@@ -2015,6 +2025,10 @@ function showActualBillingForm(user, overdueOnly = false) {
                 overdueAmount: currentBillState.selectedOverdueAmount, 
                 payOverdueIds: currentBillState.selectedOverdueIds,
                 paidMonthsText: paidMonthsText, 
+
+                // ✨ [ส่วนที่ 3] แนบข้อมูลหนี้ที่เหลือส่งไปให้หลังบ้าน
+                remainingOverdue: remainingOverdueAmount,
+                remainingOverdueText: remainingOverdueText,
 
                 grandTotal: parseFloat(document.getElementById('calc-total').innerText.replace(/,/g, '')) || 0,
                 status: status,
@@ -2059,7 +2073,9 @@ function showActualBillingForm(user, overdueOnly = false) {
 
                         window.globalUsersList[userIndex] = u;
                         renderRealData(window.globalUsersList);
-                         const searchBox = document.getElementById('search-input');
+                        
+                        // กรองคำค้นหาเดิม (แก้ไขไว้จากรอบก่อน)
+                        const searchBox = document.getElementById('search-input');
                         if (searchBox && searchBox.value.trim() !== "") {
                             handleSearch(searchBox.value);
                         }
