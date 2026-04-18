@@ -2289,11 +2289,15 @@ function showActualBillingForm(user, overdueOnly = false) {
 
   </script>
 
-  <div id="toast-container" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[200] flex flex-col items-center gap-3 pointer-events-none"></div>
+  <div id="toast-container"
+    class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[200] flex flex-col items-center gap-3 pointer-events-none">
+  </div>
 
   <div id="confirm-modal"
     class="fixed inset-0 z-[250] bg-slate-900/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
-    <div class="bg-white/95 backdrop-blur-xl rounded-[2rem] p-8 w-full max-w-sm shadow-[0_20px_50px_rgba(0,0,0,0.15)] transform scale-95 translate-y-4 transition-all duration-300 border border-white" id="confirm-modal-box">
+    <div
+      class="bg-white/95 backdrop-blur-xl rounded-[2rem] p-8 w-full max-w-sm shadow-[0_20px_50px_rgba(0,0,0,0.15)] transform scale-95 translate-y-4 transition-all duration-300 border border-white"
+      id="confirm-modal-box">
       <div class="flex flex-col items-center text-center">
 
         <div id="confirm-icon-box" class="w-24 h-24 rounded-full flex items-center justify-center mb-6 relative">
@@ -2302,7 +2306,8 @@ function showActualBillingForm(user, overdueOnly = false) {
         </div>
 
         <h3 id="confirm-title" class="text-xl font-extrabold text-slate-800 mb-2 tracking-tight">ยืนยันการทำรายการ?</h3>
-        <p id="confirm-message" class="text-sm text-slate-500 mb-8 font-medium leading-relaxed">คุณแน่ใจหรือไม่ว่าต้องการดำเนินการนี้?</p>
+        <p id="confirm-message" class="text-sm text-slate-500 mb-8 font-medium leading-relaxed">
+          คุณแน่ใจหรือไม่ว่าต้องการดำเนินการนี้?</p>
 
         <div class="flex items-center gap-3 w-full">
           <button onclick="closeConfirmModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-xl transition-all active:scale-95 text-sm">
@@ -2332,15 +2337,16 @@ function showActualBillingForm(user, overdueOnly = false) {
       <div class="flex flex-col items-center mb-6">
         <div class="relative group cursor-pointer active:scale-95 transition-transform"
           onclick="document.getElementById('user-image-file').click()">
-          <img id="user-image-preview" src="" class="w-32 h-32 rounded-full object-cover border-4 border-blue-50 shadow-md bg-slate-100 hidden">
+
+          <img id="user-image-preview" src="" class="w-32 h-32 rounded-2xl object-cover border-4 border-blue-50 shadow-md bg-slate-100 hidden">
 
           <div id="user-image-placeholder"
-            class="w-32 h-32 rounded-full bg-blue-50 text-blue-300 flex items-center justify-center text-4xl border-4 border-white shadow-md">
+            class="w-32 h-32 rounded-2xl bg-blue-50 text-blue-300 flex items-center justify-center text-4xl border-4 border-white shadow-md">
             <i class="fas fa-camera"></i>
           </div>
 
           <div
-            class="absolute bottom-1 right-1 w-9 h-9 bg-blue-500 rounded-full text-white flex items-center justify-center shadow-md border-2 border-white">
+            class="absolute -bottom-2 -right-2 w-9 h-9 bg-blue-500 rounded-full text-white flex items-center justify-center shadow-md border-2 border-white">
             <i class="fas fa-plus text-sm"></i>
           </div>
         </div>
@@ -2463,7 +2469,8 @@ function showActualBillingForm(user, overdueOnly = false) {
           </div>
 
           <div id="high-usage-warning" class="hidden flex justify-center -mt-3 mb-1 relative z-10">
-            <div class="text-[11.5px] font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 shadow-sm animate-bounce flex items-center gap-1.5">
+            <div
+              class="text-[11.5px] font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 shadow-sm animate-bounce flex items-center gap-1.5">
               <i class="fas fa-exclamation-triangle"></i> ใช้น้ำผิดปกติ โปรดตรวจสอบเลขอีกครั้ง!
             </div>
           </div>
@@ -2526,7 +2533,7 @@ function showActualBillingForm(user, overdueOnly = false) {
           <span class="text-sm font-bold text-slate-500">รวมยอดที่เลือกชำระ:</span>
           <span class="text-xl font-extrabold text-rose-600"><span id="overdue-summary-total">0</span> บ.</span>
         </div>
-        
+
         <div class="flex gap-2">
           <button onclick="closeOverdueModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm">ปิด</button>
           <button id="btn-pay-overdue-only" onclick="saveOverduePayment()" class="flex-[1.5] py-3 bg-rose-600 text-white font-bold rounded-xl shadow-lg shadow-rose-200 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm">
