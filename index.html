@@ -2657,14 +2657,14 @@ function showActualBillingForm(user, overdueOnly = false) {
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-       // 💾 ฟังก์ชันยืนยันและส่งไปบันทึก (แก้ไขให้ปิดฟอร์มเสมอเพื่อให้เห็นแจ้งเตือนชัดเจน)
+       // 💾 ฟังก์ชันยืนยันและส่งไปบันทึก (เอาข้อความ "กำลังบันทึก" ออก เพื่อไม่ให้ตาลาย)
         function saveCollectorFeeExpense(name, amount, monthYearStr) {
             const msg = `คุณต้องการบันทึกรายจ่ายค่าตอบแทนให้แก่:\nคุณ ${name}\nยอดเงิน: ${Number(amount).toLocaleString()} บาท ใช่หรือไม่?`;
             
             openConfirmModal("ยืนยันจ่ายค่าจัดเก็บ", msg, "ยืนยันบันทึก", async function() {
                 const loggedInName = localStorage.getItem("username") || "Admin";
                 
-                // ใช้ฟังก์ชัน formatThaiMonth เพื่อแปลง "04/2569" -> "เม.ย./2569"
+                // แปลงรูปแบบเดือน
                 const thaiMonthStr = formatThaiMonth(monthYearStr).replace(" / ", "/");
 
                 const expenseData = { 
@@ -2674,8 +2674,7 @@ function showActualBillingForm(user, overdueOnly = false) {
                     recorder: loggedInName 
                 };
 
-                // แสดงข้อความกำลังบันทึก
-                showToast('กำลังบันทึกข้อมูล...', 'info');
+                // ❌ ลบคำสั่ง showToast('กำลังบันทึกข้อมูล...') ออกไปแล้วครับ เพื่อไม่ให้เด้งซ้อนกัน
 
                 try {
                     const response = await fetch(API_URL, {
@@ -2685,13 +2684,12 @@ function showActualBillingForm(user, overdueOnly = false) {
                     const result = await response.json();
                     
                     if (result.success) {
-                        closeCollectorFeeModal(); // ✨ ปิดฟอร์มเมื่อบันทึกสำเร็จ
+                        closeCollectorFeeModal(); 
                         showToast('บันทึกรายจ่ายค่าจัดเก็บเรียบร้อยแล้ว', 'success');
                         if(typeof loadCurrentMonthExpenses === "function") loadCurrentMonthExpenses(); 
                     } else {
-                        closeCollectorFeeModal(); // ✨ ปิดฟอร์มด้วยเมื่อข้อมูลซ้ำ เพื่อให้เห็นแจ้งเตือนชัดเจน!
+                        closeCollectorFeeModal(); 
                         
-                        // หน่วงเวลาเล็กน้อยให้ฟอร์มปิดสนิทก่อนโชว์แจ้งเตือนสีแดง
                         setTimeout(() => {
                             showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
                         }, 300);
