@@ -614,6 +614,81 @@
         </div>
       </div>
 
+      <div id="page-finance" class="hidden space-y-6 animate-fade-in pb-20">
+      <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border-t-4 border-teal-500 space-y-4">
+        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fas fa-wallet text-teal-500"></i>การเงิน-ธนาคาร
+        </h2>
+
+        <div class="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl p-6 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden">
+          <div class="absolute top-0 right-0 p-4 opacity-20 text-6xl"><i class="fas fa-landmark"></i></div>
+          <div class="relative z-10">
+            <div class="text-[13px] opacity-90 mb-1">ยอดเงินในธนาคาร</div>
+            <div class="text-3xl font-bold mb-6 tracking-wide" id="fin-bank-balance">0</div>
+            <div class="flex gap-3">
+              <button onclick="openFinanceModal('bank_deposit')" class="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-md py-2.5 rounded-xl text-sm font-bold transition active:scale-95"><i class="fas fa-arrow-down mr-1"></i> ฝาก</button>
+              <button onclick="openFinanceModal('bank_withdraw')" class="flex-1 bg-white/10 hover:bg-white/20 backdrop-blur-md py-2.5 rounded-xl text-sm font-bold text-red-100 transition active:scale-95"><i class="fas fa-arrow-up mr-1"></i> ถอน</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 relative overflow-hidden flex justify-between items-center">
+          <div>
+            <div class="text-[13px] text-slate-500 mb-1">เงินสด (สำรองจ่าย)</div>
+            <div class="text-2xl font-bold text-teal-600" id="fin-cash-balance">0</div>
+          </div>
+          <div class="flex flex-col gap-2 shrink-0">
+             <button onclick="openFinanceModal('cash_add')" class="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center text-teal-500 text-lg shadow-sm hover:bg-teal-100 active:scale-95 transition"><i class="fas fa-plus"></i></button>
+             <button onclick="openFinanceModal('cash_use')" class="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-orange-500 text-lg shadow-sm hover:bg-orange-100 active:scale-95 transition"><i class="fas fa-minus"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100">
+        <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+          <h3 class="font-bold text-slate-700 flex items-center gap-2 text-base">
+            <i class="fas fa-history text-slate-400"></i> ประวัติล่าสุด
+          </h3>
+          <button onclick="printFinanceReport()" class="text-[11px] bg-slate-50 hover:bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 font-bold active:scale-95 transition">
+            <i class="fas fa-print mr-1"></i> พิมพ์รายงาน
+          </button>
+        </div>
+        <div id="finance-history-body" class="space-y-3 min-h-[100px]"></div>
+      </div>
+    </div>
+
+  <div id="finance-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+    <div id="finance-modal-box" class="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl relative transform scale-95 transition-transform duration-300 border border-white/20">
+      
+      <div id="fin-header-bg" class="p-6 text-center relative overflow-hidden bg-indigo-500">
+        <button onclick="closeFinanceModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition active:scale-90 z-10"><i class="fas fa-times"></i></button>
+        <h3 class="text-lg font-bold text-white relative z-10" id="fin-modal-title">หัวข้อ</h3>
+        <p class="text-white/80 text-xs mt-1 relative z-10" id="fin-date-display"></p>
+      </div>
+
+      <input type="hidden" id="fin-input-type">
+      <input type="hidden" id="fin-input-category">
+
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="ml-1 text-xs font-bold text-slate-500">จำนวนเงิน (บาท)</label>
+          <input type="number" id="fin-input-amount" placeholder="0" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-center font-bold text-2xl text-slate-700 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all mt-1">
+        </div>
+        
+        <div>
+          <label class="ml-1 text-xs font-bold text-slate-500">รายละเอียด / หมายเหตุ</label>
+          <input type="text" id="fin-input-detail" placeholder="เช่น นำส่งเข้าบัญชี หรือ ซ่อมท่อ" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-700 text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all mt-1">
+        </div>
+      </div>
+
+      <div class="px-6 pb-6">
+        <button id="fin-btn-submit" onclick="submitFinance()" class="w-full py-3.5 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 text-sm flex justify-center items-center gap-2">
+          <i class="fas fa-save"></i> บันทึกข้อมูล
+        </button>
+      </div>
+    </div>
+  </div>
+
     </main>
   </div>
 
@@ -2362,6 +2437,273 @@ function showActualBillingForm(user, overdueOnly = false) {
             // โหลดข้อมูลเฉพาะหน้าเมื่อถูกเปิด
             if (pageId === 'settings' && typeof loadSettingsData === "function") loadSettingsData();
             if (pageId === 'expenses' && typeof loadCurrentMonthExpenses === "function") loadCurrentMonthExpenses();
+            if (pageId === 'finance' && typeof loadFinance === "function") loadFinance();
+        }
+
+        // ==========================================
+        // 💰 ระบบการเงิน-ธนาคาร (Finance System)
+        // ==========================================
+        let currentFinanceData = null;
+
+        async function loadFinance() {
+            const container = document.getElementById('finance-history-body');
+            if(container) container.innerHTML = `<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500"></i><p class="text-slate-500 text-sm mt-3">กำลังโหลดข้อมูลการเงิน...</p></div>`;
+
+            try {
+                const response = await fetch(API_URL + "?action=getFinanceDashboard");
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentFinanceData = result.data;
+                    document.getElementById('fin-bank-balance').innerText = Number(result.data.bankBalance || 0).toLocaleString();
+                    document.getElementById('fin-cash-balance').innerText = Number(result.data.cashBalance || 0).toLocaleString();
+                    
+                    renderFinanceHistory(result.data.history || []);
+                } else {
+                    showToast(result.message || 'ไม่สามารถดึงข้อมูลได้', 'error');
+                    if(container) container.innerHTML = `<div class="text-center py-6 text-rose-500 text-sm font-bold bg-rose-50 rounded-2xl border border-rose-100">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>`;
+                }
+            } catch (e) {
+                showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+                if(container) container.innerHTML = `<div class="text-center py-6 text-rose-500 text-sm font-bold bg-rose-50 rounded-2xl border border-rose-100">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</div>`;
+            }
+        }
+
+        function renderFinanceHistory(history) {
+            const b = document.getElementById('finance-history-body');
+            if (!history || history.length === 0) {
+                b.innerHTML = '<div class="text-center py-8 text-slate-400"><div class="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-folder-open text-2xl text-slate-300"></i></div><p class="text-sm font-bold text-slate-500">ไม่มีรายการประวัติ</p></div>';
+                return;
+            }
+
+            let fullHtml = '';
+            const MAX_ITEMS = 30; // แสดงแค่ 30 รายการล่าสุด
+            const historyToShow = history.slice(0, MAX_ITEMS);
+
+            if (history.length > MAX_ITEMS) {
+                fullHtml += `<div class="text-center text-[10px] text-slate-400 mb-3 font-medium bg-slate-50 py-1.5 rounded-lg border border-slate-100">แสดง <span class="text-indigo-500 font-bold">${MAX_ITEMS}</span> รายการล่าสุด (จาก ${history.length})</div>`;
+            }
+
+            historyToShow.forEach(h => {
+                let pDateStr = h.date || '-';
+                let isExpense = (h.category === 'รายจ่าย');
+                let amountColor = isExpense ? 'text-rose-500' : 'text-emerald-500';
+                let sign = isExpense ? '-' : '+';
+                
+                let ic = 'fa-exchange-alt';
+                let col = 'text-slate-500';
+                let bgCol = 'bg-slate-100';
+                
+                if (h.type === 'ฝากเงินธนาคาร') {
+                    ic = 'fa-university'; col = 'text-indigo-500'; bgCol = 'bg-indigo-50';
+                } else if (h.type === 'ถอนเงินธนาคาร') {
+                    ic = 'fa-money-check-alt'; col = 'text-rose-500'; bgCol = 'bg-rose-50';
+                } else if (h.type === 'รับเงินสด (เพิ่ม)') {
+                    ic = 'fa-hand-holding-usd'; col = 'text-teal-500'; bgCol = 'bg-teal-50';
+                } else if (h.type === 'ใช้เงินสดสำรอง') {
+                    ic = 'fa-file-invoice-dollar'; col = 'text-orange-500'; bgCol = 'bg-orange-50';
+                }
+                
+                let detailText = h.detail ? `(${h.detail})` : '-';
+
+                fullHtml += `
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex gap-3 items-center transition hover:bg-slate-50">
+                        <div class="w-11 h-11 rounded-xl ${bgCol} ${col} flex items-center justify-center text-lg shrink-0 shadow-inner">
+                            <i class="fas ${ic}"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start mb-0.5">
+                                <div class="font-bold text-slate-800 text-[13px] truncate pr-2">${h.type}</div>
+                                <div class="text-[9px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 whitespace-nowrap shrink-0 mt-0.5"><i class="far fa-calendar-alt opacity-70"></i> ${pDateStr}</div>
+                            </div>
+                            <div class="flex justify-between items-start gap-2">
+                                <div class="text-[11px] text-slate-500 leading-tight flex-1 truncate">${detailText}</div>
+                                <div class="font-black ${amountColor} text-[14px] leading-none shrink-0 mt-0.5">${sign}${Number(h.amount).toLocaleString()} บ.</div>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+
+            b.innerHTML = fullHtml;
+        }
+
+        function openFinanceModal(action) {
+            const modal = document.getElementById('finance-modal');
+            const box = document.getElementById('finance-modal-box');
+            
+            const now = new Date();
+            const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+            document.getElementById('fin-date-display').innerText = `วันที่ ${now.getDate()} ${thMonths[now.getMonth()]} ${now.getFullYear()+543}`;
+            document.getElementById('fin-input-amount').value = '';
+            document.getElementById('fin-input-detail').value = '';
+            
+            const headerBg = document.getElementById('fin-header-bg');
+            const title = document.getElementById('fin-modal-title');
+            const btn = document.getElementById('fin-btn-submit');
+            const inputType = document.getElementById('fin-input-type');
+            const inputCategory = document.getElementById('fin-input-category');
+            
+            if (action === 'bank_deposit') {
+                headerBg.className = 'p-6 text-center relative overflow-hidden bg-gradient-to-r from-indigo-500 to-blue-600';
+                title.innerText = 'ฝากเงินเข้าธนาคาร';
+                btn.className = 'w-full py-3.5 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 text-sm flex justify-center items-center gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/30';
+                inputType.value = 'ฝากเงินธนาคาร'; inputCategory.value = 'รายรับ';
+            } else if (action === 'bank_withdraw') {
+                headerBg.className = 'p-6 text-center relative overflow-hidden bg-gradient-to-r from-rose-500 to-red-600';
+                title.innerText = 'ถอนเงินจากธนาคาร';
+                btn.className = 'w-full py-3.5 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 text-sm flex justify-center items-center gap-2 bg-rose-600 hover:bg-rose-700 shadow-rose-500/30';
+                inputType.value = 'ถอนเงินธนาคาร'; inputCategory.value = 'รายจ่าย';
+            } else if (action === 'cash_add') {
+                headerBg.className = 'p-6 text-center relative overflow-hidden bg-gradient-to-r from-teal-500 to-emerald-600';
+                title.innerText = 'เพิ่มเงินสดสำรอง';
+                btn.className = 'w-full py-3.5 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 text-sm flex justify-center items-center gap-2 bg-teal-600 hover:bg-teal-700 shadow-teal-500/30';
+                inputType.value = 'รับเงินสด (เพิ่ม)'; inputCategory.value = 'รายรับ';
+            } else if (action === 'cash_use') {
+                headerBg.className = 'p-6 text-center relative overflow-hidden bg-gradient-to-r from-orange-500 to-amber-600';
+                title.innerText = 'บันทึกการใช้เงินสด';
+                btn.className = 'w-full py-3.5 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 text-sm flex justify-center items-center gap-2 bg-orange-600 hover:bg-orange-700 shadow-orange-500/30';
+                inputType.value = 'ใช้เงินสดสำรอง'; inputCategory.value = 'รายจ่าย';
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeFinanceModal() {
+            const modal = document.getElementById('finance-modal');
+            const box = document.getElementById('finance-modal-box');
+            modal.classList.add('opacity-0'); box.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        async function submitFinance() {
+            const amount = document.getElementById('fin-input-amount').value;
+            const detail = document.getElementById('fin-input-detail').value;
+            const type = document.getElementById('fin-input-type').value;
+            const category = document.getElementById('fin-input-category').value;
+            const btn = document.getElementById('fin-btn-submit');
+            
+            if (!amount || amount <= 0) {
+                showToast('กรุณาระบุจำนวนเงินที่ถูกต้อง', 'warning');
+                return;
+            }
+
+            const oldText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> กำลังบันทึก...`;
+            
+            try {
+                const payload = {
+                    action: 'saveFinanceTx',
+                    txData: {
+                        type: type, category: category, detail: detail,
+                        amount: Number(amount),
+                        recorder: localStorage.getItem("username") || "Admin"
+                    }
+                };
+
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const result = await res.json();
+
+                if(result.success) {
+                    showToast('บันทึกข้อมูลเรียบร้อย', 'success');
+                    closeFinanceModal();
+                    loadFinance(); // รีเฟรชหน้าจอใหม่
+                } else {
+                    showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
+                }
+            } catch(err) {
+                showToast('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = oldText;
+            }
+        }
+
+        // ==========================================
+        // 🖨️ ฟังก์ชันพิมพ์รายงานการเงิน
+        // ==========================================
+        function printFinanceReport() {
+            if(!currentFinanceData) {
+                showToast('ข้อมูลรายงานยังไม่พร้อม', 'warning');
+                return; 
+            }
+            const d = currentFinanceData;
+            
+            let p = document.getElementById('print-section');
+            if (!p) {
+                p = document.createElement('div');
+                p.id = 'print-section';
+                document.body.appendChild(p);
+            }
+            
+            let bankBal = Number(d.bankBalance) || 0;
+            let cashBal = Number(d.cashBalance) || 0;
+            
+            let historyRows = '';
+            if(!d.history || d.history.length === 0) {
+                historyRows = '<tr><td colspan="4" style="text-align:center; padding:15px; color:#666;">ไม่มีรายการความเคลื่อนไหว</td></tr>';
+            } else {
+                d.history.forEach(h => {
+                    historyRows += `<tr>
+                        <td style="border:1px solid #000; padding:8px; text-align:center;">${h.date || '-'}</td>
+                        <td style="border:1px solid #000; padding:8px;">${h.type} ${h.detail ? '<span style="color:#555; font-size:0.9em;">('+h.detail+')</span>' : ''}</td>
+                        <td style="border:1px solid #000; padding:8px; text-align:center;">${h.recorder || '-'}</td>
+                        <td style="border:1px solid #000; padding:8px; text-align:right;">${Number(h.amount).toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+                    </tr>`;
+                });
+            }
+            
+            const now = new Date();
+            const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+            const printedDate = `${now.getDate()} ${thMonths[now.getMonth()]} ${now.getFullYear()+543} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            p.innerHTML = `
+                <style>
+                    @media print {
+                        @page { size: A4; margin: 10mm; }
+                        body > *:not(#print-section) { display: none !important; }
+                        #print-section { display: block !important; position: absolute; top: 0; left: 0; width: 100%; background: #fff; padding: 20px; font-family: 'Kanit', sans-serif; color: #000; }
+                    }
+                </style>
+                <div style="font-family: 'Kanit', sans-serif; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0 0 5px 0; font-size: 18pt;">รายงานการเงินและบัญชีธนาคาร</h2>
+                        <h3 style="margin: 0; font-size: 14pt; font-weight: normal;">ระบบประปาหมู่บ้าน</h3>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; background: #f9f9f9; border-radius: 8px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <div><strong style="font-size: 12pt;">ยอดเงินในธนาคาร:</strong> <br><span style="font-size: 16pt; color: #4f46e5;">${bankBal.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท</span></div>
+                        <div style="text-align:right;"><strong style="font-size: 12pt;">เงินสดสำรองจ่าย:</strong> <br><span style="font-size: 16pt; color: #0d9488;">${cashBal.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท</span></div>
+                    </div>
+                    
+                    <h4 style="margin: 0 0 10px 0; font-size: 12pt; border-bottom: 2px solid #000; padding-bottom: 5px;">ประวัติความเคลื่อนไหว</h4>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 10pt;">
+                        <thead>
+                            <tr style="background-color: #f1f5f9; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                <th style="border:1px solid #000; padding:8px; width:15%;">วันที่</th>
+                                <th style="border:1px solid #000; padding:8px; width:45%;">รายการ</th>
+                                <th style="border:1px solid #000; padding:8px; width:20%;">ผู้บันทึก</th>
+                                <th style="border:1px solid #000; padding:8px; width:20%; text-align:right;">จำนวนเงิน (บาท)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${historyRows}
+                        </tbody>
+                    </table>
+                    
+                    <div style="margin-top: 50px; text-align: right; font-size:11pt;">
+                        <p style="margin-bottom: 15px;">ลงชื่อ ....................................................... ผู้จัดทำรายงาน</p>
+                        <p>วันที่พิมพ์: ${printedDate}</p>
+                    </div>
+                </div>
+            `;
+            
+            setTimeout(() => { window.print(); }, 250);
+            
+            window.onafterprint = function() {
+                if (p) p.innerHTML = '';
+            };
         }
 
         // ==========================================
