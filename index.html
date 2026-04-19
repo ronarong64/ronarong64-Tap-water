@@ -2533,6 +2533,17 @@ function showActualBillingForm(user, overdueOnly = false) {
             }, 10);
         }
 
+        // ❌ ฟังก์ชันปิดหน้าต่างรายจ่าย
+        function closeExpModal() {
+            const modal = document.getElementById('expense-modal');
+            const box = document.getElementById('expense-modal-box');
+            if (modal && box) {
+                modal.classList.add('opacity-0');
+                box.classList.add('scale-95');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+        }
+
         // ==========================================
         // ระบบสรุปค่าจัดเก็บ (รายบุคคล)
         // ==========================================
