@@ -2657,15 +2657,20 @@ function showActualBillingForm(user, overdueOnly = false) {
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        // 💾 ฟังก์ชันยืนยันและส่งไปบันทึก (แก้ไขให้ใช้ Toast ของระบบแทน Swal)
+       // 💾 ฟังก์ชันยืนยันและส่งไปบันทึก
         function saveCollectorFeeExpense(name, amount, monthYearStr) {
             const msg = `คุณต้องการบันทึกรายจ่ายค่าตอบแทนให้แก่:\nคุณ ${name}\nยอดเงิน: ${Number(amount).toLocaleString()} บาท ใช่หรือไม่?`;
             
             openConfirmModal("ยืนยันจ่ายค่าจัดเก็บ", msg, "ยืนยันบันทึก", async function() {
                 const loggedInName = localStorage.getItem("username") || "Admin";
+                
+                // ✨ เรียกใช้ฟังก์ชัน formatThaiMonth เพื่อแปลง "04/2569" -> "เม.ย. / 2569"
+                // และใช้ .replace(" / ", "/") เพื่อลบช่องว่างออก ให้กลายเป็น "เม.ย./2569" แบบเนียนๆ
+                const thaiMonthStr = formatThaiMonth(monthYearStr).replace(" / ", "/");
+
                 const expenseData = { 
                     type: "ค่าจัดเก็บ", 
-                    detail: `ค่าจัดเก็บค่าน้ำ ${monthYearStr} (${name})`, 
+                    detail: `ค่าจัดเก็บค่าน้ำ ${thaiMonthStr} (${name})`,  // ✨ ใช้ตัวแปรใหม่ที่แปลงแล้ว
                     amount: Number(amount), 
                     recorder: loggedInName 
                 };
