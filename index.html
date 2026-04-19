@@ -554,14 +554,68 @@
           <div class="grid grid-cols-2 gap-2 mt-2">
             <button onclick="openBankModal()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 px-3 py-2 rounded-xl text-sm font-bold transition shadow-sm flex items-center justify-center gap-1">
         <i class="fas fa-university mr-1"></i> บัญชีธนาคาร
-    </button>
+            </button>
 
             <button onclick="openBroadcastModal()" class="bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-xl font-bold text-sm h-10 shadow-md active:scale-95 transition flex items-center justify-center gap-1">
         <i class="fas fa-bullhorn"></i> แจ้งข่าวสาร
-    </button>
+            </button>
           </div>
         </div>
       </div>
+
+      <div id="page-expenses" class="hidden space-y-6 animate-fade-in pb-20">
+        <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border-t-4 border-orange-500 space-y-4">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <i class="fas fa-file-invoice-dollar text-orange-500"></i>บันทึกรายจ่าย
+          </h2>
+
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="openCollectorFeeModal()" class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center gap-2 hover:bg-blue-50 hover:border-blue-100 transition active:scale-95">
+              <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center text-xl shadow-sm"><i class="fas fa-user-tie"></i></div>
+              <span class="text-[13px] font-bold text-slate-600">ค่าจัดเก็บ</span>
+            </button>
+            <button onclick="openExpModal('repair')" class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center gap-2 hover:bg-orange-50 hover:border-orange-100 transition active:scale-95">
+              <div class="w-12 h-12 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center text-xl shadow-sm"><i class="fas fa-tools"></i></div>
+              <span class="text-[13px] font-bold text-slate-600">ค่าซ่อมแซม</span>
+            </button>
+            <button onclick="openExpModal('elec')" class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center gap-2 hover:bg-yellow-50 hover:border-yellow-100 transition active:scale-95">
+              <div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-500 flex items-center justify-center text-xl shadow-sm"><i class="fas fa-bolt"></i></div>
+              <span class="text-[13px] font-bold text-slate-600">ค่าไฟฟ้า</span>
+            </button>
+            <button onclick="openExpModal('other')" class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center gap-2 hover:bg-pink-50 hover:border-pink-100 transition active:scale-95">
+              <div class="w-12 h-12 rounded-full bg-pink-100 text-pink-500 flex items-center justify-center text-xl shadow-sm"><i class="fas fa-ellipsis-h"></i></div>
+              <span class="text-[13px] font-bold text-slate-600">ค่าอื่นๆ</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 mt-4">
+          <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+            <h3 class="font-bold text-slate-700 flex items-center gap-2 text-base">
+              <i class="fas fa-list text-slate-400"></i> รายการที่บันทึก
+            </h3>
+
+            <div
+              class="relative bg-slate-50 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden">
+              <input type="month" id="exp-month-input" onchange="changeExpenseMonth(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+              <div
+                class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shadow-sm relative z-0">
+                <i class="far fa-calendar-alt text-xs"></i>
+              </div>
+              <div class="text-right flex-1 min-w-[65px] relative z-0">
+                <div class="text-[9px] text-slate-400 font-medium mb-[1px] leading-none">เลือกเดือน</div>
+                <div id="exp-picker-display" class="font-bold text-slate-700 text-[11px] leading-none">กำลังโหลด...
+                </div>
+              </div>
+              <i class="fas fa-chevron-down text-[9px] text-slate-300 ml-0.5 relative z-0"></i>
+            </div>
+          </div>
+
+          <div id="expense-list-body" class="space-y-3">
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -2287,6 +2341,202 @@ function showActualBillingForm(user, overdueOnly = false) {
             window.print();
         }
 
+        // ==========================================
+        // ฟังก์ชันสลับหน้าจอ (อัปเดตใหม่รองรับทุกหน้า)
+        // ==========================================
+        function showPage(pageId) {
+            // รายชื่อหน้าทั้งหมดในระบบ
+            const pages = ['home', 'settings', 'expenses', 'reports', 'yearly', 'finance', 'collector'];
+            
+            // ซ่อนทุกหน้า
+            pages.forEach(p => {
+                const el = document.getElementById('page-' + p);
+                if (el) el.classList.add('hidden');
+            });
+            
+            // แสดงหน้าที่ต้องการ
+            const targetPage = document.getElementById('page-' + pageId);
+            if (targetPage) targetPage.classList.remove('hidden');
+
+            // ปิดเมนูด้านข้าง
+            if (typeof toggleMenu === "function") toggleMenu();
+
+            // โหลดข้อมูลเฉพาะหน้าเมื่อถูกเปิด
+            if (pageId === 'settings' && typeof loadSettingsData === "function") loadSettingsData();
+            if (pageId === 'expenses' && typeof loadCurrentMonthExpenses === "function") loadCurrentMonthExpenses();
+        }
+
+        // ==========================================
+        // ระบบบันทึกและแสดงรายจ่าย (Expenses System)
+        // ==========================================
+        
+        // 🔄 โหลดรายการเดือนปัจจุบัน
+        function loadCurrentMonthExpenses() {
+            const now = new Date();
+            const yearBE = now.getFullYear() + 543;
+            const mStr = String(now.getMonth() + 1).padStart(2, '0');
+            const displayMonth = mStr + '/' + yearBE;
+            
+            document.getElementById('exp-picker-display').innerText = displayMonth;
+            
+            // ตั้งค่าให้ปฏิทินที่ซ่อนอยู่ (Format: YYYY-MM)
+            const monthInput = document.getElementById('exp-month-input');
+            if (monthInput) monthInput.value = `${now.getFullYear()}-${mStr}`;
+
+            fetchExpensesFromAPI(displayMonth);
+        }
+
+        // 📅 เปลี่ยนเดือนเมื่อกดเลือกจากปฏิทิน
+        function changeExpenseMonth(val) {
+            if (!val) return; 
+            const parts = val.split('-'); // จะได้ ['YYYY', 'MM']
+            const yBE = parseInt(parts[0]) + 543;
+            const displayMonth = parts[1] + "/" + yBE;
+            
+            document.getElementById('exp-picker-display').innerText = displayMonth;
+            fetchExpensesFromAPI(displayMonth);
+        }
+
+        // 📡 ยิง API ไปดึงข้อมูล
+        async function fetchExpensesFromAPI(monthStr) {
+            const container = document.getElementById('expense-list-body');
+            container.innerHTML = `<div class="text-center py-6"><i class="fas fa-circle-notch fa-spin text-orange-500 text-2xl"></i><p class="text-xs text-slate-400 mt-2">กำลังโหลดข้อมูล...</p></div>`;
+            
+            try {
+                // เรียกใช้ GET request ไปที่ Google Apps Script
+                const res = await fetch(API_URL + "?action=getExpenses&monthStr=" + encodeURIComponent(monthStr));
+                const result = await res.json();
+                
+                if(result.success) {
+                    renderExpenseList(result.data);
+                } else {
+                    container.innerHTML = `<div class="text-center text-slate-400 py-6 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">ไม่พบข้อมูล</div>`;
+                }
+            } catch(e) {
+                container.innerHTML = `<div class="text-center text-red-500 py-4 text-sm">ข้อผิดพลาดในการเชื่อมต่อ</div>`;
+            }
+        }
+
+        // 🎨 วาดรายการลงหน้าจอ
+        function renderExpenseList(data) {
+            const container = document.getElementById('expense-list-body');
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="text-center text-slate-400 py-6 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">ไม่มีรายการรายจ่ายในเดือนนี้</div>`;
+                return;
+            }
+
+            let html = "";
+            data.forEach(item => {
+                let icon = 'fa-ellipsis-h'; let colorClass = 'text-pink-500'; let bgClass = 'bg-pink-100';
+                if (item.type.includes('ซ่อม')) { icon = 'fa-tools'; colorClass = 'text-orange-500'; bgClass = 'bg-orange-100'; }
+                else if (item.type.includes('ไฟ')) { icon = 'fa-bolt'; colorClass = 'text-yellow-500'; bgClass = 'bg-yellow-100'; }
+                else if (item.type.includes('จัดเก็บ')) { icon = 'fa-user-tie'; colorClass = 'text-blue-500'; bgClass = 'bg-blue-100'; }
+
+                html += `
+                <div class="flex items-center justify-between border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl ${bgClass} ${colorClass} flex items-center justify-center text-lg shrink-0">
+                            <i class="fas ${icon}"></i>
+                        </div>
+                        <div class="min-w-0 pr-2">
+                            <div class="text-[13px] font-bold text-slate-700 truncate">${item.detail}</div>
+                            <div class="text-[10px] text-slate-400 mt-[2px]"><i class="far fa-calendar-alt"></i> ${item.date} | 👤 ${item.recorder}</div>
+                        </div>
+                    </div>
+                    <div class="text-rose-500 font-bold text-[13px] bg-rose-50 px-2 py-1 rounded-lg shrink-0">
+                        -${Number(item.amount).toLocaleString()} ฿
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        // 💾 ฟังก์ชันส่งข้อมูลรายจ่ายไปบันทึก
+        async function submitExpense() {
+            const type = document.getElementById('exp-type-input').value;
+            const detail = document.getElementById('exp-detail-input').value;
+            const amount = document.getElementById('exp-amount-input').value;
+
+            if(!detail || !amount) {
+                showToast('กรุณากรอกรายละเอียดและจำนวนเงิน', 'warning');
+                return;
+            }
+
+            const loggedInName = localStorage.getItem("username") || "Admin";
+            const expenseData = { type: type, detail: detail, amount: Number(amount), recorder: loggedInName };
+
+            // เปลี่ยนปุ่มเป็น Loading
+            const btn = document.getElementById('btn-save-expense');
+            if(btn) { btn.disabled = true; btn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> กำลังบันทึก...`; }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "saveExpenseData", expenseData: expenseData })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast("บันทึกรายจ่ายเรียบร้อย", "success");
+                    closeExpModal();
+                    loadCurrentMonthExpenses(); // โหลดรายการใหม่ทันที
+                } else {
+                    showToast(result.message, "error");
+                }
+            } catch (err) {
+                showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", "error");
+            } finally {
+                if(btn) { btn.disabled = false; btn.innerHTML = `<i class="fas fa-save"></i> บันทึกข้อมูล`; }
+            }
+        }
+
+        // 🛠️ ฟังก์ชันเปิดหน้าต่างบันทึกรายจ่าย (อัปเดตแอนิเมชัน)
+        function openExpModal(type) {
+            let title = "";
+            let icon = "";
+            if(type === 'repair') { title = "ค่าซ่อมแซม"; icon = "fa-tools text-orange-500"; }
+            else if(type === 'elec') { title = "ค่าไฟฟ้า"; icon = "fa-bolt text-yellow-500"; }
+            else if(type === 'other') { title = "ค่าอื่นๆ"; icon = "fa-ellipsis-h text-pink-500"; }
+
+            document.getElementById('exp-modal-title').innerHTML = `<i class="fas ${icon}"></i> บันทึก${title}`;
+            document.getElementById('exp-type-input').value = title;
+            document.getElementById('exp-detail-input').value = "";
+            document.getElementById('exp-amount-input').value = "";
+            
+            const modal = document.getElementById('expense-modal');
+            const box = document.getElementById('expense-modal-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+            }, 10);
+        }
+
+        // 👨‍💼 ฟังก์ชันเปิดหน้าต่างสำหรับ "ค่าจัดเก็บ" (อัปเดตแอนิเมชัน)
+        function openCollectorFeeModal() {
+            document.getElementById('exp-modal-title').innerHTML = `<i class="fas fa-user-tie text-blue-500"></i> บันทึกค่าจัดเก็บ`;
+            document.getElementById('exp-type-input').value = "ค่าจัดเก็บ";
+            document.getElementById('exp-detail-input').value = "ค่าจดมิเตอร์/เก็บค่าน้ำประจำเดือน";
+            document.getElementById('exp-amount-input').value = "";
+            
+            const modal = document.getElementById('expense-modal');
+            const box = document.getElementById('expense-modal-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+            }, 10);
+        }
+
+        // ❌ ฟังก์ชันปิดหน้าต่างรายจ่าย (อัปเดตแอนิเมชัน)
+        function closeExpModal() {
+            const modal = document.getElementById('expense-modal');
+            const box = document.getElementById('expense-modal-box');
+            modal.classList.add('opacity-0');
+            box.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
   </script>
 
   <div id="toast-container"
@@ -2436,6 +2686,41 @@ function showActualBillingForm(user, overdueOnly = false) {
           </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div id="expense-modal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+    <div id="expense-modal-box" class="bg-white rounded-[2rem] p-6 w-full max-w-sm shadow-2xl relative transform scale-95 transition-transform duration-300">
+
+      <div class="text-center mb-5 relative">
+        <button onclick="closeExpModal()" class="absolute -right-2 -top-2 w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center hover:bg-rose-100 hover:text-rose-500 transition-all active:scale-90">
+          <i class="fas fa-times"></i>
+        </button>
+        <h3 class="text-xl font-bold text-slate-800 flex items-center justify-center gap-2" id="exp-modal-title">
+          <i class="fas fa-file-invoice-dollar text-orange-500"></i> บันทึกรายจ่าย
+        </h3>
+      </div>
+
+      <input type="hidden" id="exp-type-input" value="">
+
+      <div class="space-y-4">
+        <div>
+          <label class="ml-1 text-xs font-bold text-slate-500">รายละเอียด / รายการ</label>
+          <input type="text" id="exp-detail-input" placeholder="เช่น ซ่อมท่อประปา ซอย 1" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-700 font-medium focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all mt-1">
+        </div>
+
+        <div>
+          <label class="ml-1 text-xs font-bold text-slate-500">จำนวนเงิน (บาท)</label>
+          <input type="number" id="exp-amount-input" placeholder="0" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-center font-bold text-2xl text-rose-500 focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none transition-all mt-1">
+        </div>
+      </div>
+
+      <div class="mt-8">
+        <button id="btn-save-expense" onclick="submitExpense()" class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 text-sm flex justify-center items-center gap-2">
+          <i class="fas fa-save"></i> บันทึกข้อมูล
+        </button>
+      </div>
+
     </div>
   </div>
 
