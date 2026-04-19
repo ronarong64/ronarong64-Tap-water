@@ -602,11 +602,20 @@
                 class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shadow-sm relative z-0">
                 <i class="far fa-calendar-alt text-xs"></i>
               </div>
-              <div class="text-right flex-1 min-w-[65px] relative z-0">
-                <div class="text-[9px] text-slate-400 font-medium mb-[1px] leading-none">เลือกเดือน</div>
-                <div id="exp-picker-display" class="font-bold text-slate-700 text-[11px] leading-none">กำลังโหลด...
-                </div>
+              <div onclick="try { document.getElementById('exp-month-input').showPicker(); } catch(e){}"
+              class="relative bg-slate-50 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden">
+              
+              <input type="month" id="exp-month-input" onchange="changeExpenseMonth(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+              
+              <div class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shadow-sm relative z-0 pointer-events-none">
+                <i class="far fa-calendar-alt text-xs"></i>
               </div>
+              <div class="text-right flex-1 min-w-[65px] relative z-0 pointer-events-none">
+                <div class="text-[9px] text-slate-400 font-medium mb-[1px] leading-none">เลือกเดือน</div>
+                <div id="exp-picker-display" class="font-bold text-slate-700 text-[11px] leading-none">กำลังโหลด...</div>
+              </div>
+              <i class="fas fa-chevron-down text-[9px] text-slate-300 ml-0.5 relative z-0 pointer-events-none"></i>
+            </div>
               <i class="fas fa-chevron-down text-[9px] text-slate-300 ml-0.5 relative z-0"></i>
             </div>
           </div>
