@@ -2490,17 +2490,38 @@ function showActualBillingForm(user, overdueOnly = false) {
             }
         }
 
-        // 🛠️ ฟังก์ชันเปิดหน้าต่างบันทึกรายจ่าย (อัปเดตแอนิเมชัน)
+        // 🛠️ ฟังก์ชันเปิดหน้าต่างบันทึกรายจ่าย (อัปเดต: เติมข้อความค่าไฟฟ้าอัตโนมัติ)
         function openExpModal(type) {
             let title = "";
             let icon = "";
-            if(type === 'repair') { title = "ค่าซ่อมแซม"; icon = "fa-tools text-orange-500"; }
-            else if(type === 'elec') { title = "ค่าไฟฟ้า"; icon = "fa-bolt text-yellow-500"; }
-            else if(type === 'other') { title = "ค่าอื่นๆ"; icon = "fa-ellipsis-h text-pink-500"; }
+            let defaultDetail = ""; // ตัวแปรเก็บข้อความเริ่มต้น
+
+            if(type === 'repair') { 
+                title = "ค่าซ่อมแซม"; 
+                icon = "fa-tools text-orange-500"; 
+            }
+            else if(type === 'elec') { 
+                title = "ค่าไฟฟ้า"; 
+                icon = "fa-bolt text-yellow-500"; 
+                
+                // ✨ ดึงวันที่ปัจจุบันมาสร้างข้อความอัตโนมัติ
+                const now = new Date();
+                const d = now.getDate();
+                const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+                const mName = thaiMonths[now.getMonth()];
+                const yBE = now.getFullYear() + 543;
+                
+                // จะได้ข้อความเช่น "ค่าไฟฟ้า 19 เม.ย. 2569"
+                defaultDetail = `ค่าไฟฟ้า ${d} ${mName} ${yBE}`;
+            }
+            else if(type === 'other') { 
+                title = "ค่าอื่นๆ"; 
+                icon = "fa-ellipsis-h text-pink-500"; 
+            }
 
             document.getElementById('exp-modal-title').innerHTML = `<i class="fas ${icon}"></i> บันทึก${title}`;
             document.getElementById('exp-type-input').value = title;
-            document.getElementById('exp-detail-input').value = "";
+            document.getElementById('exp-detail-input').value = defaultDetail; // ยัดข้อความใส่ช่องรายละเอียด
             document.getElementById('exp-amount-input').value = "";
             
             const modal = document.getElementById('expense-modal');
