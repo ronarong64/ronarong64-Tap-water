@@ -2451,7 +2451,7 @@ function showActualBillingForm(user, overdueOnly = false) {
             container.innerHTML = html;
         }
 
-        // 💾 ฟังก์ชันส่งข้อมูลรายจ่ายไปบันทึก
+        // 💾 ฟังก์ชันส่งข้อมูลรายจ่ายไปบันทึก (อัปเดต: ปิดฟอร์มอัตโนมัติเมื่อข้อมูลซ้ำเพื่อโชว์แจ้งเตือน)
         async function submitExpense() {
             const type = document.getElementById('exp-type-input').value;
             const detail = document.getElementById('exp-detail-input').value;
@@ -2478,13 +2478,22 @@ function showActualBillingForm(user, overdueOnly = false) {
                 
                 if (result.success) {
                     showToast("บันทึกรายจ่ายเรียบร้อย", "success");
-                    closeExpModal();
-                    loadCurrentMonthExpenses(); // โหลดรายการใหม่ทันที
+                    closeExpModal(); // ปิดฟอร์มเมื่อบันทึกสำเร็จ
+                    loadCurrentMonthExpenses(); 
                 } else {
-                    showToast(result.message, "error");
+                    // ✨ ปรับปรุงจุดนี้: สั่งปิดฟอร์มทันทีเพื่อให้เห็นข้อความแจ้งเตือนข้อมูลซ้ำ
+                    closeExpModal();
+                    
+                    // หน่วงเวลาเล็กน้อยให้หน้าต่างปิดสนิทก่อนแสดงแจ้งเตือน
+                    setTimeout(() => {
+                        showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
+                    }, 300);
                 }
             } catch (err) {
-                showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", "error");
+                closeExpModal();
+                setTimeout(() => {
+                    showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", "error");
+                }, 300);
             } finally {
                 if(btn) { btn.disabled = false; btn.innerHTML = `<i class="fas fa-save"></i> บันทึกข้อมูล`; }
             }
