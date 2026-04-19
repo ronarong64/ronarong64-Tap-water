@@ -2657,9 +2657,8 @@ function showActualBillingForm(user, overdueOnly = false) {
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        // 💾 ฟังก์ชันยืนยันและส่งไปบันทึก
+        // 💾 ฟังก์ชันยืนยันและส่งไปบันทึก (แก้ไขให้ใช้ Toast ของระบบแทน Swal)
         function saveCollectorFeeExpense(name, amount, monthYearStr) {
-            // ใช้ Modal Confirm ของระบบที่คุณรณรงค์มีอยู่แล้ว
             const msg = `คุณต้องการบันทึกรายจ่ายค่าตอบแทนให้แก่:\nคุณ ${name}\nยอดเงิน: ${Number(amount).toLocaleString()} บาท ใช่หรือไม่?`;
             
             openConfirmModal("ยืนยันจ่ายค่าจัดเก็บ", msg, "ยืนยันบันทึก", async function() {
@@ -2671,10 +2670,10 @@ function showActualBillingForm(user, overdueOnly = false) {
                     recorder: loggedInName 
                 };
 
-                Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+                // แสดงข้อความกำลังบันทึก (ใช้ showToast สีฟ้า info)
+                showToast('กำลังบันทึกข้อมูล...', 'info');
 
                 try {
-                    // เรียกใช้ API บันทึกรายจ่ายตัวเดิมที่เรามี
                     const response = await fetch(API_URL, {
                         method: 'POST',
                         body: JSON.stringify({ action: "saveExpenseData", expenseData: expenseData })
@@ -2682,14 +2681,14 @@ function showActualBillingForm(user, overdueOnly = false) {
                     const result = await response.json();
                     
                     if (result.success) {
-                        Swal.fire('สำเร็จ', 'บันทึกรายจ่ายค่าจัดเก็บเรียบร้อยแล้ว', 'success');
+                        showToast('บันทึกรายจ่ายค่าจัดเก็บเรียบร้อยแล้ว', 'success');
                         closeCollectorFeeModal();
                         if(typeof loadCurrentMonthExpenses === "function") loadCurrentMonthExpenses(); 
                     } else {
-                        Swal.fire('ข้อผิดพลาด', result.message, 'error');
+                        showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
                     }
                 } catch (err) {
-                    Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
+                    showToast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
                 }
             }, false); // ใส่ false เพื่อให้ปุ่มเป็นสีน้ำเงิน
         }
