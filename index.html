@@ -625,27 +625,52 @@
       </div>
 
       <div id="page-finance" class="hidden space-y-6 animate-fade-in pb-20">
-      <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border-t-4 border-teal-500 space-y-4">
-        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <i class="fas fa-wallet text-teal-500"></i>การเงิน-ธนาคาร
+      <div class="px-2">
+        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <i class="fas fa-landmark text-indigo-600"></i> การเงิน-ธนาคาร
         </h2>
+        <p class="text-[11px] text-slate-500 font-medium">จัดการยอดเงินโอนและเงินสดสำรองของระบบ</p>
+      </div>
 
-        <div class="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl p-6 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden">
-          <div class="absolute top-0 right-0 p-4 opacity-20 text-6xl"><i class="fas fa-landmark"></i></div>
-          <div class="relative z-10">
-            <div class="text-[13px] opacity-90 mb-1">ยอดเงินในธนาคาร</div>
-            <div class="text-3xl font-bold mb-6 tracking-wide" id="fin-bank-balance">0</div>
-            <div class="flex gap-3">
-              <button onclick="openFinanceModal('bank_deposit')" class="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-md py-2.5 rounded-xl text-sm font-bold transition active:scale-95"><i class="fas fa-arrow-down mr-1"></i> ฝาก</button>
-              <button onclick="openFinanceModal('bank_withdraw')" class="flex-1 bg-white/10 hover:bg-white/20 backdrop-blur-md py-2.5 rounded-xl text-sm font-bold text-red-100 transition active:scale-95"><i class="fas fa-arrow-up mr-1"></i> ถอน</button>
+      <div class="grid grid-cols-1 gap-4">
+        
+        <div class="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-[2rem] p-6 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden h-44 flex flex-col justify-between border border-white/10">
+          <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-2xl"></div>
+          <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-16 h-16 bg-blue-400 opacity-10 rounded-full blur-xl"></div>
+          
+          <div class="flex justify-between items-start relative z-10">
+            <div>
+              <div class="text-[13px] opacity-80 font-medium mb-1">ยอดเงินในธนาคาร</div>
+              <div class="text-3xl font-black tracking-tight" id="fin-bank-balance">0</div>
+            </div>
+            <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl border border-white/30 shadow-inner">
+              <i class="fas fa-university"></i>
             </div>
           </div>
+          
+          <div class="flex gap-2 relative z-10">
+            <button onclick="openFinanceModal('bank_deposit')" class="flex-1 bg-white/20 hover:bg-white/30 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 border border-white/20 shadow-sm flex items-center justify-center gap-1.5">
+              <i class="fas fa-plus-circle opacity-70"></i> ฝากเงิน
+            </button>
+            <button onclick="openFinanceModal('bank_withdraw')" class="flex-1 bg-white/10 hover:bg-white/20 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 border border-white/10 shadow-sm flex items-center justify-center gap-1.5">
+              <i class="fas fa-minus-circle opacity-70"></i> ถอนเงิน
+            </button>
+          </div>
         </div>
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 relative overflow-hidden flex justify-between items-center">
-          <div>
-            <div class="text-[13px] text-slate-500 mb-1">เงินสด (สำรองจ่าย)</div>
-            <div class="text-2xl font-bold text-teal-600" id="fin-cash-balance">0</div>
-          </div>        
+
+        <div class="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-[2rem] p-6 text-white shadow-xl shadow-teal-500/20 relative overflow-hidden h-44 flex flex-col justify-between border border-white/10">
+          <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-2xl"></div>
+          <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-16 h-16 bg-emerald-400 opacity-10 rounded-full blur-xl"></div>
+
+          <div class="flex justify-between items-start relative z-10">
+            <div>
+              <div class="text-[13px] opacity-80 font-medium mb-1">เงินสด (สำรองจ่าย)</div>
+              <div class="text-3xl font-black tracking-tight" id="fin-cash-balance">0</div>
+            </div>
+            <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl border border-white/30 shadow-inner">
+              <i class="fas fa-wallet"></i>
+            </div>
+          </div>         
         </div>
       </div>
 
