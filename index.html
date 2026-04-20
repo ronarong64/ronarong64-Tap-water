@@ -2002,8 +2002,24 @@ function showActualBillingForm(user, overdueOnly = false) {
         isOverdueOnly: overdueOnly // ✨ [เพิ่มบรรทัดนี้] จำไว้ว่ามาจ่ายแค่หนี้เก่าไหม
     };
 
-    document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
-    document.getElementById('calc-price').innerText = user.price || priceVal;
+      document.getElementById('calc-price').innerText = user.price || priceVal;
+    
+    // ✨ เช็คโหมดเปลี่ยนมิเตอร์ใหม่ (ถอนของเก่าออก)
+    const cmWarningBox = document.getElementById('cm-warning-box');
+    if (user.cmUsage && parseInt(user.cmUsage) > 0) {
+        currentBillState.cmUsage = parseInt(user.cmUsage);
+        document.getElementById('cm-warning-unit').innerText = currentBillState.cmUsage;
+        
+        // 🌟 บังคับให้เลขเดิมเป็น 0 เพราะเปลี่ยนมิเตอร์ใหม่แล้ว (มิเตอร์ใหม่เริ่มที่ 0 เสมอ)
+        currentBillState.prevUnit = 0; 
+        document.getElementById('bill-prev-unit').innerText = "0";
+
+        if (cmWarningBox) cmWarningBox.classList.remove('hidden');
+    } else {
+        currentBillState.cmUsage = 0;
+        document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
+        if (cmWarningBox) cmWarningBox.classList.add('hidden');
+    }
     
     // ✨ เช็คโหมดการทำงานของฟอร์ม
     if (overdueOnly) {
@@ -2121,7 +2137,14 @@ function showActualBillingForm(user, overdueOnly = false) {
 
             // 2. ถ้ามีการกรอกข้อมูลแล้ว ให้ทำการคำนวณปกติ
             const currUnit = parseInt(currUnitInput);
-            const usage = currUnit - prevUnit;
+            const baseUsage = currUnit - prevUnit; // เลขมิเตอร์ใหม่ที่เริ่มจาก 0
+            
+            // 🌟 นำค่ามาบวกกับมิเตอร์ตัวเก่าที่เสีย
+            const cmUsage = currentBillState.cmUsage || 0;
+            const usage = baseUsage + cmUsage;
+
+            // 🛑 กรณีที่ 1: เลขใหม่น้อยกว่าเลขเดิม (ผิดพลาด)
+            if (isNaN(baseUsage) || baseUsage < 0) {
 
             // 🛑 กรณีที่ 1: เลขใหม่น้อยกว่าเลขเดิม (ผิดพลาดขั้นรุนแรง)
             if (isNaN(usage) || usage < 0) {
@@ -2185,7 +2208,8 @@ function showActualBillingForm(user, overdueOnly = false) {
                 billingId: currentBillState.billingId || "", 
                 houseNo: currentBillState.houseNo,
                 prevUnit: currentBillState.prevUnit,
-                currUnit: currUnit,
+                usage: parseInt(currUnit) - currentBillState.prevUnit + (currentBillState.cmUsage || 0),
+                pricePerUnit: parseFloat(document.getElementById('calc-price').innerText) || 0,
                 usage: parseInt(currUnit) - currentBillState.prevUnit,
                 pricePerUnit: parseFloat(document.getElementById('calc-price').innerText) || 0,
                 currentAmount: parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, '')) || 0,
@@ -2223,7 +2247,8 @@ function showActualBillingForm(user, overdueOnly = false) {
                         u.statusCode = status.toLowerCase();
                         u.oldUnit = u.prevUnit;
                         u.prevUnit = parseInt(currUnit);
-                        u.usage = parseInt(currUnit) - currentBillState.prevUnit;
+                        u.usage = parseInt(currUnit) - currentBillState.prevUnit + (currentBillState.cmUsage || 0);
+                        u.cmUsage = 0;
                         u.amount = parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, ''));
                         if (result.paidDate) u.paidDate = result.paidDate;
                         if (result.billingId) {
@@ -3504,6 +3529,16 @@ function showActualBillingForm(user, overdueOnly = false) {
             </div>
           </div>
 
+          <div id="cm-warning-box" class="hidden mb-2 bg-rose-50 border border-rose-200 rounded-xl p-2.5 flex items-center gap-3 shadow-sm relative z-10">
+            <div class="w-8 h-8 bg-rose-200 text-rose-600 rounded-full flex items-center justify-center shrink-0">
+                <i class="fas fa-tools"></i>
+            </div>
+            <div class="text-[12px] text-rose-600 font-medium leading-tight">
+                บ้านนี้มีการเปลี่ยนมิเตอร์น้ำใหม่<br>
+                <span class="font-bold">(+<span id="cm-warning-unit">0</span> หน่วยจากมิเตอร์เดิม)</span>
+            </div>
+          </div>
+
           <div id="high-usage-warning" class="hidden flex justify-center -mt-3 mb-1 relative z-10">
             <div
               class="text-[11.5px] font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 shadow-sm animate-bounce flex items-center gap-1.5">
@@ -3716,6 +3751,55 @@ function showActualBillingForm(user, overdueOnly = false) {
     </div>
   </div>
 
+  <div id="change-meter-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300 opacity-0">
+    <div id="change-meter-modal-box" class="bg-white w-full sm:max-w-sm p-0 relative overflow-hidden rounded-[2rem] shadow-2xl transform scale-95 transition-transform duration-300 border border-white/20">
+      
+      <button onclick="closeChangeMeterMenu()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 z-20 transition active:scale-90"><i class="fas fa-times"></i></button>
+
+      <div class="bg-gradient-to-r from-rose-500 to-red-600 p-5 text-center pt-6 pb-5 shadow-md relative z-10">
+        <div class="absolute -top-4 -right-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
+        <h3 class="text-xl font-bold text-white relative z-10"><i class="fas fa-tools mr-2"></i> เปลี่ยนมิเตอร์ใหม่</h3>
+        <p class="text-red-100 text-[13px] mt-1 relative z-10">บันทึกหน่วยน้ำจากมิเตอร์ตัวเก่าที่เสีย</p>
+      </div>
+
+      <div class="p-6 relative z-0">
+        <div id="cm-step1">
+          <div class="text-sm font-bold text-slate-700 mb-2 text-center">ระบุบ้านเลขที่ ที่ต้องการเปลี่ยนมิเตอร์</div>
+          <div class="flex gap-2">
+            <input type="text" id="cm-search-input" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-center font-bold text-slate-700 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" placeholder="เช่น 123/4">
+            <button id="cm-search-btn" onclick="searchCMHouse()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-bold transition shadow-sm w-20 active:scale-95">ค้นหา</button>
+          </div>
+        </div>
+
+        <div id="cm-step2" class="hidden space-y-4">
+          <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-100 mt-2">
+            <div class="text-[13px] text-slate-500 font-bold uppercase">เจ้าบ้าน</div>
+            <div id="cm-house-name" class="font-bold text-red-600 text-base mt-0.5">...</div>
+          </div>
+
+          <div class="bg-red-50 p-4 rounded-2xl border border-red-100">
+            <div class="flex items-center justify-between gap-3 bg-white p-2.5 rounded-xl shadow-sm mb-2">
+              <div class="text-[13px] text-slate-600 font-bold leading-tight pl-1">
+                เลขตอนถอดมิเตอร์เก่า<br><span class="text-[10px] text-slate-400 font-normal">(เลขเดือนก่อนคือ <span id="cm-prev-unit" class="font-bold text-slate-500">0</span>)</span>
+              </div>
+              <input type="number" id="cm-final-unit" oninput="calcCMUsage()" class="text-xl font-bold text-center w-24 bg-slate-50 rounded-lg border border-slate-200 focus:border-red-500 focus:bg-white outline-none p-1 text-rose-500 font-mono" placeholder="0">
+            </div>
+
+            <div class="flex justify-between items-end px-2 pt-2 border-t border-red-200/50 mt-3">
+              <span class="text-sm font-bold text-slate-600">ใช้น้ำไปทั้งสิ้น</span>
+              <span class="text-xl font-black text-red-600"><span id="cm-usage">0</span>
+              <span class="text-sm font-normal text-red-400">หน่วย</span></span>
+            </div>
+          </div>
+
+          <button id="btn-submit-cm" onclick="submitCM()" class="w-full py-3.5 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-500/30 transition-all active:scale-95 text-sm flex justify-center items-center gap-2 mt-4">
+            <i class="fas fa-save"></i> บันทึกเข้าระบบ
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
       // ==========================================
       // ระบบสถิติเงินสดในมือ (Collector Stats)
@@ -3773,6 +3857,111 @@ function showActualBillingForm(user, overdueOnly = false) {
           modal.classList.add('opacity-0'); box.classList.add('scale-95');
           setTimeout(() => modal.classList.add('hidden'), 300);
       }
+
+      // ==========================================
+        // 🔧 ระบบเปลี่ยนมิเตอร์น้ำตัวใหม่ (Change Meter)
+        // ==========================================
+        let cmTempData = {};
+
+        function openChangeMeterMenu() {
+            document.getElementById('cm-search-input').value = "";
+            document.getElementById('cm-step2').classList.add('hidden');
+            document.getElementById('cm-step1').classList.remove('hidden');
+            
+            const modal = document.getElementById('change-meter-modal');
+            const box = document.getElementById('change-meter-modal-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+            
+            if (typeof toggleMenu === 'function') toggleMenu();
+        }
+
+        function closeChangeMeterMenu() {
+            const modal = document.getElementById('change-meter-modal');
+            const box = document.getElementById('change-meter-modal-box');
+            modal.classList.add('opacity-0'); box.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function searchCMHouse() {
+            const houseNo = document.getElementById('cm-search-input').value.trim();
+            if (!houseNo) { showToast('กรุณาระบุบ้านเลขที่', 'warning'); return; }
+            
+            const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
+            if (!user) { showToast('ไม่พบข้อมูลบ้านเลขที่นี้', 'error'); return; }
+            
+            if (user.statusCode === 'waiting') {
+                showToast('บ้านนี้มีบิลรอชำระ กรุณาเก็บเงินให้เรียบร้อยก่อนเปลี่ยนมิเตอร์ใหม่', 'warning');
+                return;
+            }
+
+            cmTempData = {
+                houseNo: user.houseNo,
+                prevUnit: parseInt(user.prevUnit) || 0,
+                billingId: user.billingId || "" 
+            };
+
+            document.getElementById('cm-house-name').innerText = user.name || "ไม่มีชื่อ";
+            document.getElementById('cm-prev-unit').innerText = cmTempData.prevUnit;
+            document.getElementById('cm-final-unit').value = "";
+            document.getElementById('cm-usage').innerText = "0";
+
+            document.getElementById('cm-step1').classList.add('hidden');
+            document.getElementById('cm-step2').classList.remove('hidden');
+        }
+
+        function calcCMUsage() {
+            const finalUnit = parseInt(document.getElementById('cm-final-unit').value);
+            const prevUnit = cmTempData.prevUnit;
+            const usageEl = document.getElementById('cm-usage');
+            
+            if (isNaN(finalUnit)) { usageEl.innerText = "0"; return; }
+            
+            const usage = finalUnit - prevUnit;
+            if (usage < 0) { usageEl.innerText = "ข้อผิดพลาด"; }
+            else { usageEl.innerText = usage; }
+        }
+
+        async function submitCM() {
+            let usage = document.getElementById('cm-usage').innerText;
+            if(usage === '0' || usage === 'ข้อผิดพลาด') {
+                showToast('กรุณาตรวจสอบเลขมิเตอร์ให้ถูกต้อง (ต้องมากกว่าเลขเดิม)', 'error'); return;
+            }
+            
+            cmTempData.brokenUsage = parseFloat(usage);
+            
+            const btn = document.getElementById('btn-submit-cm');
+            const oldText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> กำลังบันทึก...`;
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "saveBrokenMeter", data: cmTempData })
+                });
+                const result = await response.json();
+                
+                if(result.success) {
+                    showToast(result.message, 'success');
+                    closeChangeMeterMenu();
+                    
+                    // 🌟 แอบฝังค่ามิเตอร์เสียลงในข้อมูลบ้าน เพื่อให้เรียกใช้ได้ทันทีตอนจดมิเตอร์
+                    const uIndex = window.globalUsersList.findIndex(u => u.houseNo === cmTempData.houseNo);
+                    if (uIndex !== -1) {
+                        window.globalUsersList[uIndex].cmUsage = cmTempData.brokenUsage;
+                    }
+                } else {
+                    showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
+                }
+            } catch (err) {
+                showToast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = oldText;
+            }
+        }
+        
   </script>
 
 </body>
