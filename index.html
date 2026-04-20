@@ -631,7 +631,6 @@
             </div>
           </div>
         </div>
-
         <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 relative overflow-hidden flex justify-between items-center">
           <div>
             <div class="text-[13px] text-slate-500 mb-1">เงินสด (สำรองจ่าย)</div>
@@ -645,13 +644,25 @@
           <h3 class="font-bold text-slate-700 flex items-center gap-2 text-base">
             <i class="fas fa-history text-slate-400"></i> ประวัติล่าสุด
           </h3>
-          <button onclick="printFinanceReport()" class="text-[11px] bg-slate-50 hover:bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 font-bold active:scale-95 transition">
-            <i class="fas fa-print mr-1"></i> พิมพ์รายงาน
-          </button>
+          
+          <div class="relative bg-slate-50 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden"
+               onclick="try { document.getElementById('fin-month-input').showPicker(); } catch(e){}">
+            
+            <input type="month" id="fin-month-input" onchange="changeFinanceMonth(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+            
+            <div class="w-7 h-7 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center shadow-sm relative z-0 pointer-events-none">
+              <i class="far fa-calendar-alt text-xs"></i>
+            </div>
+            <div class="text-right flex-1 min-w-[65px] relative z-0 pointer-events-none">
+              <div class="text-[9px] text-slate-400 font-medium mb-[1px] leading-none">เลือกเดือน</div>
+              <div id="fin-picker-display" class="font-bold text-slate-700 text-[11px] leading-none">กำลังโหลด...</div>
+            </div>
+            <i class="fas fa-chevron-down text-[9px] text-slate-300 ml-0.5 relative z-0 pointer-events-none"></i>
+          </div>
         </div>
+        
         <div id="finance-history-body" class="space-y-3 min-h-[100px]"></div>
       </div>
-    </div>
 
   <div id="finance-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 opacity-0">
     <div id="finance-modal-box" class="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl relative transform scale-95 transition-transform duration-300 border border-white/20">
@@ -2441,28 +2452,50 @@ function showActualBillingForm(user, overdueOnly = false) {
         // ==========================================
         let currentFinanceData = null;
 
-        async function loadFinance() {
+        async function loadFinance(monthStr = null) {
             const container = document.getElementById('finance-history-body');
-            if(container) container.innerHTML = `<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500"></i><p class="text-slate-500 text-sm mt-3">กำลังโหลดข้อมูลการเงิน...</p></div>`;
+            if(container) container.innerHTML = `<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500"></i><p class="text-xs text-slate-500 mt-3">กำลังประมวลผลข้อมูล...</p></div>`;
+
+            // ถ้าไม่มีเดือนส่งมา ให้ใช้เดือนปัจจุบัน
+            if (!monthStr) {
+                const now = new Date();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const y = now.getFullYear() + 543;
+                monthStr = `${m}/${y}`;
+                
+                // ตั้งค่าหน้าตาปุ่ม
+                document.getElementById('fin-month-input').value = `${now.getFullYear()}-${m}`;
+            }
+            
+            // แสดงเดือนที่เลือกบนปุ่ม (ใช้ formatThaiMonth ของคุณรณรงค์)
+            document.getElementById('fin-picker-display').innerText = formatThaiMonth(monthStr).replace(" / ", "/");
 
             try {
-                const response = await fetch(API_URL + "?action=getFinanceDashboard");
+                // ยิง API พร้อมส่งเดือนที่ต้องการดูประวัติไปด้วย
+                const response = await fetch(API_URL + "?action=getFinanceDashboard&monthStr=" + encodeURIComponent(monthStr));
                 const result = await response.json();
                 
                 if (result.success) {
                     currentFinanceData = result.data;
+                    // ยอดคงเหลือยังคงเป็นยอดปัจจุบันเสมอ (เพื่อความถูกต้องของเงินในกระเป๋า)
                     document.getElementById('fin-bank-balance').innerText = Number(result.data.bankBalance || 0).toLocaleString();
                     document.getElementById('fin-cash-balance').innerText = Number(result.data.cashBalance || 0).toLocaleString();
                     
                     renderFinanceHistory(result.data.history || []);
                 } else {
-                    showToast(result.message || 'ไม่สามารถดึงข้อมูลได้', 'error');
-                    if(container) container.innerHTML = `<div class="text-center py-6 text-rose-500 text-sm font-bold bg-rose-50 rounded-2xl border border-rose-100">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>`;
+                    showToast(result.message, 'error');
                 }
             } catch (e) {
-                showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
-                if(container) container.innerHTML = `<div class="text-center py-6 text-rose-500 text-sm font-bold bg-rose-50 rounded-2xl border border-rose-100">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</div>`;
+                showToast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
             }
+        }
+
+        // 📅 ฟังก์ชันเมื่อมีการเปลี่ยนเดือนจากปฏิทิน
+        function changeFinanceMonth(val) {
+            if (!val) return;
+            const parts = val.split('-'); // YYYY-MM
+            const monthStr = parts[1] + "/" + (parseInt(parts[0]) + 543);
+            loadFinance(monthStr);
         }
 
         // 🎨 ฟังก์ชันวาดประวัติการเงิน (อัปเดต: เปลี่ยนวันที่เป็นเดือนย่อภาษาไทย)
@@ -2633,7 +2666,8 @@ function showActualBillingForm(user, overdueOnly = false) {
         // 🖨️ ฟังก์ชันพิมพ์รายงานการเงิน
         // ==========================================
         function printFinanceReport() {
-            if(!currentFinanceData) {
+            if(!currentFinanceData) return; {
+              const currentSelectedMonth = document.getElementById('fin-picker-display').innerText;
                 showToast('ข้อมูลรายงานยังไม่พร้อม', 'warning');
                 return; 
             }
