@@ -1914,7 +1914,7 @@ function toggleOption(elementId, isChecked) {
             const now = new Date();
             const currentM = now.getMonth() + 1;
             const currentY = now.getFullYear() + 543;
-            const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
+            const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`;
             const currentMonthStr2 = `${currentM}/${currentY}`; 
 
             // คัดกรองเอาเฉพาะ "บิลค้างชำระเก่า" 
@@ -1928,14 +1928,30 @@ function toggleOption(elementId, isChecked) {
                 billingId: user.statusCode === 'waiting' ? (user.billingId || "") : "",
                 houseNo: user.houseNo,
                 prevUnit: user.statusCode === 'waiting' ? (parseInt(user.oldUnit) || 0) : (parseInt(user.prevUnit) || 0),
-                overdueDetails: actualOverdueList, 
+                overdueDetails: actualOverdueList,
                 selectedOverdueIds: actualOverdueList.map(b => b.billingId),
                 selectedOverdueAmount: actualOverdueAmount
             };
 
-            document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
             document.getElementById('calc-price').innerText = user.price || priceVal;
             
+            // ✨ เช็คโหมดเปลี่ยนมิเตอร์ใหม่ (ถอนของเก่าออก)
+            const cmWarningBox = document.getElementById('cm-warning-box');
+            if (user.cmUsage && parseInt(user.cmUsage) > 0) {
+                currentBillState.cmUsage = parseInt(user.cmUsage);
+                document.getElementById('cm-warning-unit').innerText = currentBillState.cmUsage;
+                
+                // 🌟 บังคับให้เลขเดิมเป็น 0 เพราะเปลี่ยนมิเตอร์ใหม่แล้ว
+                currentBillState.prevUnit = 0; 
+                document.getElementById('bill-prev-unit').innerText = "0";
+
+                if (cmWarningBox) cmWarningBox.classList.remove('hidden');
+            } else {
+                currentBillState.cmUsage = 0;
+                document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
+                if (cmWarningBox) cmWarningBox.classList.add('hidden');
+            }
+
             if (user.statusCode === 'waiting') {
                 currUnitInput.value = user.prevUnit;
                 currUnitInput.disabled = true;
@@ -1973,103 +1989,6 @@ function toggleOption(elementId, isChecked) {
             modal.classList.remove('hidden');
             setTimeout(() => modal.classList.remove('opacity-0'), 10);
         }
-
-// 🎯 2. ฟังก์ชันหลักสำหรับเปิดฟอร์มจดมิเตอร์และจัดการหนี้
-function showActualBillingForm(user, overdueOnly = false) {
-    const currUnitInput = document.getElementById('bill-curr-unit');
-    const btnWaiting = document.getElementById('btn-save-waiting');
-    const priceInput = document.getElementById('set-price');
-    let priceVal = parseFloat(priceInput && priceInput.value !== "" ? priceInput.value : 0) || 0;
-
-    const now = new Date();
-    const currentM = now.getMonth() + 1;
-    const currentY = now.getFullYear() + 543;
-    const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
-    const currentMonthStr2 = `${currentM}/${currentY}`; 
-
-    const actualOverdueList = (user.overdueList || []).filter(bill => 
-        bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2
-    );
-    const actualOverdueAmount = actualOverdueList.reduce((sum, bill) => sum + Number(bill.amount), 0);
-
-    currentBillState = {
-        billingId: user.statusCode === 'waiting' ? (user.billingId || "") : "",
-        houseNo: user.houseNo,
-        prevUnit: user.statusCode === 'waiting' ? (parseInt(user.oldUnit) || 0) : (parseInt(user.prevUnit) || 0),
-        overdueDetails: actualOverdueList, 
-        selectedOverdueIds: actualOverdueList.map(b => b.billingId),
-        selectedOverdueAmount: actualOverdueAmount,
-        isOverdueOnly: overdueOnly // ✨ [เพิ่มบรรทัดนี้] จำไว้ว่ามาจ่ายแค่หนี้เก่าไหม
-    };
-
-      document.getElementById('calc-price').innerText = user.price || priceVal;
-    
-    // ✨ เช็คโหมดเปลี่ยนมิเตอร์ใหม่ (ถอนของเก่าออก)
-    const cmWarningBox = document.getElementById('cm-warning-box');
-    if (user.cmUsage && parseInt(user.cmUsage) > 0) {
-        currentBillState.cmUsage = parseInt(user.cmUsage);
-        document.getElementById('cm-warning-unit').innerText = currentBillState.cmUsage;
-        
-        // 🌟 บังคับให้เลขเดิมเป็น 0 เพราะเปลี่ยนมิเตอร์ใหม่แล้ว (มิเตอร์ใหม่เริ่มที่ 0 เสมอ)
-        currentBillState.prevUnit = 0; 
-        document.getElementById('bill-prev-unit').innerText = "0";
-
-        if (cmWarningBox) cmWarningBox.classList.remove('hidden');
-    } else {
-        currentBillState.cmUsage = 0;
-        document.getElementById('bill-prev-unit').innerText = currentBillState.prevUnit;
-        if (cmWarningBox) cmWarningBox.classList.add('hidden');
-    }
-    
-    // ✨ เช็คโหมดการทำงานของฟอร์ม
-    if (overdueOnly) {
-        // โหมดจัดการหนี้เก่าอย่างเดียว (ค่าน้ำเดือนนี้จ่ายไปแล้ว) ล็อคช่องเลขมิเตอร์
-        currUnitInput.value = user.prevUnit; 
-        currUnitInput.disabled = true;
-        currUnitInput.classList.add('bg-slate-100', 'text-slate-500', 'cursor-not-allowed');
-        document.getElementById('calc-usage').innerText = '0';
-        document.getElementById('calc-current-amount').innerText = '0';
-        if (btnWaiting) btnWaiting.classList.add('hidden');
-    } else if (user.statusCode === 'waiting') {
-        // โหมดรอชำระ (บิลออกแล้ว รอเก็บเงิน) ล็อคช่องเลขมิเตอร์
-        currUnitInput.value = user.prevUnit;
-        currUnitInput.disabled = true;
-        currUnitInput.classList.add('bg-slate-100', 'text-slate-500', 'cursor-not-allowed');
-        document.getElementById('calc-usage').innerText = user.usage || 0;
-        document.getElementById('calc-current-amount').innerText = Number(user.amount || 0).toLocaleString();
-        if (btnWaiting) btnWaiting.classList.add('hidden');
-    } else {
-        // โหมดจดมิเตอร์ใหม่ เปิดให้พิมพ์เลขใหม่ได้
-        currUnitInput.value = '';
-        currUnitInput.disabled = false;
-        currUnitInput.classList.remove('bg-slate-100', 'text-slate-500', 'cursor-not-allowed');
-        document.getElementById('calc-usage').innerText = '0';
-        document.getElementById('calc-current-amount').innerText = '0';
-        if (btnWaiting) btnWaiting.classList.remove('hidden');
-    }
-
-    document.getElementById('calc-overdue').innerText = currentBillState.selectedOverdueAmount.toLocaleString();
-    calculateBill(); 
-
-    // จัดการปุ่ม "จัดการยอดค้าง"
-    const overdueBtn = document.querySelector('[onclick="openOverdueModal()"]');
-    if (overdueBtn) {
-        if (currentBillState.overdueDetails.length > 0) {
-            overdueBtn.innerHTML = '<i class="fas fa-search"></i> จัดการยอดค้าง';
-            overdueBtn.className = "cursor-pointer bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg flex items-center gap-2 border border-red-200 text-red-600 transition-colors active:scale-95";
-            overdueBtn.style.pointerEvents = "auto";
-        } else {
-            overdueBtn.innerHTML = '<i class="fas fa-check-circle"></i> ไม่มียอดค้างชำระ';
-            overdueBtn.className = "cursor-default bg-slate-100 px-3 py-1.5 rounded-lg flex items-center gap-2 border border-slate-200 text-slate-400";
-            overdueBtn.style.pointerEvents = "none";
-        }
-    }
-
-    document.getElementById('bill-house-display').innerText = `บ้านเลขที่ ${user.houseNo}`;
-    const modal = document.getElementById('billing-modal');
-    modal.classList.remove('hidden');
-    setTimeout(() => modal.classList.remove('opacity-0'), 10);
-}
 
         function renderOverdueDetailsInModal() {
             const container = document.getElementById('overdue-modal-content');
@@ -2209,20 +2128,15 @@ function showActualBillingForm(user, overdueOnly = false) {
                 billingId: currentBillState.billingId || "", 
                 houseNo: currentBillState.houseNo,
                 prevUnit: currentBillState.prevUnit,
+                currUnit: currUnit,                
                 usage: parseInt(currUnit) - currentBillState.prevUnit + (currentBillState.cmUsage || 0),
                 pricePerUnit: parseFloat(document.getElementById('calc-price').innerText) || 0,
-                usage: parseInt(currUnit) - currentBillState.prevUnit,
-                pricePerUnit: parseFloat(document.getElementById('calc-price').innerText) || 0,
                 currentAmount: parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, '')) || 0,
-                
                 overdueAmount: currentBillState.selectedOverdueAmount, 
                 payOverdueIds: currentBillState.selectedOverdueIds,
                 paidMonthsText: paidMonthsText, 
-
-                // ✨ [ส่วนที่ 3] แนบข้อมูลหนี้ที่เหลือส่งไปให้หลังบ้าน
                 remainingOverdue: remainingOverdueAmount,
                 remainingOverdueText: remainingOverdueText,
-
                 grandTotal: parseFloat(document.getElementById('calc-total').innerText.replace(/,/g, '')) || 0,
                 status: status,
                 collector: loggedInName, 
