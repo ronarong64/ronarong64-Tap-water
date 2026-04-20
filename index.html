@@ -636,11 +636,7 @@
           <div>
             <div class="text-[13px] text-slate-500 mb-1">เงินสด (สำรองจ่าย)</div>
             <div class="text-2xl font-bold text-teal-600" id="fin-cash-balance">0</div>
-          </div>
-          <div class="flex flex-col gap-2 shrink-0">
-             <button onclick="openFinanceModal('cash_add')" class="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center text-teal-500 text-lg shadow-sm hover:bg-teal-100 active:scale-95 transition"><i class="fas fa-plus"></i></button>
-             <button onclick="openFinanceModal('cash_use')" class="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-orange-500 text-lg shadow-sm hover:bg-orange-100 active:scale-95 transition"><i class="fas fa-minus"></i></button>
-          </div>
+          </div>        
         </div>
       </div>
 
@@ -2576,17 +2572,7 @@ function showActualBillingForm(user, overdueOnly = false) {
                 title.innerText = 'ถอนเงินจากธนาคาร';
                 btn.className = 'w-full py-3.5 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 text-sm flex justify-center items-center gap-2 bg-rose-600 hover:bg-rose-700 shadow-rose-500/30';
                 inputType.value = 'ถอนเงินธนาคาร'; inputCategory.value = 'รายจ่าย';
-            } else if (action === 'cash_add') {
-                headerBg.className = 'p-6 text-center relative overflow-hidden bg-gradient-to-r from-teal-500 to-emerald-600';
-                title.innerText = 'เพิ่มเงินสดสำรอง';
-                btn.className = 'w-full py-3.5 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 text-sm flex justify-center items-center gap-2 bg-teal-600 hover:bg-teal-700 shadow-teal-500/30';
-                inputType.value = 'รับเงินสด (เพิ่ม)'; inputCategory.value = 'รายรับ';
-            } else if (action === 'cash_use') {
-                headerBg.className = 'p-6 text-center relative overflow-hidden bg-gradient-to-r from-orange-500 to-amber-600';
-                title.innerText = 'บันทึกการใช้เงินสด';
-                btn.className = 'w-full py-3.5 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 text-sm flex justify-center items-center gap-2 bg-orange-600 hover:bg-orange-700 shadow-orange-500/30';
-                inputType.value = 'ใช้เงินสดสำรอง'; inputCategory.value = 'รายจ่าย';
-            }
+            } 
 
             modal.classList.remove('hidden');
             setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
