@@ -2033,48 +2033,57 @@ function toggleOption(elementId, isChecked) {
         }
        
         function calculateBill() {
-            const currUnitInputEl = document.getElementById('bill-curr-unit');
-            const usageDisplay = document.getElementById('calc-usage');
-            const amountDisplay = document.getElementById('calc-current-amount');
-            const totalDisplay = document.getElementById('calc-total');
-            const overdueAmt = currentBillState.selectedOverdueAmount || 0;
-
-            // 🔒 [สำคัญ] ถ้าฟอร์มถูกล็อค (รอชำระ) ให้ดึงค่าจากที่ตั้งไว้ตอนเปิด Modal (จากฐานข้อมูล) ห้ามคำนวณใหม่
-            if (currUnitInputEl.disabled) {
-                const savedUsage = parseFloat(usageDisplay.innerText.replace(/,/g, '')) || 0;
-                const savedAmount = parseFloat(amountDisplay.innerText.replace(/,/g, '')) || 0;
-                totalDisplay.innerText = (savedAmount + overdueAmt).toLocaleString();
-                return;
-            }
-
-            // ✍️ โหมดจดใหม่: คำนวณตามปกติ
-            const currUnitInput = currUnitInputEl.value;
-            const prevUnit = currentBillState.prevUnit || 0;
+            const prevUnit = parseInt(document.getElementById('bill-prev-unit').innerText) || 0;
+            const currUnitInput = document.getElementById('bill-curr-unit').value;
             const price = parseFloat(document.getElementById('calc-price').innerText) || 0;
-            const cmUsage = currentBillState.cmUsage || 0;
+            const overdueAmount = currentBillState.selectedOverdueAmount || 0;
+            const btnWaiting = document.getElementById('btn-save-waiting');
+            const btnPaid = document.getElementById('btn-save-paid');
+            const warningBox = document.getElementById('high-usage-warning');
 
+            // 1. ถ้ายังไม่ได้กรอกเลขมิเตอร์ ให้แสดงค่า 0
             if (currUnitInput === "") {
-                usageDisplay.innerText = "0";
-                amountDisplay.innerText = "0";
-                totalDisplay.innerText = overdueAmt.toLocaleString();
+                document.getElementById('calc-usage').innerText = "0";
+                document.getElementById('calc-current-amount').innerText = "0";
+                document.getElementById('calc-total').innerText = overdueAmount.toLocaleString();
+                if (btnWaiting) { btnWaiting.disabled = false; btnWaiting.classList.remove('opacity-50', 'cursor-not-allowed'); }
+                if (btnPaid) { btnPaid.disabled = false; btnPaid.classList.remove('opacity-50', 'cursor-not-allowed'); }
+                if (warningBox) warningBox.classList.add('hidden');
                 return;
             }
 
+            // 2. คำนวณหน่วยน้ำ
             const currUnit = parseInt(currUnitInput);
-            const baseUsage = currUnit - prevUnit;
-            const totalUsage = baseUsage + cmUsage; // บวกรวมหน่วยมิเตอร์เสีย
+            const baseUsage = currUnit - prevUnit; // หน่วยจากมิเตอร์ใหม่
+            const cmUsage = currentBillState.cmUsage || 0;
+            const usage = baseUsage + cmUsage;    // รวมกับมิเตอร์เก่า
 
+            // 🛑 กรณีเลขมิเตอร์น้อยกว่าเดิม (ผิดพลาด)
             if (isNaN(baseUsage) || baseUsage < 0) {
-                usageDisplay.innerText = "ผิดพลาด";
-                amountDisplay.innerText = "0";
-                totalDisplay.innerText = overdueAmt.toLocaleString();
+                document.getElementById('calc-usage').innerText = "ผิดพลาด";
+                document.getElementById('calc-current-amount').innerText = "0";
+                document.getElementById('calc-total').innerText = overdueAmount.toLocaleString();
+                
+                if (btnWaiting) { btnWaiting.disabled = true; btnWaiting.classList.add('opacity-50', 'cursor-not-allowed'); }
+                if (btnPaid) { btnPaid.disabled = true; btnPaid.classList.add('opacity-50', 'cursor-not-allowed'); }
+                if (warningBox) warningBox.classList.add('hidden');
             } else {
-                const currentAmount = totalUsage * price;
-                const grandTotal = currentAmount + overdueAmt;
+                // ✅ กรณีเลขถูกต้อง ให้คำนวณเงินและแสดงผล
+                const currentAmount = usage * price;
+                const total = currentAmount + overdueAmount;
 
-                usageDisplay.innerText = totalUsage.toLocaleString();
-                amountDisplay.innerText = currentAmount.toLocaleString();
-                totalDisplay.innerText = grandTotal.toLocaleString();
+                document.getElementById('calc-usage').innerText = usage.toLocaleString();
+                document.getElementById('calc-current-amount').innerText = currentAmount.toLocaleString();
+                document.getElementById('calc-total').innerText = total.toLocaleString();
+                
+                if (btnWaiting) { btnWaiting.disabled = false; btnWaiting.classList.remove('opacity-50', 'cursor-not-allowed'); }
+                if (btnPaid) { btnPaid.disabled = false; btnPaid.classList.remove('opacity-50', 'cursor-not-allowed'); }
+
+                // แจ้งเตือนถ้าใช้น้ำเกิน 50 หน่วย
+                if (warningBox) {
+                    if (usage > 50) warningBox.classList.remove('hidden');
+                    else warningBox.classList.add('hidden');
+                }
             }
         }
 
@@ -2103,17 +2112,12 @@ function toggleOption(elementId, isChecked) {
             const remainingOverdueAmount = user ? (currentBillState.isOverdueOnly ? 0 : (user.overdue - currentBillState.selectedOverdueAmount)) : 0;
 
             const payload = {
-                const payload = {
                 action: "saveBilling",
-                billingId: currentBillState.billingId || "",
+                billingId: currentBillState.billingId || "", 
                 houseNo: currentBillState.houseNo,
                 prevUnit: currentBillState.prevUnit,
-                
-                // ✅ บันทึกเลขหน้าปัดจริงลง Column F เพื่อความต่อเนื่องของมิเตอร์ในเดือนหน้า
-                currUnit: parseInt(currUnitInput), 
-                
-                // ✅ บันทึกหน่วยรวม (จริง + เสีย) ลง Column G เพื่อคิดเงินให้ถูกต้อง
-                usage: parseInt(currUnitInput) - currentBillState.prevUnit + (currentBillState.cmUsage || 0),
+                currUnit: currUnit,                
+                usage: parseInt(currUnit) - currentBillState.prevUnit + (currentBillState.cmUsage || 0),
                 pricePerUnit: parseFloat(document.getElementById('calc-price').innerText) || 0,
                 currentAmount: parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, '')) || 0,
                 overdueAmount: currentBillState.selectedOverdueAmount, 
