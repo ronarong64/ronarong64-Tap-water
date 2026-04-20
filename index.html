@@ -693,6 +693,34 @@
         <div id="finance-history-body" class="space-y-3 min-h-[100px]"></div>
       </div>
 
+   <div id="page-collector" class="hidden space-y-5 animate-fade-in pb-20">
+      
+      <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 flex justify-between items-center relative overflow-hidden">
+        <div class="relative z-10">
+          <h2 class="font-bold text-slate-800 text-xl flex items-center gap-2">
+             <i class="fas fa-user-tag text-cyan-500"></i> รายงานจัดเก็บ
+          </h2>
+          <p class="text-[11px] text-cyan-600 font-bold mt-1 bg-cyan-50 w-fit px-2 py-0.5 rounded-md border border-cyan-100">สรุปยอดรายบุคคล</p>
+        </div>
+
+        <div class="relative bg-slate-50 pl-3 pr-2 py-2 rounded-2xl border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden z-10"
+             onclick="try { document.getElementById('collector-month-input').showPicker(); } catch(e){}">
+          <input type="month" id="collector-month-input" onchange="loadCollectorReport(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+          <div class="w-8 h-8 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center shadow-sm relative z-0 pointer-events-none">
+            <i class="far fa-calendar-alt text-sm"></i>
+          </div>
+          <div class="text-right flex-1 min-w-[65px] relative z-0 pointer-events-none">
+            <div class="text-[9px] text-slate-400 font-medium mb-[1px] leading-none">ประจำเดือน</div>
+            <div id="collector-picker-display" class="font-bold text-slate-700 text-[11px] leading-none">กำลังโหลด...</div>
+          </div>
+          <i class="fas fa-chevron-down text-[9px] text-slate-300 ml-0.5 relative z-0 pointer-events-none"></i>
+        </div>
+      </div>
+
+      <div id="collector-list-container" class="space-y-4"></div>
+      
+    </div>   
+
   <div id="finance-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 opacity-0">
     <div id="finance-modal-box" class="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl relative transform scale-95 transition-transform duration-300 border border-white/20">
       
@@ -1499,33 +1527,7 @@ function toggleOption(elementId, isChecked) {
             clickedBtn.classList.add('bg-white/10');
         }
 
-        // ==========================================
-// ฟังก์ชันสลับหน้าจอ
-// ==========================================
-function showPage(pageId) {
-    // 1. ซ่อนทุกหน้าที่มีในระบบก่อน
-    const pageHome = document.getElementById('page-home');
-    const pageSettings = document.getElementById('page-settings');
-    
-    if (pageHome) pageHome.classList.add('hidden');
-    if (pageSettings) pageSettings.classList.add('hidden');
-    
-    // 2. แสดงเฉพาะหน้าที่เรากำลังจะเปิด
-    const targetPage = document.getElementById('page-' + pageId);
-    if (targetPage) {
-        targetPage.classList.remove('hidden');
-    }
-
-    // 3. ปิดเมนูด้านข้างอัตโนมัติ
-    if (typeof toggleMenu === "function") {
-        toggleMenu(); 
-    }
-
-    // 4. ถ้ากดเข้ามาที่หน้า "ตั้งค่าระบบ" (settings) ให้โหลดข้อมูลจากฐานข้อมูลมาแสดงทันที
-    if (pageId === 'settings' && typeof loadSettingsData === "function") {
-        loadSettingsData();
-    }
-}
+       
         
         function openAboutModal() {
             alert("ระบบบริหารจัดการน้ำประปาหมู่บ้าน\nพัฒนาโดย: รณรงค์ อินทร์คง\nเวอร์ชัน: 14.0.0");
@@ -2474,6 +2476,7 @@ function showActualBillingForm(user, overdueOnly = false) {
             if (pageId === 'settings' && typeof loadSettingsData === "function") loadSettingsData();
             if (pageId === 'expenses' && typeof loadCurrentMonthExpenses === "function") loadCurrentMonthExpenses();
             if (pageId === 'finance' && typeof loadFinance === "function") loadFinance();
+            if (pageId === 'collector' && typeof loadCollectorReport === "function") loadCollectorReport();
         }
 
         // ==========================================
@@ -3140,6 +3143,112 @@ function showActualBillingForm(user, overdueOnly = false) {
                     }, 300);
                 }
             }, false); 
+        }
+
+        // ==========================================
+        // 👤 ระบบรายงานคนจัดเก็บ (Collector Report)
+        // ==========================================
+        async function loadCollectorReport(monthStr = null) {
+            const container = document.getElementById('collector-list-container');
+            if(container) container.innerHTML = `<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-3xl text-cyan-500"></i><p class="text-xs text-slate-500 mt-3 font-medium">กำลังโหลดข้อมูลคนจัดเก็บ...</p></div>`;
+
+            // ถ้าไม่มีเดือนส่งมา ให้ใช้เดือนปัจจุบัน
+            if (!monthStr) {
+                const now = new Date();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const y = now.getFullYear(); // input type="month" ใช้ ค.ศ. เสมอ
+                monthStr = `${y}-${m}`;
+                if(document.getElementById('collector-month-input')) document.getElementById('collector-month-input').value = monthStr;
+            }
+            
+            // แปลง YYYY-MM เป็น MM/YYYY (พ.ศ.) สำหรับส่งไป API
+            const parts = monthStr.split('-');
+            const reqMonth = parts[1];
+            const reqYear = parseInt(parts[0]) + 543;
+            const targetMonthStr = `${reqMonth}/${reqYear}`;
+
+            if(document.getElementById('collector-picker-display')) {
+                document.getElementById('collector-picker-display').innerText = formatThaiMonth(targetMonthStr).replace(" / ", "/");
+            }
+
+            try {
+                const response = await fetch(API_URL + "?action=getCollectorReport&month=" + encodeURIComponent(reqMonth) + "&year=" + encodeURIComponent(reqYear));
+                const result = await response.json();
+                
+                if (result.success) {
+                    renderCollectorReport(result.data);
+                } else {
+                    if(container) container.innerHTML = `<div class="text-center py-6 text-rose-500 text-sm font-bold bg-rose-50 rounded-2xl border border-rose-100">${result.message || 'ไม่พบข้อมูล'}</div>`;
+                }
+            } catch (e) {
+                showToast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
+                if(container) container.innerHTML = `<div class="text-center py-6 text-rose-500 text-sm font-bold bg-rose-50 rounded-2xl border border-rose-100">เกิดข้อผิดพลาดในการเชื่อมต่อ</div>`;
+            }
+        }
+
+        function renderCollectorReport(data) {
+            const container = document.getElementById('collector-list-container');
+            
+            if(!data || data.length === 0) { 
+                container.innerHTML = `<div class="text-center py-10 bg-white rounded-[1.5rem] border border-dashed border-slate-200 text-slate-400"><div class="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-folder-open text-2xl text-slate-300"></i></div><p class="text-sm font-bold text-slate-500">ไม่มีรายการเก็บบิลในเดือนนี้</p></div>`;
+                return;
+            }
+
+            let fullHtml = '';
+            
+            // วนลูปวาดกล่องของคนจัดเก็บแต่ละคน
+            data.forEach(c => {
+                let housesHtml = c.houses.map(h => {
+                    let isOverdueTag = h.isOverdue ? `<span class="ml-2 text-[9px] bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded-md border border-rose-200 font-bold leading-none whitespace-nowrap shadow-sm">ค้างเก่า</span>` : '';
+                    let pDateStr = h.paidDate ? h.paidDate : '-';
+                    
+                    let subText = h.isOverdue 
+                        ? `<div class="text-[10px] text-rose-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-file-invoice opacity-70"></i> บิล: ${h.billMonthStr} <span class="mx-1 text-rose-300">|</span> <i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`
+                        : `<div class="text-[10px] text-slate-400 mt-1 font-medium flex items-center gap-1"><i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`;
+
+                    return `
+                    <div class="flex justify-between items-start py-3 border-b border-slate-50 last:border-none hover:bg-slate-50 transition px-2 rounded-lg">
+                        <div class="flex gap-3 w-full pr-2 items-start">
+                            <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0 shadow-inner mt-0.5 border border-white">${h.houseNo}</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center font-bold text-[13px] text-slate-700 leading-snug">${h.name.replace(' (', '<br>(')}${isOverdueTag}</div>
+                                ${subText}
+                            </div>
+                        </div>
+                        <div class="font-black text-slate-700 shrink-0 text-sm mt-0.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">${Number(h.amount).toLocaleString()} บ.</div>
+                    </div>`;
+                }).join('');
+
+                let isTransfer = c.name.includes("โอน");
+                let headerBg = isTransfer ? "bg-gradient-to-br from-blue-500 to-indigo-600" : "bg-gradient-to-br from-teal-500 to-emerald-600";
+                let iconClass = isTransfer ? "fa-university" : "fa-wallet";
+                let shadowClass = isTransfer ? "shadow-indigo-500/20" : "shadow-teal-500/20";
+                
+                fullHtml += `
+                <div class="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden mb-5">
+                    <div class="${headerBg} p-5 text-white flex justify-between items-center relative overflow-hidden shadow-lg ${shadowClass}">
+                        <div class="absolute -top-4 -right-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
+                        <div class="absolute -bottom-4 -left-4 w-16 h-16 bg-white opacity-10 rounded-full blur-lg"></div>
+                        
+                        <div class="flex gap-3 relative z-10 items-center">
+                            <div class="w-12 h-12 rounded-[1rem] bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-inner border border-white/30">
+                                <i class="fas ${iconClass}"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-[17px] leading-tight drop-shadow-sm">${c.name}</div>
+                                <div class="text-[10px] font-medium opacity-90 mt-1 bg-white/10 w-fit px-2 py-0.5 rounded-md border border-white/10 shadow-sm"><i class="fas fa-list-ul mr-1 opacity-70"></i> ${c.count} รายการ</div>
+                            </div>
+                        </div>
+                        <div class="text-right relative z-10">
+                            <div class="text-[10px] opacity-80 uppercase tracking-wide font-bold mb-0.5">ยอดเงินรวม</div>
+                            <div class="text-2xl font-black leading-none tracking-tight drop-shadow-sm">${Number(c.total).toLocaleString()}</div>
+                        </div>
+                    </div>
+                    <div class="p-2 px-3 max-h-[400px] overflow-y-auto hide-scrollbar bg-white">${housesHtml}</div>
+                </div>`;
+            });
+
+            container.innerHTML = fullHtml;
         }
 
   </script>
