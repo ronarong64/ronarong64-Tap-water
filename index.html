@@ -2118,6 +2118,10 @@ function toggleOption(elementId, isChecked) {
                 prevUnit: currentBillState.prevUnit,
                 currUnit: currUnit,                
                 usage: parseInt(currUnit) - currentBillState.prevUnit + (currentBillState.cmUsage || 0),
+                
+                // 🌟 [เพิ่มบรรทัดนี้] ส่งยอดมิเตอร์เสียไปให้ Google Sheets เพื่อบันทึกลงคอลัมน์ T
+                cmUsage: currentBillState.cmUsage || 0, 
+
                 pricePerUnit: parseFloat(document.getElementById('calc-price').innerText) || 0,
                 currentAmount: parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, '')) || 0,
                 overdueAmount: currentBillState.selectedOverdueAmount, 
@@ -2151,7 +2155,10 @@ function toggleOption(elementId, isChecked) {
                         u.oldUnit = u.prevUnit;
                         u.prevUnit = parseInt(currUnit);
                         u.usage = parseInt(currUnit) - currentBillState.prevUnit + (currentBillState.cmUsage || 0);
-                        u.cmUsage = 0;
+                        
+                        // 🌟 [แก้ไขบรรทัดนี้] ถ้าจ่ายแล้วถึงจะเคลียร์ทิ้ง แต่ถ้ารอชำระให้จำค่าไว้โชว์เตือน
+                        u.cmUsage = status.toLowerCase() === 'paid' ? 0 : (currentBillState.cmUsage || 0);
+                        
                         u.amount = parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, ''));
                         if (result.paidDate) u.paidDate = result.paidDate;
                         if (result.billingId) {
@@ -2170,7 +2177,7 @@ function toggleOption(elementId, isChecked) {
                         window.globalUsersList[userIndex] = u;
                         renderRealData(window.globalUsersList);
                         
-                        // กรองคำค้นหาเดิม (แก้ไขไว้จากรอบก่อน)
+                        // กรองคำค้นหาเดิม
                         const searchBox = document.getElementById('search-input');
                         if (searchBox && searchBox.value.trim() !== "") {
                             handleSearch(searchBox.value);
