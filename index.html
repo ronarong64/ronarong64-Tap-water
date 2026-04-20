@@ -2469,6 +2469,7 @@ function showActualBillingForm(user, overdueOnly = false) {
             }
         }
 
+        // 🎨 ฟังก์ชันวาดประวัติการเงิน (อัปเดต: เปลี่ยนวันที่เป็นเดือนย่อภาษาไทย)
         function renderFinanceHistory(history) {
             const b = document.getElementById('finance-history-body');
             if (!history || history.length === 0) {
@@ -2477,15 +2478,32 @@ function showActualBillingForm(user, overdueOnly = false) {
             }
 
             let fullHtml = '';
-            const MAX_ITEMS = 30; // แสดงแค่ 30 รายการล่าสุด
+            const MAX_ITEMS = 30;
             const historyToShow = history.slice(0, MAX_ITEMS);
 
             if (history.length > MAX_ITEMS) {
-                fullHtml += `<div class="text-center text-[10px] text-slate-400 mb-3 font-medium bg-slate-50 py-1.5 rounded-lg border border-slate-100">แสดง <span class="text-indigo-500 font-bold">${MAX_ITEMS}</span> รายการล่าสุด (จาก ${history.length})</div>`;
+                fullHtml += `<div class="text-center text-[10px] text-slate-400 mb-3 font-medium bg-slate-50 py-1.5 rounded-lg border border-slate-100">แสดง <span class="text-indigo-500 font-bold">${MAX_ITEMS}</span> รายการล่าสุด</div>`;
             }
 
             historyToShow.forEach(h => {
-                let pDateStr = h.date || '-';
+                // ✨ ส่วนการแปลงวันที่เป็นเดือนย่อ
+                let rawDate = h.date || '-';
+                let pDateStr = rawDate;
+                
+                if (rawDate !== '-' && rawDate.includes('/')) {
+                    const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+                    // แยก "20/04/2569 08:30" ออกเป็นส่วนๆ
+                    const parts = rawDate.split(' '); // [0] = วันที่, [1] = เวลา
+                    const dateParts = parts[0].split('/'); // [0]=ว, [1]=ด, [2]=ป
+                    
+                    const d = dateParts[0];
+                    const m = thMonths[parseInt(dateParts[1]) - 1]; // แปลงเลขเดือนเป็นชื่อย่อ
+                    const y = dateParts[2];
+                    const time = parts[1] ? parts[1] : '';
+                    
+                    pDateStr = `${d} ${m} ${y} ${time}`;
+                }
+
                 let isExpense = (h.category === 'รายจ่าย');
                 let amountColor = isExpense ? 'text-rose-500' : 'text-emerald-500';
                 let sign = isExpense ? '-' : '+';
@@ -2504,7 +2522,7 @@ function showActualBillingForm(user, overdueOnly = false) {
                     ic = 'fa-file-invoice-dollar'; col = 'text-orange-500'; bgCol = 'bg-orange-50';
                 }
                 
-                let detailText = h.detail ? `(${h.detail})` : '-';
+                let detailText = h.detail ? h.detail : '-';
 
                 fullHtml += `
                     <div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex gap-3 items-center transition hover:bg-slate-50">
@@ -2514,11 +2532,16 @@ function showActualBillingForm(user, overdueOnly = false) {
                         <div class="flex-1 min-w-0">
                             <div class="flex justify-between items-start mb-0.5">
                                 <div class="font-bold text-slate-800 text-[13px] truncate pr-2">${h.type}</div>
-                                <div class="text-[9px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 whitespace-nowrap shrink-0 mt-0.5"><i class="far fa-calendar-alt opacity-70"></i> ${pDateStr}</div>
+                                <div class="text-[9px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 whitespace-nowrap shrink-0 mt-0.5">${pDateStr}</div>
                             </div>
-                            <div class="flex justify-between items-start gap-2">
-                                <div class="text-[11px] text-slate-500 leading-tight flex-1 truncate">${detailText}</div>
-                                <div class="font-black ${amountColor} text-[14px] leading-none shrink-0 mt-0.5">${sign}${Number(h.amount).toLocaleString()} บ.</div>
+                            <div class="flex justify-between items-end gap-2">
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-[11px] text-slate-500 leading-tight truncate">📝 ${detailText}</div>
+                                    <div class="text-[10px] text-indigo-500 font-bold mt-1 flex items-center gap-1">
+                                        <i class="fas fa-user-edit text-[8px]"></i> โดย: ${h.recorder || 'Admin'}
+                                    </div>
+                                </div>
+                                <div class="font-black ${amountColor} text-[14px] leading-none shrink-0 mb-1">${sign}${Number(h.amount).toLocaleString()} บ.</div>
                             </div>
                         </div>
                     </div>`;
