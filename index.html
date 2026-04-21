@@ -4376,7 +4376,7 @@ function toggleOption(elementId, isChecked) {
         }
 
         // ==========================================
-        // 🔍 ฟังก์ชันแสดงรายละเอียด "ยอดค้างเก่า" ที่เก็บได้ในเดือนนี้
+        // 🔍 ฟังก์ชันแสดงรายละเอียด "ยอดค้างเก่า" แบบระบุเดือนชัดเจน
         // ==========================================
         function openReportOverdueCollected() {
             const modal = document.getElementById('report-overdue-collected-modal');
@@ -4384,84 +4384,78 @@ function toggleOption(elementId, isChecked) {
             const contentArea = document.getElementById('report-overdue-collected-list');
             const monthDisplay = document.getElementById('report-overdue-collected-month');
 
-            // 1. ดึงชื่อเดือนจากหน้ารายงานมาโชว์ที่หัว Modal
             const reportMonthHeader = document.getElementById('report-month-header');
-            monthDisplay.innerText = reportMonthHeader ? reportMonthHeader.innerText : "เดือนปัจจุบัน";
+            if (monthDisplay && reportMonthHeader) monthDisplay.innerText = reportMonthHeader.innerText;
 
-            // 2. เตรียมตัวแปรคำนวณ
             let listData = [];
             let totalCash = 0;
             let totalTransfer = 0;
 
-            // 3. กวาดข้อมูลจาก globalUsersList (เร็วปรู๊ดปร๊าด ไม่ต้องรอโหลด)
             if (window.globalUsersList) {
                 window.globalUsersList.forEach(u => {
-                    // กรองเฉพาะคนที่จ่ายแล้ว และ มียอดค้างชำระที่เพิ่งเคลียร์ไป
+                    // กรองเฉพาะบ้านที่ชำระแล้ว และมียอดค้างชำระ (Overdue) ที่เก็บได้ในรอบนี้
                     if ((u.statusCode === 'paid' || u.statusCode === 'free') && Number(u.overdueAmount) > 0) {
                         
                         let isTransfer = u.collector && u.collector.includes("โอน");
                         let overdueAmt = Number(u.overdueAmount);
 
-                        // แยกยอดเงินสด-เงินโอน
                         if (isTransfer) totalTransfer += overdueAmt;
                         else totalCash += overdueAmt;
 
-                        // 🎯 แกะรอยว่าจ่ายบิลของเดือนไหนไปบ้าง (ดึงจาก paidMonthsText)
-                        let monthsText = u.paidMonthsText || "บิลค้างเก่า";
-                        let parsedMonths = [];
+                        // 🎯 จุดสำคัญ: ตรวจสอบข้อมูลเดือนที่ชำระ
+                        let monthsText = u.paidMonthsText || "";
                         
-                        if (monthsText.includes('|')) {
-                            // กรณีแยกหลายเดือน เช่น "มี.ค. / 2569|100,เม.ย. / 2569|50"
+                        if (monthsText && monthsText.includes('|')) {
+                            // กรณีข้อมูลสมบูรณ์ (เดือน|ยอด)
                             let parts = monthsText.split(',');
-                            parsedMonths = parts.map(p => {
+                            parts.forEach(p => {
                                 let sp = p.split('|');
-                                return { m: sp[0], a: Number(sp[1] || 0) };
-                            });
-                        } else {
-                            // กรณีไม่มีรายละเอียดเดือน
-                            parsedMonths = [{ m: monthsText, a: overdueAmt }];
-                        }
-
-                        // ยัดใส่ List เตรียมวาดขึ้นจอ
-                        parsedMonths.forEach(pm => {
-                            if (pm.a > 0) {
                                 listData.push({
                                     houseNo: u.houseNo,
                                     name: u.name,
-                                    month: pm.m,
-                                    amount: pm.a,
+                                    month: sp[0], // ชื่อเดือนที่ระบุไว้
+                                    amount: Number(sp[1] || 0),
                                     collector: u.collector || "Admin",
                                     isTransfer: isTransfer
                                 });
-                            }
-                        });
+                            });
+                        } else {
+                            // 💡 กรณีข้อมูลเดือนว่าง (เช่น บิลเก่าก่อนเข้าระบบใหม่) 
+                            // ให้แสดงเป็น "บิลค้างเก่า" แต่ใส่ยอดรวมให้ถูกต้อง
+                            listData.push({
+                                houseNo: u.houseNo,
+                                name: u.name,
+                                month: monthsText || "บิลค้างเก่า",
+                                amount: overdueAmt,
+                                collector: u.collector || "Admin",
+                                isTransfer: isTransfer
+                            });
+                        }
                     }
                 });
             }
 
-            // 4. วาด HTML ลงในหน้าจอ
+            // --- ส่วนการวาดหน้าจอ (UI) ---
             if (listData.length === 0) {
-                contentArea.innerHTML = '<div class="text-center text-slate-400 py-10 bg-white rounded-[1.5rem] border border-dashed border-slate-200 shadow-sm"><i class="fas fa-folder-open text-3xl mb-2 opacity-50"></i><br>ไม่มีการเก็บยอดค้างเก่าในรอบนี้</div>';
+                contentArea.innerHTML = '<div class="text-center text-slate-400 py-10 bg-white rounded-3xl border border-dashed">ไม่มีรายการเก็บยอดค้างเก่า</div>';
             } else {
                 let html = '<div class="space-y-3 mb-6">';
                 listData.forEach(item => {
-                    let iconBg = item.isTransfer ? "bg-blue-100 text-blue-600" : "bg-emerald-100 text-emerald-600";
-                    let icon = item.isTransfer ? "fa-university" : "fa-hand-holding-usd";
-
+                    let iconColor = item.isTransfer ? "text-blue-500 bg-blue-50" : "text-emerald-500 bg-emerald-50";
                     html += `
-                    <div class="bg-white p-3.5 rounded-[1.2rem] border border-slate-100 shadow-sm flex justify-between items-center hover:bg-slate-50 transition">
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
                         <div class="flex items-start gap-3 min-w-0 pr-2">
-                            <div class="w-10 h-10 rounded-[0.8rem] ${iconBg} flex items-center justify-center shrink-0 shadow-inner mt-0.5">
-                                <i class="fas ${icon} text-lg"></i>
+                            <div class="w-10 h-10 rounded-xl ${iconColor} flex items-center justify-center shrink-0 shadow-inner">
+                                <i class="fas ${item.isTransfer ? 'fa-university' : 'fa-hand-holding-usd'} text-lg"></i>
                             </div>
                             <div class="min-w-0">
-                                <div class="font-bold text-slate-700 text-[13px] leading-tight truncate flex items-center gap-2">
-                                    <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] shadow-sm">${item.houseNo}</span>
+                                <div class="font-bold text-slate-700 text-[13px] truncate">
+                                    <span class="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] mr-1">${item.houseNo}</span>
                                     ${item.name}
                                 </div>
-                                <div class="text-[11px] text-slate-500 mt-1 flex flex-col gap-0.5">
-                                    <span><i class="fas fa-file-invoice text-rose-300 w-3"></i> บิล: <span class="font-bold text-rose-500">${item.month}</span></span>
-                                    <span><i class="fas fa-user-edit text-slate-300 w-3"></i> เก็บโดย: ${item.collector}</span>
+                                <div class="text-[11px] text-slate-500 mt-1">
+                                    <span class="text-rose-500 font-bold"><i class="fas fa-calendar-alt opacity-70"></i> บิล: ${item.month}</span>
+                                    <br><i class="fas fa-user-edit opacity-50"></i> เก็บโดย: ${item.collector}
                                 </div>
                             </div>
                         </div>
@@ -4472,39 +4466,21 @@ function toggleOption(elementId, isChecked) {
                 });
                 html += '</div>';
 
-                // กล่องสรุปยอดรวมด้านล่างสุด
+                // กล่องสรุปยอดเงิน
                 html += `
-                <div class="bg-slate-800 rounded-[1.5rem] p-5 shadow-lg mt-auto text-white relative overflow-hidden">
-                    <div class="absolute -right-4 -top-4 w-20 h-20 bg-white/5 rounded-full blur-xl"></div>
-                    <div class="flex justify-between items-center mb-2.5 relative z-10">
-                        <div class="flex items-center gap-2 text-slate-300 text-xs font-medium">
-                            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px]"><i class="fas fa-money-bill-wave"></i></div>
-                            เงินสด
-                        </div>
-                        <div class="font-bold text-emerald-400 text-sm">${totalCash.toLocaleString()} ฿</div>
-                    </div>
-                    <div class="flex justify-between items-center mb-3 relative z-10">
-                        <div class="flex items-center gap-2 text-slate-300 text-xs font-medium">
-                            <div class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-[10px]"><i class="fas fa-university"></i></div>
-                            โอนเข้าบัญชี
-                        </div>
-                        <div class="font-bold text-blue-400 text-sm">${totalTransfer.toLocaleString()} ฿</div>
-                    </div>
-                    <div class="flex justify-between items-center mt-3 pt-3 border-t border-slate-600 relative z-10">
-                        <div class="font-bold text-white text-sm">รวมยอดทั้งหมด</div>
-                        <div class="font-black text-white text-xl">${(totalCash + totalTransfer).toLocaleString()} <span class="text-sm opacity-80">฿</span></div>
+                <div class="bg-slate-800 rounded-3xl p-5 shadow-lg text-white">
+                    <div class="flex justify-between text-xs opacity-70 mb-2"><span>เงินสด:</span> <span>${totalCash.toLocaleString()} ฿</span></div>
+                    <div class="flex justify-between text-xs opacity-70 mb-3"><span>โอนเงิน:</span> <span>${totalTransfer.toLocaleString()} ฿</span></div>
+                    <div class="flex justify-between font-bold border-t border-white/10 pt-3 text-lg">
+                        <span>รวมยอดค้างที่เก็บได้</span>
+                        <span class="text-emerald-400">${(totalCash + totalTransfer).toLocaleString()} ฿</span>
                     </div>
                 </div>`;
-
                 contentArea.innerHTML = html;
             }
 
-            // 5. แสดงหน้าต่างพร้อม Animation
             modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                box.classList.remove('scale-95');
-            }, 10);
+            setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
         }
 
         // ฟังก์ชันปิด Modal
