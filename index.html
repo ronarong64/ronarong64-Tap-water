@@ -4149,9 +4149,8 @@ function toggleOption(elementId, isChecked) {
             }, 300);
         }
 
-        // 📈 ฟังก์ชันโหลดรายงานรายเดือน (ปรับปรุง: ย้ายตัวหมุน และแสดงวันที่ไทย)
+        // 📈 1. ฟังก์ชันโหลดรายงานรายเดือน (ฉบับแก้ไข: ป้องกันยอดปัจจุบันไหลไปเดือนอดีต)
 async function loadMonthlyReport(monthStr = null) {
-    // 1. ตั้งค่าเดือนเริ่มต้น
     if (!monthStr) {
         const now = new Date();
         monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -4164,21 +4163,15 @@ async function loadMonthlyReport(monthStr = null) {
     const monthNum = parts[1];
     const targetMonthStr = `${monthNum}/${yearBE}`;
     
-    // รายชื่อเดือนไทยแบบย่อ
     const thaiShortMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
     const displayMonth = `${thaiShortMonths[parseInt(monthNum) - 1]} / ${yearBE}`;
 
     const headerEl = document.getElementById('report-month-header');
     const pickerEl = document.getElementById('report-picker-display');
 
-    // 🌀 2. แสดงสถานะกำลังโหลด (Loading State)
-    // 🌟 โชว์ตัวหมุนที่หัวข้อ "ประจำเดือน" เท่านั้น
     if(headerEl) headerEl.innerHTML = `<i class="fas fa-circle-notch fa-spin text-purple-500"></i> กำลังโหลดข้อมูล...`;
-    
-    // 🌟 ที่ปุ่มเลือกเดือน ให้แสดงชื่อเดือนนิ่งๆ ไม่ต้องมีตัวหมุน
     if(pickerEl) pickerEl.innerText = displayMonth;
     
-    // ปรับความโปร่งแสงของตัวเลขเพื่อให้รู้ว่ากำลังอัปเดต
     const fadeElements = ['report-income', 'report-expense', 'report-usage', 'report-net', 'accordion-container'];
     fadeElements.forEach(id => {
         const el = document.getElementById(id);
@@ -4186,7 +4179,7 @@ async function loadMonthlyReport(monthStr = null) {
     });
 
     try {
-        // 🚀 3. ดึงข้อมูลจาก API
+        // 🚀 ดึงข้อมูลจาก API (รายจ่าย และ รายรับประจำเดือน+ค้างเก่า)
         const [resExp, resOverdue] = await Promise.all([
             fetch(API_URL + "?action=getExpenses&monthStr=" + encodeURIComponent(targetMonthStr)),
             fetch(API_URL + "?action=getOverdueCollected&monthStr=" + encodeURIComponent(targetMonthStr))
@@ -4198,37 +4191,45 @@ async function loadMonthlyReport(monthStr = null) {
         let incCurrent = 0, incOverdue = 0, incCash = 0, incTransfer = 0, totalUsage = 0;
         let listPd = [], listWp = [], listNc = [];
 
-        // คำนวณค้างเก่า
         if (dataOverdue.success) {
+            // 🎯 1. คำนวณค้างเก่าที่เก็บได้จริงในเดือนที่เลือกดู
             dataOverdue.data.forEach(item => {
                 incOverdue += item.amount;
                 if (item.isTransfer) incTransfer += item.amount;
                 else incCash += item.amount;
             });
+            
+            // 🎯 2. ใช้ยอดบิลประจำเดือนจาก Server (ป้องกันยอดปัจจุบันไหลไปโชว์ในเดือนอดีต)
+            // เลิกใช้ globalUsersList ในส่วนนี้ ยอดจะเป็น 0 ทันทีถ้า Server ไม่มีข้อมูล
+            if (dataOverdue.currentData) {
+                incCurrent = dataOverdue.currentData.total;
+                totalUsage = dataOverdue.currentData.usage;
+                
+                // รวมยอดเงินสด/โอน ทั้งบิลปัจจุบันและบิลค้างเก่าที่เก็บได้ในเดือนนี้
+                incCash += dataOverdue.currentData.cash;
+                incTransfer += dataOverdue.currentData.transfer;
+                
+                listPd = dataOverdue.currentData.listPd || [];
+                listWp = dataOverdue.currentData.listWp || [];
+                
+                // หาบ้านที่ "ยังไม่เก็บ" ในเดือนนั้น
+                const allHouses = dataOverdue.currentData.allHouses || [];
+                const billedHouses = [...listPd, ...listWp].map(b => String(b.houseNo));
+                allHouses.forEach(h => {
+                    if (!billedHouses.includes(String(h.houseNo))) {
+                        listNc.push({ houseNo: h.houseNo, name: h.name, amount: 0 });
+                    }
+                });
+            }
+            
+            // พักข้อมูลค้างเก่าไว้ให้ Modal
+            window.lastOverdueData = dataOverdue.data || [];
         }
 
-        // คำนวณเดือนปัจจุบัน & จัดกลุ่ม Accordion (จาก globalUsersList)
-        if (window.globalUsersList) {
-            window.globalUsersList.forEach(u => {
-                const amt = parseFloat(u.amount) || 0;
-                if (u.statusCode === 'paid' || u.statusCode === 'free') {
-                    incCurrent += amt;
-                    totalUsage += (parseInt(u.usage) || 0);
-                    if (u.collector && u.collector.includes("โอน")) incTransfer += amt;
-                    else incCash += amt;
-                    listPd.push(u);
-                } else if (u.statusCode === 'waiting') {
-                    listWp.push(u);
-                } else {
-                    listNc.push(u);
-                }
-            });
-        }
-
-        // คำนวณรายจ่าย
+        // 🎯 3. คำนวณรายจ่าย
         let expRepair = 0, expElec = 0, expFee = 0, expOther = 0;
         let expItems = [];
-        if (dataExp.success) {
+        if (dataExp.success && dataExp.data) {
             dataExp.data.forEach(item => {
                 const amt = parseFloat(item.amount) || 0;
                 if (item.type === 'ค่าซ่อมแซม') expRepair += amt;
@@ -4240,7 +4241,7 @@ async function loadMonthlyReport(monthStr = null) {
         }
         const totalExp = expRepair + expElec + expFee + expOther;
 
-        // ✅ 4. อัปเดตข้อมูลบนหน้าจอ และคืนค่าความชัด
+        // ✅ 4. อัปเดตข้อมูลบนหน้าจอ
         if(headerEl) headerEl.innerText = `ประจำเดือน ${displayMonth}`;
         
         document.getElementById('report-income').innerText = (incCurrent + incOverdue).toLocaleString();
@@ -4258,17 +4259,16 @@ async function loadMonthlyReport(monthStr = null) {
         document.getElementById('report-usage').innerText = totalUsage.toLocaleString();
         document.getElementById('report-net').innerText = (incCurrent + incOverdue - totalExp).toLocaleString();
 
-        // อัปเดต Accordion
         if(document.getElementById('badge-pd')) document.getElementById('badge-pd').innerText = listPd.length;
         if(document.getElementById('badge-wp')) document.getElementById('badge-wp').innerText = listWp.length;
         if(document.getElementById('badge-nc')) document.getElementById('badge-nc').innerText = listNc.length;
 
+        // วาดรายการลง Accordion
         renderReportListAccordion('list-pd', listPd, 'emerald');
         renderReportListAccordion('list-wp', listWp, 'orange');
         renderReportListAccordion('list-nc', listNc, 'slate');
         renderExpenseListAccordion('report-expenses-body', expItems);
 
-        // คืนค่าความชัดพร้อมลูกเล่นแวบหนึ่ง
         fadeElements.forEach(id => {
             const el = document.getElementById(id);
             if(el) {
