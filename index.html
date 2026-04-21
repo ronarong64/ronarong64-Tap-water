@@ -563,76 +563,76 @@
         </div>
       </div>
 
-      <div id="page-reports" class="hidden space-y-4 animate-fade-in pb-20">
-        <div
-          class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 flex justify-between items-center relative overflow-hidden">
+      <div id="page-reports" class="hidden space-y-5 animate-fade-in pb-20">
+        
+        <div class="bg-white p-5 flex justify-between items-center rounded-[1.5rem] shadow-sm border border-slate-100 relative overflow-hidden">
           <div class="relative z-10">
-            <h2 class="font-bold text-slate-800 text-[18px] flex items-center gap-2">
-              <i class="fas fa-chart-pie text-purple-600"></i> สรุปรายงานรายเดือน
+            <h2 class="font-bold text-slate-800 text-xl flex items-center gap-2">
+              <i class="fas fa-chart-pie text-purple-500"></i> สรุปรายเดือน
             </h2>
-            <p id="report-month-display" class="text-[12px] text-slate-500 font-medium mt-0.5">ประจำเดือน ...</p>
+            <p id="report-month-header" class="text-[14px] text-purple-500 font-medium mt-0.5">ประจำเดือน ...</p>
           </div>
-
-          <div
-            class="relative bg-slate-50 px-3 py-2 rounded-2xl border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden z-10"
-            onclick="try { document.getElementById('report-month-input').showPicker(); } catch(e){}">
+          
+          <div class="relative bg-slate-50 pl-3 pr-2 py-2 rounded-2xl border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-inner z-10"
+               onclick="try { document.getElementById('report-month-input').showPicker(); } catch(e){}">
             <input type="month" id="report-month-input" onchange="loadMonthlyReport(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-            <div
-              class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shadow-sm relative z-0 pointer-events-none">
+            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shadow-sm relative pointer-events-none">
               <i class="far fa-calendar-alt text-sm"></i>
             </div>
-            <i class="fas fa-chevron-down text-[9px] text-slate-300 ml-0.5 relative z-0 pointer-events-none"></i>
-          </div>
-        </div>
-
-        <div
-          class="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-[2rem] p-6 text-white shadow-lg shadow-purple-500/20 relative overflow-hidden">
-          <div class="absolute -top-4 -right-4 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl"></div>
-          <div class="relative z-10">
-            <p class="text-purple-100 text-xs font-medium uppercase tracking-widest mb-1">รายรับรวมประจำเดือน
-              (รวมยอดค้าง)</p>
-            <div class="flex items-baseline gap-2">
-              <span id="rpt-total-income" class="text-4xl font-black tracking-tight">0</span>
-              <span class="text-lg font-bold opacity-80">บาท</span>
+            <div class="text-right flex-1 min-w-[65px] pointer-events-none">
+              <div class="text-[9px] text-slate-400 font-medium mb-[1px] leading-none">เลือกเดือน</div>
+              <div id="report-picker-display" class="font-bold text-slate-700 text-[11px] leading-none">กำลังโหลด...</div>
             </div>
-            <div class="mt-4 grid grid-cols-2 gap-4 border-t border-white/20 pt-4">
-              <div>
-                <p class="text-[10px] text-purple-200 uppercase">💰 เงินสดในมือ</p>
-                <p class="text-lg font-bold" id="rpt-cash-total">0 ฿</p>
-              </div>
-              <div>
-                <p class="text-[10px] text-purple-200 uppercase">🏦 เงินโอนธนาคาร</p>
-                <p class="text-lg font-bold" id="rpt-bank-total">0 ฿</p>
-              </div>
-            </div>
+            <i class="fas fa-chevron-down text-[9px] text-slate-300 ml-0.5 pointer-events-none"></i>
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
-          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-            <div class="flex items-center gap-2 mb-2 text-emerald-600">
-              <i class="fas fa-check-circle text-sm"></i>
-              <span class="text-[11px] font-bold uppercase">ชำระแล้ว</span>
-            </div>
-            <div class="text-2xl font-black text-slate-800" id="rpt-paid-count">0
-              <span class="text-xs font-normal text-slate-400">หลัง</span></div>
+          <div class="bg-white p-4 rounded-3xl shadow-sm border border-emerald-100 flex flex-col justify-center items-center text-center relative overflow-hidden">
+            <div class="absolute bottom-0 w-full h-1 bg-emerald-400"></div>
+            <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl mb-2"><i class="fas fa-hand-holding-usd"></i></div>
+            <p class="text-[11px] text-slate-400 font-bold uppercase">รายรับ (ค่าน้ำ)</p>
+            <p class="text-xl font-black text-emerald-600 leading-none mt-1"><span id="report-total-income">0</span><span class="text-sm ml-1 text-emerald-400">฿</span></p>
           </div>
-          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-            <div class="flex items-center gap-2 mb-2 text-rose-500">
-              <i class="fas fa-exclamation-circle text-sm"></i>
-              <span class="text-[11px] font-bold uppercase">ยังไม่จ่าย</span>
-            </div>
-            <div class="text-2xl font-black text-slate-800" id="rpt-pending-count">0
-              <span class="text-xs font-normal text-slate-400">หลัง</span></div>
+          
+          <div class="bg-white p-4 rounded-3xl shadow-sm border border-rose-100 flex flex-col justify-center items-center text-center relative overflow-hidden">
+            <div class="absolute bottom-0 w-full h-1 bg-rose-400"></div>
+            <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center text-xl mb-2"><i class="fas fa-file-invoice-dollar"></i></div>
+            <p class="text-[11px] text-slate-400 font-bold uppercase">รายจ่ายทั้งหมด</p>
+            <p class="text-xl font-black text-rose-500 leading-none mt-1"><span id="report-total-expense">0</span><span class="text-sm ml-1 text-rose-400">฿</span></p>
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div class="p-4 border-b border-slate-50 font-bold text-slate-700 text-sm flex items-center gap-2">
-            <i class="fas fa-list-ul text-slate-400"></i> สรุปรายละเอียด
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-5 rounded-[2rem] flex justify-between items-center shadow-lg shadow-blue-500/30 text-white relative overflow-hidden">
+          <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+          <div class="flex items-center gap-4 relative z-10">
+            <div class="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl border border-white/20"><i class="fas fa-wallet text-white drop-shadow-sm"></i></div>
+            <div>
+              <p class="text-[12px] font-bold text-blue-100 uppercase tracking-wide">ยอดคงเหลือสุทธิ</p>
+              <p class="text-3xl font-black text-white leading-none mt-1 drop-shadow-sm"><span id="report-net-balance">0</span> <span class="text-lg font-bold opacity-80">฿</span></p>
+            </div>
           </div>
-          <div class="p-4 space-y-4" id="report-detail-list">
-          </div>
+        </div>
+
+        <div class="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-4 border-b border-slate-100 font-bold text-slate-700 text-[14px] flex items-center gap-2 bg-slate-50/50">
+                <i class="fas fa-list-ul text-slate-400"></i> แจกแจงรายละเอียด
+            </div>
+            
+            <div class="p-4">
+                <h3 class="text-sm font-bold text-emerald-600 mb-3 flex items-center gap-2"><i class="fas fa-check-circle"></i> รายชื่อผู้ชำระแล้ว <span id="report-paid-count" class="text-xs bg-emerald-100 px-2 py-0.5 rounded-full text-emerald-700">0 หลัง</span></h3>
+                <div id="report-list-paid" class="space-y-1 max-h-[300px] overflow-y-auto hide-scrollbar"></div>
+                
+                <div class="border-t border-dashed border-slate-200 my-4"></div>
+                
+                <h3 class="text-sm font-bold text-rose-500 mb-3 flex items-center gap-2"><i class="fas fa-exclamation-circle"></i> รายชื่อผู้ค้างชำระ <span id="report-pending-count" class="text-xs bg-rose-100 px-2 py-0.5 rounded-full text-rose-700">0 หลัง</span></h3>
+                <div id="report-list-pending" class="space-y-1 max-h-[300px] overflow-y-auto hide-scrollbar"></div>
+                
+                <div class="border-t border-dashed border-slate-200 my-4"></div>
+                
+                <h3 class="text-sm font-bold text-orange-500 mb-3 flex items-center gap-2"><i class="fas fa-receipt"></i> รายการรายจ่ายเดือนนี้</h3>
+                <div id="report-list-expense" class="space-y-1 max-h-[300px] overflow-y-auto hide-scrollbar"></div>
+            </div>
         </div>
       </div>
 
@@ -2504,6 +2504,7 @@ function toggleOption(elementId, isChecked) {
             if (pageId === 'expenses' && typeof loadCurrentMonthExpenses === "function") loadCurrentMonthExpenses();
             if (pageId === 'finance' && typeof loadFinance === "function") loadFinance();
             if (pageId === 'collector' && typeof loadCollectorReport === "function") loadCollectorReport();
+            if (pageId === 'reports' && typeof loadMonthlyReport === "function") loadMonthlyReport();
         }
 
         // ==========================================
@@ -4044,84 +4045,152 @@ function toggleOption(elementId, isChecked) {
         }
 
         // ==========================================
-// 📈 ระบบรายงานรายเดือน (Monthly Report Logic)
-// ==========================================
-async function loadMonthlyReport(monthStr = null) {
-    const container = document.getElementById('report-detail-list');
-    container.innerHTML = `<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-3xl text-purple-500"></i></div>`;
+        // 📈 ระบบรายงานรายเดือน (Monthly Report & Summaries)
+        // ==========================================
+        async function loadMonthlyReport(monthStr = null) {
+            const listPaid = document.getElementById('report-list-paid');
+            const listPending = document.getElementById('report-list-pending');
+            const listExpense = document.getElementById('report-list-expense');
+            
+            listPaid.innerHTML = `<div class="text-center py-4"><i class="fas fa-circle-notch fa-spin text-emerald-500"></i></div>`;
+            listPending.innerHTML = `<div class="text-center py-4"><i class="fas fa-circle-notch fa-spin text-rose-500"></i></div>`;
+            listExpense.innerHTML = `<div class="text-center py-4"><i class="fas fa-circle-notch fa-spin text-orange-500"></i></div>`;
 
-    if (!monthStr) {
-        const now = new Date();
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        monthStr = `${now.getFullYear()}-${m}`;
-        document.getElementById('report-month-input').value = monthStr;
-    }
-
-    // แปลง YYYY-MM เป็นชื่อเดือนไทย
-    const parts = monthStr.split('-');
-    const targetMonth = `${parts[1]}/${parseInt(parts[0]) + 543}`;
-    document.getElementById('report-month-display').innerText = `ประจำเดือน ${formatThaiMonth(targetMonth).replace(" / ", "/")}`;
-
-    try {
-        // ใช้ข้อมูลจาก globalUsersList ที่โหลดไว้แล้วมาคำนวณ (เพื่อความรวดเร็ว)
-        // หรือถ้าต้องการข้อมูลสดใหม่จาก Server สามารถใช้ fetch API ได้
-        const users = window.globalUsersList;
-        
-        let stats = {
-            totalIncome: 0, cash: 0, bank: 0,
-            paid: 0, pending: 0, waterUsage: 0
-        };
-
-        users.forEach(u => {
-            if (u.statusCode === 'paid' || u.statusCode === 'free') {
-                stats.paid++;
-                const amount = parseFloat(u.amount) || 0;
-                const overdue = parseFloat(u.overdueAmount) || 0;
-                const total = amount + overdue;
-                
-                stats.totalIncome += total;
-                // ตรวจสอบวิธีชำระเงินจากข้อมูลล่าสุด
-                if (u.collector && u.collector.includes("โอน")) stats.bank += total;
-                else stats.cash += total;
-                
-                stats.waterUsage += (parseInt(u.usage) || 0);
-            } else {
-                stats.pending++;
+            if (!monthStr) {
+                const now = new Date();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                monthStr = `${now.getFullYear()}-${m}`;
+                if(document.getElementById('report-month-input')) document.getElementById('report-month-input').value = monthStr;
             }
-        });
 
-        // อัปเดต UI
-        document.getElementById('rpt-total-income').innerText = stats.totalIncome.toLocaleString();
-        document.getElementById('rpt-cash-total').innerText = stats.cash.toLocaleString() + " ฿";
-        document.getElementById('rpt-bank-total').innerText = stats.bank.toLocaleString() + " ฿";
-        document.getElementById('rpt-paid-count').innerText = stats.paid;
-        document.getElementById('rpt-pending-count').innerText = stats.pending;
+            const parts = monthStr.split('-');
+            const reqMonth = parts[1];
+            const reqYear = parseInt(parts[0]) + 543;
+            const targetMonthStr = `${reqMonth}/${reqYear}`;
+            
+            const monthText = formatThaiMonth(targetMonthStr).replace(" / ", "/");
+            document.getElementById('report-month-header').innerText = `ประจำเดือน ${monthText}`;
+            document.getElementById('report-picker-display').innerText = monthText;
 
-        container.innerHTML = `
-            <div class="flex justify-between items-center text-sm">
-                <span class="text-slate-500">ปริมาณน้ำที่ใช้รวม:</span>
-                <span class="font-bold text-slate-800">${stats.waterUsage.toLocaleString()} หน่วย</span>
-            </div>
-            <div class="flex justify-between items-center text-sm">
-                <span class="text-slate-500">เปอร์เซ็นต์การจัดเก็บ:</span>
-                <span class="font-bold text-purple-600">${Math.round((stats.paid / (stats.paid + stats.pending)) * 100)}%</span>
-            </div>
-            <button onclick="window.print()" class="w-full mt-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2">
-                <i class="fas fa-print"></i> พิมพ์รายงานสรุป
-            </button>
-        `;
+            try {
+                // 🚀 ยิง API ดึงรายจ่ายของเดือนที่เลือก
+                const resOut = await fetch(API_URL + "?action=getExpenses&monthStr=" + encodeURIComponent(targetMonthStr));
+                const dataOut = await resOut.json();
 
-    } catch (e) {
-        showToast('ไม่สามารถสรุปข้อมูลได้', 'error');
-    }
-}
+                let totalIncome = 0;
+                let totalExpense = 0;
+                
+                let paidUsers = [];
+                let pendingUsers = [];
 
-// อัปเดตฟังก์ชัน showPage ให้เรียก loadMonthlyReport เมื่อเปิดหน้า
-const originalShowPage = showPage;
-showPage = function(pageId) {
-    originalShowPage(pageId);
-    if (pageId === 'reports') loadMonthlyReport();
-};
+                // 1. แยกแยะผู้จ่ายแล้ว / ค้างชำระ (ดึงจากตัวแปร globalUsersList ในหน้าแรกเลย รวดเร็วทันใจ)
+                if (window.globalUsersList) {
+                    window.globalUsersList.forEach(u => {
+                        const amount = parseFloat(u.amount) || 0;
+                        const overdue = parseFloat(u.overdueAmount) || 0;
+                        
+                        if (u.statusCode === 'paid' || u.statusCode === 'free') {
+                            const totalPaid = amount + overdue;
+                            if(totalPaid > 0 || u.statusCode === 'free') {
+                                totalIncome += totalPaid;
+                                paidUsers.push({ houseNo: u.houseNo, name: u.name, amount: totalPaid, paidDate: u.paidDate, collector: u.collector });
+                            }
+                        } else if (u.statusCode === 'waiting') {
+                            const totalPending = amount + overdue;
+                            if(totalPending > 0) {
+                                pendingUsers.push({ houseNo: u.houseNo, name: u.name, amount: totalPending });
+                            }
+                        }
+                    });
+                }
+
+                // 2. ดึงรายการรายจ่ายมาคำนวณยอดรวม
+                let expenseItems = [];
+                if (dataOut.success && dataOut.data) {
+                    dataOut.data.forEach(item => {
+                        totalExpense += Number(item.amount);
+                        expenseItems.push(item);
+                    });
+                }
+
+                // 3. แสดงผลตัวเลข 3 กล่องหลัก
+                document.getElementById('report-total-income').innerText = totalIncome.toLocaleString();
+                document.getElementById('report-total-expense').innerText = totalExpense.toLocaleString();
+                document.getElementById('report-net-balance').innerText = (totalIncome - totalExpense).toLocaleString();
+                
+                document.getElementById('report-paid-count').innerText = paidUsers.length + " หลัง";
+                document.getElementById('report-pending-count').innerText = pendingUsers.length + " หลัง";
+
+                // 4. วาดลิสต์รายชื่อลงไปในหน้าจอ
+                renderReportList('report-list-paid', paidUsers, 'emerald');
+                renderReportList('report-list-pending', pendingUsers, 'rose');
+                renderExpenseReportList('report-list-expense', expenseItems);
+
+            } catch (e) {
+                showToast('เกิดข้อผิดพลาดในการโหลดรายงาน', 'error');
+            }
+        }
+
+        // ฟังก์ชันวาดรายการบ้าน (ตามลอจิกในไฟล์ สรุปรายเดือน.txt)
+        function renderReportList(id, list, color) {
+            const el = document.getElementById(id);
+            el.innerHTML = '';
+            if (list.length === 0) {
+                el.innerHTML = '<div class="text-center text-slate-300 py-4 text-[13px]">ไม่มีรายการ</div>';
+                return;
+            }
+            
+            let html = "";
+            list.forEach(item => {
+                let subText = '';
+                let amountText = `<div class="font-bold text-${color}-600 text-sm">${Number(item.amount).toLocaleString()} ฿</div>`;
+                
+                // ดึงสีและข้อความย่อยตามสถานะ
+                if (color === 'emerald') {
+                    subText = `<div class="text-[10px] text-slate-400 mt-0.5"><i class="fas fa-calendar-check opacity-70"></i> ${item.paidDate || '-'} | 👤 ${item.collector || '-'}</div>`;
+                } else if (color === 'rose') {
+                    subText = `<div class="text-[10px] text-rose-400 mt-0.5"><i class="fas fa-clock opacity-70"></i> รอชำระเงิน</div>`;
+                }
+                
+                html += `
+                    <div class="flex justify-between items-center p-2.5 hover:bg-slate-50 rounded-xl transition border-b border-slate-50 last:border-0">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-full bg-${color}-100 text-${color}-600 flex items-center justify-center text-[11px] font-bold shrink-0 shadow-inner">${item.houseNo}</div>
+                            <div class="min-w-0 pr-2">
+                                <div class="text-slate-700 text-[13px] font-bold leading-tight truncate">${item.name}</div>
+                                ${subText}
+                            </div>
+                        </div>
+                        ${amountText}
+                    </div>`;
+            });
+            el.innerHTML = html;
+        }
+
+        // ฟังก์ชันวาดรายการรายจ่าย
+        function renderExpenseReportList(id, list) {
+            const el = document.getElementById(id);
+            if (list.length === 0) {
+                el.innerHTML = '<div class="text-center text-slate-300 py-4 text-[13px]">ไม่มีรายการรายจ่าย</div>';
+                return;
+            }
+            
+            let html = "";
+            list.forEach(item => {
+                html += `
+                    <div class="flex justify-between items-center p-2.5 hover:bg-slate-50 rounded-xl transition border-b border-slate-50 last:border-0">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-[12px] shrink-0 shadow-inner"><i class="fas fa-file-invoice-dollar"></i></div>
+                            <div class="min-w-0 pr-2">
+                                <div class="text-slate-700 text-[13px] font-bold leading-tight truncate">${item.type}</div>
+                                <div class="text-[10px] text-slate-400 mt-0.5 truncate">${item.detail}</div>
+                            </div>
+                        </div>
+                        <div class="font-bold text-orange-500 text-sm">-${Number(item.amount).toLocaleString()} ฿</div>
+                    </div>`;
+            });
+            el.innerHTML = html;
+        }
 
   </script>
 
