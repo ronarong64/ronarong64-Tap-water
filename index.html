@@ -3710,6 +3710,38 @@ function toggleOption(elementId, isChecked) {
     </div>
   </div>
 
+  <div id="about-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+    <div id="about-modal-box" class="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl relative transform scale-95 transition-transform duration-300 border border-white/20">
+      
+      <button onclick="closeAboutModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition active:scale-90 z-20">
+        <i class="fas fa-times"></i>
+      </button>
+
+      <div class="p-8 text-center flex flex-col items-center relative z-10">
+        
+        <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-pink-500 to-purple-500 flex items-center justify-center text-white text-3xl shadow-lg mb-4">
+          <i class="fas fa-code"></i>
+        </div>
+
+        <h3 class="text-xl font-bold text-slate-800 mb-1">เกี่ยวกับเรา</h3>
+        <p class="text-xs text-slate-500 mb-5">ระบบบริหารจัดการน้ำประปาหมู่บ้าน</p>
+
+        <div class="bg-white p-2 rounded-2xl border-2 border-dashed border-purple-200 shadow-sm mb-3">
+          <img src="https://raw.githubusercontent.com/ronarong64/IMG/refs/heads/main/QR.PNG" alt="QR Code" class="w-40 h-40 object-contain rounded-lg">
+        </div>
+
+        <p class="text-sm text-slate-700 font-bold mb-5">สแกนเพื่อลงทะเบียนระบบ</p>
+
+        <div class="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
+            <p class="text-[11px] text-slate-400 font-medium uppercase tracking-widest">ผู้พัฒนาระบบ</p>
+            <h4 class="text-sm font-bold text-purple-600 mt-1">รณรงค์ อินทร์คง</h4>
+            <p class="text-[10px] text-slate-400 mt-1 font-mono">Software version 14.0.0</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <script>
       // ==========================================
       // ระบบสถิติเงินสดในมือ (Collector Stats)
@@ -3870,6 +3902,35 @@ function toggleOption(elementId, isChecked) {
                 btn.disabled = false;
                 btn.innerHTML = oldText;
             }
+        }
+
+        // ==========================================
+        // ระบบหน้าต่างเกี่ยวกับเรา (About Modal)
+        // ==========================================
+        function openAboutModal() {
+            // หุบเมนูด้านข้างก่อน
+            if (typeof toggleMenu === 'function') toggleMenu();
+            
+            const modal = document.getElementById('about-modal');
+            const box = document.getElementById('about-modal-box');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeAboutModal() {
+            const modal = document.getElementById('about-modal');
+            const box = document.getElementById('about-modal-box');
+            
+            modal.classList.add('opacity-0');
+            box.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
         }
 
   </script>
