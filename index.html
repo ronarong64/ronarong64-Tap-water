@@ -4149,9 +4149,8 @@ function toggleOption(elementId, isChecked) {
             }, 300);
         }
 
-        // 📈 ฟังก์ชันโหลดรายงานรายเดือน (ปรับปรุง: ย้ายตัวหมุน และแสดงวันที่ไทย)
+      // 📈 ฟังก์ชันโหลดรายงานรายเดือน (ดึงยอดจาก Server ทั้งหมด ป้องกันยอดปัจจุบันไหลไปเดือนอดีต)
 async function loadMonthlyReport(monthStr = null) {
-    // 1. ตั้งค่าเดือนเริ่มต้น
     if (!monthStr) {
         const now = new Date();
         monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -4164,21 +4163,15 @@ async function loadMonthlyReport(monthStr = null) {
     const monthNum = parts[1];
     const targetMonthStr = `${monthNum}/${yearBE}`;
     
-    // รายชื่อเดือนไทยแบบย่อ
     const thaiShortMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
     const displayMonth = `${thaiShortMonths[parseInt(monthNum) - 1]} / ${yearBE}`;
 
     const headerEl = document.getElementById('report-month-header');
     const pickerEl = document.getElementById('report-picker-display');
 
-    // 🌀 2. แสดงสถานะกำลังโหลด (Loading State)
-    // 🌟 โชว์ตัวหมุนที่หัวข้อ "ประจำเดือน" เท่านั้น
     if(headerEl) headerEl.innerHTML = `<i class="fas fa-circle-notch fa-spin text-purple-500"></i> กำลังโหลดข้อมูล...`;
-    
-    // 🌟 ที่ปุ่มเลือกเดือน ให้แสดงชื่อเดือนนิ่งๆ ไม่ต้องมีตัวหมุน
     if(pickerEl) pickerEl.innerText = displayMonth;
     
-    // ปรับความโปร่งแสงของตัวเลขเพื่อให้รู้ว่ากำลังอัปเดต
     const fadeElements = ['report-income', 'report-expense', 'report-usage', 'report-net', 'accordion-container'];
     fadeElements.forEach(id => {
         const el = document.getElementById(id);
@@ -4186,61 +4179,47 @@ async function loadMonthlyReport(monthStr = null) {
     });
 
     try {
-        // 🚀 3. ดึงข้อมูลจาก API
-        const [resExp, resOverdue] = await Promise.all([
-            fetch(API_URL + "?action=getExpenses&monthStr=" + encodeURIComponent(targetMonthStr)),
-            fetch(API_URL + "?action=getOverdueCollected&monthStr=" + encodeURIComponent(targetMonthStr))
+        // 🚀 ดึงข้อมูลจาก API ตัวใหม่
+        const [resMain, resExp] = await Promise.all([
+            fetch(API_URL + "?action=getMonthlyReportData&monthStr=" + encodeURIComponent(targetMonthStr)),
+            fetch(API_URL + "?action=getExpenses&monthStr=" + encodeURIComponent(targetMonthStr))
         ]);
         
-        const dataExp = await resExp.json();
-        const dataOverdue = await resOverdue.json();
+        const main = await resMain.json();
+        const exp = await resExp.json();
 
+        // เคลียร์ยอดเป็น 0 ไว้ก่อน ถ้าไม่มีข้อมูลจาก Server ยอดจะเป็น 0 ทันที
         let incCurrent = 0, incOverdue = 0, incCash = 0, incTransfer = 0, totalUsage = 0;
+        let expRepair = 0, expElec = 0, expFee = 0, expOther = 0, totalExp = 0;
         let listPd = [], listWp = [], listNc = [];
 
-        // คำนวณค้างเก่า
-        if (dataOverdue.success) {
-            dataOverdue.data.forEach(item => {
-                incOverdue += item.amount;
-                if (item.isTransfer) incTransfer += item.amount;
-                else incCash += item.amount;
-            });
+        if (main.success) {
+            const d = main.data;
+            incCurrent = d.currentMonth.total;
+            incOverdue = d.overdueMonth.total;
+            incCash = d.currentMonth.cash + d.overdueMonth.cash;
+            incTransfer = d.currentMonth.transfer + d.overdueMonth.transfer;
+            totalUsage = d.currentMonth.usage;
+            
+            listPd = d.currentMonth.list;
+            listWp = d.pending.list;
+
+            // เก็บรายชื่อค้างเก่าไว้เปิดใน Modal โดยเฉพาะ
+            window.lastOverdueData = d.overdueMonth.list; 
         }
 
-        // คำนวณเดือนปัจจุบัน & จัดกลุ่ม Accordion (จาก globalUsersList)
-        if (window.globalUsersList) {
-            window.globalUsersList.forEach(u => {
-                const amt = parseFloat(u.amount) || 0;
-                if (u.statusCode === 'paid' || u.statusCode === 'free') {
-                    incCurrent += amt;
-                    totalUsage += (parseInt(u.usage) || 0);
-                    if (u.collector && u.collector.includes("โอน")) incTransfer += amt;
-                    else incCash += amt;
-                    listPd.push(u);
-                } else if (u.statusCode === 'waiting') {
-                    listWp.push(u);
-                } else {
-                    listNc.push(u);
-                }
-            });
-        }
-
-        // คำนวณรายจ่าย
-        let expRepair = 0, expElec = 0, expFee = 0, expOther = 0;
-        let expItems = [];
-        if (dataExp.success) {
-            dataExp.data.forEach(item => {
+        if (exp.success) {
+            exp.data.forEach(item => {
                 const amt = parseFloat(item.amount) || 0;
+                totalExp += amt;
                 if (item.type === 'ค่าซ่อมแซม') expRepair += amt;
                 else if (item.type === 'ค่าไฟฟ้า') expElec += amt;
                 else if (item.type === 'ค่าจัดเก็บ') expFee += amt;
                 else expOther += amt;
-                expItems.push(item);
             });
         }
-        const totalExp = expRepair + expElec + expFee + expOther;
 
-        // ✅ 4. อัปเดตข้อมูลบนหน้าจอ และคืนค่าความชัด
+        // ✅ อัปเดตตัวเลขหน้าจอ
         if(headerEl) headerEl.innerText = `ประจำเดือน ${displayMonth}`;
         
         document.getElementById('report-income').innerText = (incCurrent + incOverdue).toLocaleString();
@@ -4258,17 +4237,15 @@ async function loadMonthlyReport(monthStr = null) {
         document.getElementById('report-usage').innerText = totalUsage.toLocaleString();
         document.getElementById('report-net').innerText = (incCurrent + incOverdue - totalExp).toLocaleString();
 
-        // อัปเดต Accordion
         if(document.getElementById('badge-pd')) document.getElementById('badge-pd').innerText = listPd.length;
         if(document.getElementById('badge-wp')) document.getElementById('badge-wp').innerText = listWp.length;
-        if(document.getElementById('badge-nc')) document.getElementById('badge-nc').innerText = listNc.length;
+        if(document.getElementById('badge-nc')) document.getElementById('badge-nc').innerText = "0"; // ยกเลิกการแสดงยังไม่เก็บย้อนหลัง
 
         renderReportListAccordion('list-pd', listPd, 'emerald');
         renderReportListAccordion('list-wp', listWp, 'orange');
-        renderReportListAccordion('list-nc', listNc, 'slate');
-        renderExpenseListAccordion('report-expenses-body', expItems);
+        renderReportListAccordion('list-nc', [], 'slate');
+        renderExpenseListAccordion('report-expenses-body', exp.data || []);
 
-        // คืนค่าความชัดพร้อมลูกเล่นแวบหนึ่ง
         fadeElements.forEach(id => {
             const el = document.getElementById(id);
             if(el) {
@@ -4280,8 +4257,60 @@ async function loadMonthlyReport(monthStr = null) {
 
     } catch (e) { 
         if(headerEl) headerEl.innerText = "เกิดข้อผิดพลาดในการโหลด";
-        console.error(e);
     }
+}
+
+// 🔍 ฟังก์ชันเปิด Modal ยอดค้างเก่า (ดึงข้อมูลที่โหลดเตรียมไว้แล้วมาแสดงทันที)
+function openReportOverdueCollected() {
+    const modal = document.getElementById('report-overdue-collected-modal');
+    const box = document.getElementById('report-overdue-collected-box');
+    const contentArea = document.getElementById('report-overdue-collected-list');
+    
+    // ดึงข้อมูลที่เก็บไว้ตอนโหลด Monthly Report มาใช้เลย จะได้ไม่ต้องหมุนโหลดซ้ำ
+    const dataList = window.lastOverdueData || [];
+    const thaiShortMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+
+    if (dataList.length === 0) {
+        contentArea.innerHTML = '<div class="text-center py-10 text-slate-400 border border-dashed border-slate-200 rounded-3xl m-2 bg-white">ไม่มีรายการเก็บยอดค้างเก่าในเดือนนี้</div>';
+    } else {
+        let html = '<div class="space-y-3">';
+        dataList.forEach(item => {
+            let icon = item.isTransfer ? "fa-university text-blue-500 bg-blue-50" : "fa-hand-holding-usd text-emerald-500 bg-emerald-50";
+            
+            let displayMonth = item.month;
+            if (item.month.includes('/')) {
+                let mParts = item.month.split('/');
+                let monthIndex = parseInt(mParts[0]) - 1;
+                if (monthIndex >= 0 && monthIndex < 12) {
+                    displayMonth = `${thaiShortMonths[monthIndex]} / ${mParts[1]}`;
+                }
+            }
+
+            html += `
+            <div class="bg-white p-3 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm hover:bg-slate-50 transition">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner mt-0.5 ${icon}">
+                        <i class="fas ${item.isTransfer ? 'fa-university' : 'fa-hand-holding-usd'}"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-slate-700 text-[13px]">${item.houseNo} - ${item.name}</div>
+                        <div class="text-[11px] text-slate-500 mt-1">
+                            <div>บิล: <span class="text-rose-500 font-bold">${displayMonth}</span></div>
+                            <div class="mt-0.5">รับเงิน : ${item.collector}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="font-black text-slate-700 text-sm bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 shrink-0">${item.amount.toLocaleString()} ฿</div>
+            </div>`;
+        });
+        contentArea.innerHTML = html + '</div>';
+    }
+    
+    modal.classList.remove('hidden');
+    setTimeout(() => { 
+        modal.classList.remove('opacity-0'); 
+        if(box) box.classList.remove('scale-95'); 
+    }, 10);
 }
 
 // 🔽 ฟังก์ชันกดเปิด-ปิดแถบ Accordion
