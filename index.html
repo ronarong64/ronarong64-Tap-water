@@ -4149,7 +4149,7 @@ function toggleOption(elementId, isChecked) {
             }, 300);
         }
 
-      // 📈 ฟังก์ชันโหลดรายงานรายเดือน (ดึงยอดจาก Server ทั้งหมด ป้องกันยอดปัจจุบันไหลไปเดือนอดีต)
+     // 📈 1. ฟังก์ชันโหลดรายงาน
 async function loadMonthlyReport(monthStr = null) {
     if (!monthStr) {
         const now = new Date();
@@ -4162,24 +4162,18 @@ async function loadMonthlyReport(monthStr = null) {
     const yearBE = parseInt(parts[0]) + 543;
     const monthNum = parts[1];
     const targetMonthStr = `${monthNum}/${yearBE}`;
-    
     const thaiShortMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
     const displayMonth = `${thaiShortMonths[parseInt(monthNum) - 1]} / ${yearBE}`;
 
     const headerEl = document.getElementById('report-month-header');
     const pickerEl = document.getElementById('report-picker-display');
-
     if(headerEl) headerEl.innerHTML = `<i class="fas fa-circle-notch fa-spin text-purple-500"></i> กำลังโหลดข้อมูล...`;
     if(pickerEl) pickerEl.innerText = displayMonth;
     
     const fadeElements = ['report-income', 'report-expense', 'report-usage', 'report-net', 'accordion-container'];
-    fadeElements.forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.style.opacity = "0.4";
-    });
+    fadeElements.forEach(id => { const el = document.getElementById(id); if(el) el.style.opacity = "0.4"; });
 
     try {
-        // 🚀 ดึงข้อมูลจาก API ตัวใหม่
         const [resMain, resExp] = await Promise.all([
             fetch(API_URL + "?action=getMonthlyReportData&monthStr=" + encodeURIComponent(targetMonthStr)),
             fetch(API_URL + "?action=getExpenses&monthStr=" + encodeURIComponent(targetMonthStr))
@@ -4188,10 +4182,9 @@ async function loadMonthlyReport(monthStr = null) {
         const main = await resMain.json();
         const exp = await resExp.json();
 
-        // เคลียร์ยอดเป็น 0 ไว้ก่อน ถ้าไม่มีข้อมูลจาก Server ยอดจะเป็น 0 ทันที
         let incCurrent = 0, incOverdue = 0, incCash = 0, incTransfer = 0, totalUsage = 0;
         let expRepair = 0, expElec = 0, expFee = 0, expOther = 0, totalExp = 0;
-        let listPd = [], listWp = [], listNc = [];
+        let listPd = [], listWp = [];
 
         if (main.success) {
             const d = main.data;
@@ -4204,8 +4197,8 @@ async function loadMonthlyReport(monthStr = null) {
             listPd = d.currentMonth.list;
             listWp = d.pending.list;
 
-            // เก็บรายชื่อค้างเก่าไว้เปิดใน Modal โดยเฉพาะ
-            window.lastOverdueData = d.overdueMonth.list; 
+            // 🎯 นำข้อมูลหนี้ค้างเก่ามาพักไว้ เพื่อให้ Modal ดึงไปแสดง
+            window.lastOverdueData = d.overdueMonth.list || []; 
         }
 
         if (exp.success) {
@@ -4219,7 +4212,6 @@ async function loadMonthlyReport(monthStr = null) {
             });
         }
 
-        // ✅ อัปเดตตัวเลขหน้าจอ
         if(headerEl) headerEl.innerText = `ประจำเดือน ${displayMonth}`;
         
         document.getElementById('report-income').innerText = (incCurrent + incOverdue).toLocaleString();
@@ -4239,7 +4231,7 @@ async function loadMonthlyReport(monthStr = null) {
 
         if(document.getElementById('badge-pd')) document.getElementById('badge-pd').innerText = listPd.length;
         if(document.getElementById('badge-wp')) document.getElementById('badge-wp').innerText = listWp.length;
-        if(document.getElementById('badge-nc')) document.getElementById('badge-nc').innerText = "0"; // ยกเลิกการแสดงยังไม่เก็บย้อนหลัง
+        if(document.getElementById('badge-nc')) document.getElementById('badge-nc').innerText = "0";
 
         renderReportListAccordion('list-pd', listPd, 'emerald');
         renderReportListAccordion('list-wp', listWp, 'orange');
@@ -4248,11 +4240,7 @@ async function loadMonthlyReport(monthStr = null) {
 
         fadeElements.forEach(id => {
             const el = document.getElementById(id);
-            if(el) {
-                el.style.opacity = "1";
-                el.classList.add('animate-pulse');
-                setTimeout(() => el.classList.remove('animate-pulse'), 500);
-            }
+            if(el) { el.style.opacity = "1"; el.classList.add('animate-pulse'); setTimeout(() => el.classList.remove('animate-pulse'), 500); }
         });
 
     } catch (e) { 
@@ -4260,13 +4248,13 @@ async function loadMonthlyReport(monthStr = null) {
     }
 }
 
-// 🔍 ฟังก์ชันเปิด Modal ยอดค้างเก่า (ดึงข้อมูลที่โหลดเตรียมไว้แล้วมาแสดงทันที)
+// 🔍 2. ฟังก์ชันเปิด Modal ค้างเก่า
 function openReportOverdueCollected() {
     const modal = document.getElementById('report-overdue-collected-modal');
     const box = document.getElementById('report-overdue-collected-box');
     const contentArea = document.getElementById('report-overdue-collected-list');
     
-    // ดึงข้อมูลที่เก็บไว้ตอนโหลด Monthly Report มาใช้เลย จะได้ไม่ต้องหมุนโหลดซ้ำ
+    // ดึงข้อมูลที่เก็บไว้ตอนโหลด
     const dataList = window.lastOverdueData || [];
     const thaiShortMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 
@@ -4276,7 +4264,6 @@ function openReportOverdueCollected() {
         let html = '<div class="space-y-3">';
         dataList.forEach(item => {
             let icon = item.isTransfer ? "fa-university text-blue-500 bg-blue-50" : "fa-hand-holding-usd text-emerald-500 bg-emerald-50";
-            
             let displayMonth = item.month;
             if (item.month.includes('/')) {
                 let mParts = item.month.split('/');
