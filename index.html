@@ -13,6 +13,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body {
@@ -208,12 +209,13 @@
                     <span class="text-base group-hover:translate-x-1 transition-transform">รายงาน -เดือน</span>
                 </button>
 
-        <button onclick="setActiveMenu(this); showPage('yearly')" class="menu-btn w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
-                    <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300">
-                        <i class="fas fa-calendar-alt text-base"></i>
-                    </div>
-                    <span class="text-base group-hover:translate-x-1 transition-transform">รายงาน -ปี</span>
-                </button>
+        <button onclick="setActiveMenu(this); showPage('yearly'); populateYearPicker(); loadYearlyReport();" 
+        class="menu-btn w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
+    <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300">
+        <i class="fas fa-calendar-alt text-base"></i>
+    </div>
+    <span class="text-base group-hover:translate-x-1 transition-transform">รายงาน -ปี</span>
+</button>
 
         <div class="border-t border-white/10 my-1 mx-3"></div>
         <p class="text-[10px] text-white/30 uppercase tracking-wider px-3 mb-0.5 mt-2">ผู้ดูแลระบบ</p>
@@ -709,6 +711,143 @@
           <i class="fas fa-print"></i> พิมพ์รายงานสรุปเดือนนี้
       </button>
       </div>
+
+      <div id="page-yearly" class="hidden space-y-5 anim-slide-up pb-20">
+      <!-- Header -->
+      <div class="glass-card p-5 flex justify-between items-center bg-white -mt-10">
+        <h2 class="font-bold text-slate-800 text-xl">สรุปรายปี</h2>
+        <select id="yearly-picker" onchange="loadYearlyReport()" class="thai-date-select bg-purple-50 text-purple-600 rounded-xl px-4 py-2 h-12 border border-purple-100 focus:outline-none font-medium"></select>
+      </div>
+
+      <!-- การเงินภาพรวม (คงเหลือ, รายรับ, รายจ่าย) -->
+      <div class="bg-white p-6 rounded-3xl shadow-sm text-center border-t-8 border-purple-500">
+        <div class="text-[14px] font-medium text-slate-500 mb-1">คงเหลือสุทธิ (ปีนี้)</div>
+        <div class="text-4xl font-black text-purple-600 mb-6" id="yearly-net">0</div>
+
+        <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-5">
+          <div>
+            <div class="text-[13px] text-slate-400 mb-1"><i class="fas fa-arrow-down text-green-500 mr-1"></i>รายรับ
+            </div>
+            <div class="font-bold text-green-600 text-xl" id="yearly-income">0</div>
+          </div>
+          <div class="border-l border-slate-100">
+            <div class="text-[13px] text-slate-400 mb-1"><i class="fas fa-arrow-up text-red-400 mr-1"></i>รายจ่าย</div>
+            <div class="font-bold text-red-500 text-xl" id="yearly-expense">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ยอดเงินสะสมปัจจุบัน (ธนาคาร, เงินสด) -->
+      <div class="bg-slate-800 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
+        <div class="absolute right-[-20px] top-[-20px] w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
+        <h3 class="text-sm font-bold opacity-80 mb-4 flex items-center gap-2">
+          <i class="fas fa-wallet text-yellow-400"></i> ยอดทุนทรัพย์สะสมปัจจุบัน
+        </h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-white/10 p-3 rounded-2xl">
+            <div class="text-xs text-indigo-200 mb-1"><i class="fas fa-landmark mr-1"></i>ธนาคาร</div>
+            <div class="text-xl font-bold" id="yearly-current-bank">0</div>
+          </div>
+          <div class="bg-white/10 p-3 rounded-2xl">
+            <div class="text-xs text-teal-200 mb-1"><i class="fas fa-coins mr-1"></i>เงินสด</div>
+            <div class="text-xl font-bold" id="yearly-current-cash">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- หมวดหมู่รายจ่าย -->
+      <div class="grid grid-cols-4 gap-2">
+        <div class="bg-white p-3 rounded-2xl shadow-sm text-center border border-slate-50">
+          <div
+            class="w-8 h-8 mx-auto bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mb-1 text-sm">
+            <i class="fas fa-tools"></i>
+          </div>
+          <div class="text-[11px] text-slate-400 mb-0.5">ซ่อมแซม</div>
+          <div class="font-bold text-slate-700 text-sm" id="yearly-repair">0</div>
+        </div>
+        <div class="bg-white p-3 rounded-2xl shadow-sm text-center border border-slate-50">
+          <div
+            class="w-8 h-8 mx-auto bg-yellow-50 text-yellow-500 rounded-full flex items-center justify-center mb-1 text-sm">
+            <i class="fas fa-bolt"></i>
+          </div>
+          <div class="text-[11px] text-slate-400 mb-0.5">ไฟฟ้า</div>
+          <div class="font-bold text-slate-700 text-sm" id="yearly-elec">0</div>
+        </div>
+        <div class="bg-white p-3 rounded-2xl shadow-sm text-center border border-slate-50">
+          <div
+            class="w-8 h-8 mx-auto bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-1 text-sm">
+            <i class="fas fa-user-tie"></i>
+          </div>
+          <div class="text-[11px] text-slate-400 mb-0.5">จัดเก็บ</div>
+          <div class="font-bold text-slate-700 text-sm" id="yearly-fee">0</div>
+        </div>
+        <div class="bg-white p-3 rounded-2xl shadow-sm text-center border border-slate-50">
+          <div
+            class="w-8 h-8 mx-auto bg-slate-100 text-slate-500 rounded-full flex items-center justify-center mb-1 text-sm">
+            <i class="fas fa-receipt"></i>
+          </div>
+          <div class="text-[11px] text-slate-400 mb-0.5">อื่นๆ</div>
+          <div class="font-bold text-slate-700 text-sm" id="yearly-other">0</div>
+        </div>
+      </div>
+
+      <!-- กราฟสถิติรายเดือน -->
+      <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
+        <h3 class="font-bold text-slate-700 mb-3 text-base flex items-center gap-2">
+          <i class="fas fa-chart-line text-purple-500"></i> กราฟสถิติรายเดือน
+        </h3>
+        <canvas id="yearlyChart" class="w-full h-56"></canvas>
+      </div>
+
+      <!-- 🟢 ตารางภาพรวมรายรับ-รายจ่าย ประจำปี -->
+      <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+        <h3 class="font-bold text-slate-700 mb-3 text-base flex items-center gap-2">
+          <i class="fas fa-calendar-alt text-blue-500"></i> ภาพรวมรายรับ - รายจ่าย
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left text-slate-500">
+            <thead class="text-xs text-slate-500 bg-slate-50 rounded-t-lg border-b border-slate-200">
+              <tr>
+                <th scope="col" class="px-2 py-3">เดือน</th>
+                <th scope="col" class="px-2 py-3 text-right">รายรับ</th>
+                <th scope="col" class="px-2 py-3 text-right">รายจ่าย</th>
+                <th scope="col" class="px-2 py-3 text-right">คงเหลือ</th>
+              </tr>
+            </thead>
+            <!-- 🔴 ใส่ ID นี้ไว้เพื่อให้ JS โยนข้อมูลตารางรายเดือนมาใส่ -->
+            <tbody id="yearly-monthly-table-body">
+              <tr>
+                <td colspan="4" class="text-center py-6 text-slate-400 text-sm">
+                  <i class="fas fa-circle-notch fa-spin mr-2"></i>รอข้อมูล...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 🟢 สรุปรายบ้าน (ทำเป็นแบบ Slide เปิด-ปิด) -->
+      <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+        <!-- ส่วนหัว (คลิกได้) -->
+        <div class="flex justify-between items-center cursor-pointer select-none" onclick="toggleYearlyHouse()">
+          <h3 class="font-bold text-slate-700 text-base flex items-center gap-2">
+            <i class="fas fa-home text-emerald-500"></i> สรุปข้อมูลรายบ้าน
+          </h3>
+          <i class="fas fa-chevron-down text-slate-400 transition-transform duration-300 transform" id="icon-yearly-house"></i>
+        </div>
+
+        <!-- ส่วนเนื้อหา (ซ่อนเริ่มต้น) -->
+        <div id="content-yearly-house" class="overflow-hidden transition-all duration-300" style="max-height: 0px;">
+          <div class="mt-4 pt-4 border-t border-slate-100">
+            <div id="yearly-list-body" class="space-y-3 max-h-80 overflow-y-auto custom-scroll pr-1">
+              <div class="text-center text-slate-300 py-6 text-sm">กำลังโหลด...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="printYearlyReport()" class="btn-sec text-base w-full py-3 mt-4 rounded-2xl"><i class="fas fa-print mr-2"></i> พิมพ์รายงานสรุป</button>
+    </div>
 
       <div id="page-expenses" class="hidden space-y-6 animate-fade-in pb-20">
         <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border-t-4 border-orange-500 space-y-4">
@@ -3324,9 +3463,9 @@ function toggleOption(elementId, isChecked) {
                     
                     let displayBillMonth = formatThaiMonth(h.billMonthStr).replace(" / ", "/");
 
-let subText = h.isOverdue 
-    ? `<div class="text-[11px] text-rose-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-file-invoice opacity-70"></i> บิล: ${displayBillMonth} <span class="mx-1 text-rose-300">|</span> <i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`
-    : `<div class="text-[11px] text-slate-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`;
+                      let subText = h.isOverdue 
+                          ? `<div class="text-[11px] text-rose-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-file-invoice opacity-70"></i> บิล: ${displayBillMonth} <span class="mx-1 text-rose-300">|</span> <i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`
+                          : `<div class="text-[11px] text-slate-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`;
 
                     return `
                     <div class="flex justify-between items-start py-3 border-b border-slate-50 last:border-none hover:bg-slate-50 transition px-2 rounded-lg">
@@ -4457,6 +4596,133 @@ function selectPickerMonth(m) {
             if (typeof loadCollectorReport === "function") loadCollectorReport(monthStr);
         }
     }
+}
+
+// ==========================================
+// 📊 ส่วนควบคุมหน้าสรุปรายปี
+// ==========================================
+
+// 1. สร้างตัวเลือกปี พ.ศ. (ย้อนหลัง 5 ปี)
+function populateYearPicker() {
+    const picker = document.getElementById('yearly-picker');
+    if(picker.options.length > 0) return; 
+    const currentYearBE = new Date().getFullYear() + 543;
+    for(let y = currentYearBE; y >= currentYearBE - 5; y--) {
+        picker.innerHTML += `<option value="${y}">พ.ศ. ${y}</option>`;
+    }
+}
+
+// 2. โหลดข้อมูลจาก API
+async function loadYearlyReport() {
+    const selectedYear = document.getElementById('yearly-picker').value;
+    const tbody = document.getElementById('yearly-table-body');
+    
+    document.getElementById('yearly-net').innerText = "...";
+    document.getElementById('yearly-income').innerText = "...";
+    document.getElementById('yearly-expense').innerText = "...";
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-blue-500"><i class="fas fa-circle-notch fa-spin text-2xl mb-2"></i><br>กำลังประมวลผลข้อมูลทั้งปี...</td></tr>';
+
+    try {
+        const response = await fetch(API_URL + "?action=getYearlyReportData&year=" + selectedYear);
+        const res = await response.json();
+
+        if (res.success) {
+            // อัปเดตตัวเลขภาพรวม
+            document.getElementById('yearly-net').innerText = Number(res.data.totalNet).toLocaleString();
+            document.getElementById('yearly-income').innerText = Number(res.data.totalIncome).toLocaleString();
+            document.getElementById('yearly-expense').innerText = Number(res.data.totalExpense).toLocaleString();
+
+            let html = '';
+            let labels = [];
+            let incomeData = [];
+            let expenseData = [];
+            let usageData = [];
+
+            // วาดตาราง 12 เดือน
+            res.data.monthlyData.forEach(item => {
+                labels.push(item.month);
+                incomeData.push(item.income);
+                expenseData.push(item.expense);
+                usageData.push(item.usage);
+
+                let netColorClass = item.net > 0 ? 'text-emerald-500 bg-emerald-50' : (item.net < 0 ? 'text-rose-500 bg-rose-50' : 'text-slate-500 bg-slate-50');
+                
+                html += `
+                <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
+                    <td class="p-3 font-bold text-slate-700">${item.month}</td>
+                    <td class="p-3 text-right text-emerald-600 font-medium">${Number(item.income).toLocaleString()}</td>
+                    <td class="p-3 text-right text-rose-500 font-medium">${Number(item.expense).toLocaleString()}</td>
+                    <td class="p-3 text-right font-bold ${netColorClass} rounded-md">${Number(item.net).toLocaleString()}</td>
+                    <td class="p-3 text-right text-blue-500 text-[13px]">${Number(item.usage).toLocaleString()}</td>
+                </tr>`;
+            });
+
+            tbody.innerHTML = html;
+
+            // วาดกราฟ
+            renderYearlyChart(labels, incomeData, expenseData, usageData);
+        }
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-rose-500 font-bold">❌ เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+    }
+}
+
+// 3. ฟังก์ชันวาดกราฟแท่งผสมเส้น
+function renderYearlyChart(labels, incomeData, expenseData, usageData) {
+    const ctx = document.getElementById('yearlyChart').getContext('2d');
+    
+    // รีเซ็ตตัวกราฟเก่าทิ้งก่อนวาดใหม่ (ป้องกันกราฟซ้อนกัน)
+    if (window.yearlyChartInstance) {
+        window.yearlyChartInstance.destroy();
+    }
+
+    window.yearlyChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'รายรับ (บาท)',
+                    data: incomeData,
+                    backgroundColor: '#10b981', // Emerald
+                    borderRadius: 4,
+                    order: 2,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'รายจ่าย (บาท)',
+                    data: expenseData,
+                    backgroundColor: '#f43f5e', // Rose
+                    borderRadius: 4,
+                    order: 3,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'การใช้น้ำ (หน่วย)',
+                    data: usageData,
+                    type: 'line',
+                    borderColor: '#3b82f6', // Blue
+                    backgroundColor: '#3b82f6',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    order: 1,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                y: { type: 'linear', display: true, position: 'left', grid: { drawOnChartArea: true } },
+                y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#3b82f6' } }
+            },
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 6 } }
+            }
+        }
+    });
 }
 
   </script>
