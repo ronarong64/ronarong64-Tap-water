@@ -2674,29 +2674,31 @@ function toggleOption(elementId, isChecked) {
         // ฟังก์ชันสลับหน้าจอ (อัปเดตใหม่รองรับทุกหน้า)
         // ==========================================
         function showPage(pageId) {
-            // รายชื่อหน้าทั้งหมดในระบบ
-            const pages = ['home', 'settings', 'expenses', 'reports', 'yearly', 'finance', 'collector'];
-            
-            // ซ่อนทุกหน้า
-            pages.forEach(p => {
-                const el = document.getElementById('page-' + p);
-                if (el) el.classList.add('hidden');
-            });
-            
-            // แสดงหน้าที่ต้องการ
-            const targetPage = document.getElementById('page-' + pageId);
-            if (targetPage) targetPage.classList.remove('hidden');
+    const pages = ['home', 'settings', 'expenses', 'reports', 'yearly', 'finance', 'collector'];
+    
+    pages.forEach(p => {
+        const el = document.getElementById('page-' + p);
+        if (el) el.classList.add('hidden');
+    });
+    
+    const targetPage = document.getElementById('page-' + pageId);
+    if (targetPage) targetPage.classList.remove('hidden');
 
-            // ปิดเมนูด้านข้าง
-            if (typeof toggleMenu === "function") toggleMenu();
+    if (typeof toggleMenu === "function") toggleMenu();
 
-            // โหลดข้อมูลเฉพาะหน้าเมื่อถูกเปิด
-            if (pageId === 'settings' && typeof loadSettingsData === "function") loadSettingsData();
-            if (pageId === 'expenses' && typeof loadCurrentMonthExpenses === "function") loadCurrentMonthExpenses();
-            if (pageId === 'finance' && typeof loadFinance === "function") loadFinance();
-            if (pageId === 'collector' && typeof loadCollectorReport === "function") loadCollectorReport();
-            if (pageId === 'reports' && typeof loadMonthlyReport === "function") loadMonthlyReport();
-        }
+    // 🌟 เพิ่มเงื่อนไขสำหรับหน้าสรุปรายปีตรงนี้ครับ
+    if (pageId === 'yearly') {
+        if (typeof populateYearPicker === "function") populateYearPicker();
+        if (typeof loadYearlyReport === "function") loadYearlyReport();
+    }
+    
+    // หน้าอื่นๆ (ของเดิม)
+    if (pageId === 'settings' && typeof loadSettingsData === "function") loadSettingsData();
+    if (pageId === 'expenses' && typeof loadCurrentMonthExpenses === "function") loadCurrentMonthExpenses();
+    if (pageId === 'finance' && typeof loadFinance === "function") loadFinance();
+    if (pageId === 'collector' && typeof loadCollectorReport === "function") loadCollectorReport();
+    if (pageId === 'reports' && typeof loadMonthlyReport === "function") loadMonthlyReport();
+}
 
         // ==========================================
         // 💰 ระบบการเงิน-ธนาคาร (Finance System)
