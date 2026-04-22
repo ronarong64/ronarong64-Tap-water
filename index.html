@@ -797,6 +797,7 @@
             </tr>
           </thead>
           <tbody id="yearly-table-body">
+          </tbody>
             <tr>
               <td colspan="5" class="text-center py-6 text-slate-400 text-sm">
                 <i class="fas fa-circle-notch fa-spin mr-2"></i>รอข้อมูล...
@@ -2686,10 +2687,10 @@ function toggleOption(elementId, isChecked) {
 
     if (typeof toggleMenu === "function") toggleMenu();
 
-    // 🌟 เพิ่มเงื่อนไขสำหรับหน้าสรุปรายปีตรงนี้ครับ
+    // 🌟 เพิ่ม 2 บรรทัดนี้เข้าไปครับ เพื่อให้หน้าสรุปรายปีทำงาน
     if (pageId === 'yearly') {
-        if (typeof populateYearPicker === "function") populateYearPicker();
-        if (typeof loadYearlyReport === "function") loadYearlyReport();
+        populateYearPicker();
+        loadYearlyReport();
     }
     
     // หน้าอื่นๆ (ของเดิม)
