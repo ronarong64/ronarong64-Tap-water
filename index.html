@@ -2889,30 +2889,29 @@ function toggleOption(elementId, isChecked) {
         
         // 🔄 โหลดรายการเดือนปัจจุบัน
         function loadCurrentMonthExpenses() {
-            const now = new Date();
-            const yearBE = now.getFullYear() + 543;
-            const mStr = String(now.getMonth() + 1).padStart(2, '0');
-            const displayMonth = mStr + '/' + yearBE;
-            
-            document.getElementById('exp-picker-display').innerText = displayMonth;
-            
-            // ตั้งค่าให้ปฏิทินที่ซ่อนอยู่ (Format: YYYY-MM)
-            const monthInput = document.getElementById('exp-month-input');
-            if (monthInput) monthInput.value = `${now.getFullYear()}-${mStr}`;
+    const now = new Date();
+    const yearBE = now.getFullYear() + 543;
+    const mStr = String(now.getMonth() + 1).padStart(2, '0');
+    const apiMonth = mStr + '/' + yearBE; // รูปแบบสำหรับส่งให้ API (04/2569)
+    const displayMonth = formatThaiMonth(apiMonth); 
+    document.getElementById('exp-picker-display').innerText = displayMonth;   
+    const monthInput = document.getElementById('exp-month-input');
+    if (monthInput) monthInput.value = `${now.getFullYear()}-${mStr}`;
 
-            fetchExpensesFromAPI(displayMonth);
-        }
+    fetchExpensesFromAPI(apiMonth); // ส่งค่าแบบตัวเลขให้ API ตามเดิม
+}
 
         // 📅 เปลี่ยนเดือนเมื่อกดเลือกจากปฏิทิน
         function changeExpenseMonth(val) {
-            if (!val) return; 
-            const parts = val.split('-'); // จะได้ ['YYYY', 'MM']
-            const yBE = parseInt(parts[0]) + 543;
-            const displayMonth = parts[1] + "/" + yBE;
-            
-            document.getElementById('exp-picker-display').innerText = displayMonth;
-            fetchExpensesFromAPI(displayMonth);
-        }
+    if (!val) return;
+    const parts = val.split('-'); // YYYY-MM
+    const yBE = parseInt(parts[0]) + 543;
+    const apiMonth = parts[1] + "/" + yBE;
+    const displayMonth = formatThaiMonth(apiMonth);
+    document.getElementById('exp-picker-display').innerText = displayMonth;
+    
+    fetchExpensesFromAPI(apiMonth); // ส่งค่าแบบตัวเลขให้ API ตามเดิม
+}
 
         // 📡 ยิง API ไปดึงข้อมูล
         async function fetchExpensesFromAPI(monthStr) {
