@@ -3322,24 +3322,23 @@ function toggleOption(elementId, isChecked) {
                         }
                     }
                     
-                    // 🌟 แปลงเดือนของบิลให้เป็นภาษาไทยแบบย่อ
-let displayBillMonth = formatThaiMonth(h.billMonthStr).replace(" / ", "/");
+                    let displayBillMonth = formatThaiMonth(h.billMonthStr).replace(" / ", "/");
 
-// 🌟 จัดเลย์เอาต์ใหม่ให้รองรับมือถือ (จัดเป็นป้ายแท็ก และปัดบรรทัดอัตโนมัติ)
 let subText = h.isOverdue 
-    ? `<div class="flex flex-wrap items-center gap-1.5 mt-1.5">
-           <div class="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-md shadow-sm whitespace-nowrap">
-               <i class="fas fa-file-invoice opacity-80"></i> บิล: ${displayBillMonth}
-           </div>
-           <div class="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 whitespace-nowrap">
-               <i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}
-           </div>
-       </div>`
-    : `<div class="flex flex-wrap items-center mt-1.5">
-           <div class="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md whitespace-nowrap">
-               <i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}
-           </div>
-       </div>`;
+    ? `<div class="text-[11px] text-rose-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-file-invoice opacity-70"></i> บิล: ${displayBillMonth} <span class="mx-1 text-rose-300">|</span> <i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`
+    : `<div class="text-[11px] text-slate-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`;
+
+                    return `
+                    <div class="flex justify-between items-start py-3 border-b border-slate-50 last:border-none hover:bg-slate-50 transition px-2 rounded-lg">
+                        <div class="flex gap-3 w-full pr-2 items-start">
+                            <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0 shadow-inner mt-0.5 border border-white">${h.houseNo}</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center font-bold text-[13px] text-slate-700 leading-snug">${h.name.replace(' (', '<br>(')}${isOverdueTag}</div>
+                                ${subText}
+                            </div>
+                        </div>
+                        <div class="font-black text-slate-700 shrink-0 text-sm mt-0.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">${Number(h.amount).toLocaleString()} บ.</div>
+                    </div>`;
                 }).join('');
 
                 let isTransfer = c.name.includes("โอน");
