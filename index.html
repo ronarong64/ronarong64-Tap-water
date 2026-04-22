@@ -744,11 +744,9 @@
               <i class="fas fa-list text-slate-400"></i> รายการที่บันทึก
             </h3>
 
-            <div onclick="openMonthPicker('exp')"
+            <div onclick="try { document.getElementById('exp-month-input').showPicker(); } catch(e){}"
               class="relative bg-slate-50 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden">
-
-              <input type="hidden" id="exp-month-input">
-
+              <input type="month" id="exp-month-input" onchange="changeExpenseMonth(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
               <div
                 class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shadow-sm relative z-0 pointer-events-none">
                 <i class="far fa-calendar-alt text-xs"></i>
@@ -3328,8 +3326,8 @@ function toggleOption(elementId, isChecked) {
                     }
                     
                     let subText = h.isOverdue 
-                        ? `<div class="text-[11px] text-rose-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-file-invoice opacity-70"></i> บิล: ${h.billMonthStr} <span class="mx-1 text-rose-300">|</span> <i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`
-                        : `<div class="text-[11px] text-slate-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`;
+                        ? `<div class="text-[13px] text-rose-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-file-invoice opacity-70"></i> บิล: ${h.billMonthStr} <span class="mx-1 text-rose-300">|</span> <i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`
+                        : `<div class="text-[13px] text-slate-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`;
 
                     return `
                     <div class="flex justify-between items-start py-3 border-b border-slate-50 last:border-none hover:bg-slate-50 transition px-2 rounded-lg">
@@ -4394,159 +4392,7 @@ function closeReportOverdueCollected() {
     setTimeout(() => modal.classList.add('hidden'), 300);
 }
 
-// 🗓️ ตัวแปรเก็บปี ค.ศ. ปัจจุบันที่กำลังเลือกในปฏิทิน
-let currentPickerYear = new Date().getFullYear();
-
-// 1. เปิดหน้าต่างเลือกเดือน
-function openMonthPicker() {
-    const inputVal = document.getElementById('report-month-input').value;
-    // เซ็ตปีเริ่มต้นให้ตรงกับที่ดูอยู่ปัจจุบัน
-    if (inputVal) {
-        currentPickerYear = parseInt(inputVal.split('-')[0]);
-    } else {
-        currentPickerYear = new Date().getFullYear();
-    }
-    renderPickerYear();
-    
-    const modal = document.getElementById('month-picker-modal');
-    const box = document.getElementById('month-picker-box');
-    modal.classList.remove('hidden');
-    setTimeout(() => { 
-        modal.classList.remove('opacity-0'); 
-        if(box) box.classList.remove('scale-95'); 
-    }, 10);
-}
-
-// 2. ปิดหน้าต่างเลือกเดือน
-function closeMonthPicker() {
-    const modal = document.getElementById('month-picker-modal');
-    const box = document.getElementById('month-picker-box');
-    modal.classList.add('opacity-0');
-    if(box) box.classList.add('scale-95');
-    setTimeout(() => modal.classList.add('hidden'), 300);
-}
-
-// 3. เปลี่ยนปี พ.ศ. (กดซ้าย-ขวา)
-function changePickerYear(offset) {
-    currentPickerYear += offset;
-    renderPickerYear();
-}
-
-// 4. วาดตัวเลขปีลงในหน้าจอ
-function renderPickerYear() {
-    document.getElementById('picker-year-display').innerText = currentPickerYear + 543;
-}
-
-// 5. เมื่อกดเลือกเดือน (1-12)
-function selectPickerMonth(m) {
-    // จัดฟอร์แมตให้เป็น "YYYY-MM"
-    const monthStr = `${currentPickerYear}-${String(m).padStart(2, '0')}`;
-    
-    // อัปเดตค่าลงใน input ที่ซ่อนไว้
-    const inputEl = document.getElementById('report-month-input');
-    if (inputEl) inputEl.value = monthStr;
-    
-    // ปิดปฏิทิน และโหลดรายงานทันที
-    closeMonthPicker();
-    loadMonthlyReport(monthStr); 
-}
-
-// ==========================================
-// 📅 ส่วนควบคุมปฏิทินเลือกเดือน (Custom Month Picker)
-// ==========================================
-let currentPickerYear = new Date().getFullYear();
-let currentPickerTarget = 'report';
-
-function openMonthPicker(target) {
-    currentPickerTarget = target;
-    const inputEl = document.getElementById(target + '-month-input');
-    const inputVal = inputEl ? inputEl.value : "";
-    
-    // ตั้งปีเริ่มต้นตามค่าที่มี หรือปีปัจจุบัน
-    if (inputVal) {
-        currentPickerYear = parseInt(inputVal.split('-')[0]);
-    } else {
-        currentPickerYear = new Date().getFullYear();
-    }
-    
-    document.getElementById('picker-year-display').innerText = currentPickerYear + 543;
-    
-    const modal = document.getElementById('month-picker-modal');
-    const box = document.getElementById('month-picker-box');
-    modal.classList.remove('hidden');
-    setTimeout(() => { 
-        modal.classList.remove('opacity-0'); 
-        if(box) box.classList.remove('scale-95'); 
-    }, 10);
-}
-
-function closeMonthPicker() {
-    const modal = document.getElementById('month-picker-modal');
-    const box = document.getElementById('month-picker-box');
-    modal.classList.add('opacity-0');
-    if(box) box.classList.add('scale-95');
-    setTimeout(() => modal.classList.add('hidden'), 300);
-}
-
-function changePickerYear(offset) {
-    currentPickerYear += offset;
-    document.getElementById('picker-year-display').innerText = currentPickerYear + 543;
-}
-
-function selectPickerMonth(m) {
-    const monthStr = `${currentPickerYear}-${String(m).padStart(2, '0')}`;
-    const inputEl = document.getElementById(currentPickerTarget + '-month-input');
-    
-    if (inputEl) inputEl.value = monthStr;
-    closeMonthPicker();
-    
-    // เรียกโหลดข้อมูลตามหน้าที่เลือก
-    if (currentPickerTarget === 'report') {
-        loadMonthlyReport(monthStr); 
-    } else if (currentPickerTarget === 'exp') {
-        if (typeof changeExpenseMonth === "function") {
-            changeExpenseMonth(monthStr);
-        }
-    }
-}
-
   </script>
-
-  <div id="month-picker-modal"
-    class="fixed inset-0 z-[100] hidden opacity-0 transition-opacity duration-300 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-    <div id="month-picker-box"
-      class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl scale-95 transition-transform duration-300">
-      <div class="bg-blue-600 p-4 text-white flex justify-between items-center">
-        <div class="font-bold text-lg"><i class="far fa-calendar-alt mr-2"></i>เลือกเดือนที่ต้องการ</div>
-        <button onclick="closeMonthPicker()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition">
-        <i class="fas fa-times"></i>
-      </button>
-      </div>
-
-      <div class="p-5">
-        <div class="flex justify-between items-center mb-6 bg-slate-50 p-2 rounded-2xl border border-slate-100">
-          <button onclick="changePickerYear(-1)" class="w-10 h-10 rounded-xl bg-white text-slate-600 shadow-sm hover:bg-blue-50 hover:text-blue-600 transition"><i class="fas fa-chevron-left"></i></button>
-          <div class="font-bold text-xl text-blue-600">พ.ศ. <span id="picker-year-display">2569</span></div>
-          <button onclick="changePickerYear(1)" class="w-10 h-10 rounded-xl bg-white text-slate-600 shadow-sm hover:bg-blue-50 hover:text-blue-600 transition"><i class="fas fa-chevron-right"></i></button>
-        </div>
-
-        <div class="grid grid-cols-3 gap-3">
-          <button onclick="selectPickerMonth(1)" class="py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition shadow-sm">ม.ค.</button>
-          <button onclick="selectPickerMonth(2)" class="py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition shadow-sm">ก.พ.</button>
-          <button onclick="selectPickerMonth(3)" class="py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition shadow-sm">มี.ค.</button>
-          <button onclick="selectPickerMonth(4)" class="py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition shadow-sm">เม.ย.</button>
-          <button onclick="selectPickerMonth(5)" class="py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition shadow-sm">พ.ค.</button>
-          <button onclick="selectPickerMonth(6)" class="py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition shadow-sm">มิ.ย.</button>
-          <button onclick="selectPickerMonth(7)" class="py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition shadow-sm">ก.ค.</button>
-          <button onclick="selectPickerMonth(8)" class="py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition shadow-sm">ส.ค.</button>
-          <button onclick="selectPickerMonth(9)" class="py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition shadow-sm">ก.ย.</button>
-          <button onclick="selectPickerMonth(10)" class="py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition shadow-sm">ต.ค.</button>
-          <button onclick="selectPickerMonth(11)" class="py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition shadow-sm">พ.ย.</button>
-          <button onclick="selectPickerMonth(12)" class="py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition shadow-sm">ธ.ค.</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
 </body>
 
