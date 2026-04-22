@@ -3322,9 +3322,11 @@ function toggleOption(elementId, isChecked) {
                         }
                     }
                     
-                    let subText = h.isOverdue 
-                        ? `<div class="text-[11px] text-rose-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-file-invoice opacity-70"></i> บิล: ${h.billMonthStr} <span class="mx-1 text-rose-300">|</span> <i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`
-                        : `<div class="text-[11px] text-slate-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`;
+                    let displayBillMonth = formatThaiMonth(h.billMonthStr).replace(" / ", "/");
+
+let subText = h.isOverdue 
+    ? `<div class="text-[11px] text-rose-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-file-invoice opacity-70"></i> บิล: ${displayBillMonth} <span class="mx-1 text-rose-300">|</span> <i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`
+    : `<div class="text-[11px] text-slate-500 mt-1 font-medium flex items-center gap-1"><i class="fas fa-calendar-check opacity-70"></i> จ่าย: ${pDateStr}</div>`;
 
                     return `
                     <div class="flex justify-between items-start py-3 border-b border-slate-50 last:border-none hover:bg-slate-50 transition px-2 rounded-lg">
@@ -4363,7 +4365,7 @@ function openReportOverdueCollected() {
                         </div>
                     </div>
                 </div>
-                <div class="font-black text-slate-700 text-sm bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 shrink-0">${item.amount.toLocaleString()} ฿</div>
+                <div class="font-black text-slate-700 text-sm bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 shrink-0">${item.amount.toLocaleString()} บ.</div>
             </div>`;
         });
         contentArea.innerHTML = html + '</div>';
