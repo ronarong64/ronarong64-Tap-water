@@ -864,21 +864,20 @@
               สรุปยอดรายบุคคล</p>
           </div>
 
-          <div
-            class="relative bg-slate-50 pl-3 pr-2 py-2 rounded-2xl border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden z-10"
-            onclick="try { document.getElementById('collector-month-input').showPicker(); } catch(e){}">
-            <input type="month" id="collector-month-input" onchange="loadCollectorReport(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-            <div
-              class="w-8 h-8 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center shadow-sm relative z-0 pointer-events-none">
-              <i class="far fa-calendar-alt text-sm"></i>
-            </div>
-            <div class="text-right flex-1 min-w-[65px] relative z-0 pointer-events-none">
-              <div class="text-[11px] text-slate-400 font-medium mb-[1px] leading-none">ประจำเดือน</div>
-              <div id="collector-picker-display" class="font-bold text-slate-700 text-[12px] leading-none">กำลังโหลด...
-              </div>
-            </div>
-            <i class="fas fa-chevron-down text-[9px] text-slate-300 ml-0.5 relative z-0 pointer-events-none"></i>
-          </div>
+          <div onclick="openMonthPicker('collector')" 
+     class="relative bg-slate-50 pl-3 pr-2 py-2 rounded-2xl border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden z-10">
+  
+  <input type="hidden" id="collector-month-input">
+
+  <div class="w-8 h-8 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center shadow-sm relative z-0 pointer-events-none">
+    <i class="far fa-calendar-alt text-sm"></i>
+  </div>
+  <div class="text-right flex-1 min-w-[65px] relative z-0 pointer-events-none">
+    <div class="text-[11px] text-slate-400 font-medium mb-[1px] leading-none">ประจำเดือน</div>
+    <div id="collector-picker-display" class="font-bold text-slate-700 text-[12px] leading-none">กำลังโหลด...</div>
+  </div>
+  <i class="fas fa-chevron-down text-[9px] text-slate-300 ml-0.5 relative z-0 pointer-events-none"></i>
+</div>
         </div>
 
         <div id="collector-list-container" class="space-y-4"></div>
@@ -4430,22 +4429,28 @@ function changePickerYear(offset) {
     document.getElementById('picker-year-display').innerText = currentPickerYear + 543;
 }
 
-// ฟังก์ชันเมื่อกดเลือกเดือน
+// ฟังก์ชันเมื่อกดเลือกเดือนจากหน้าต่างป๊อปอัป
 function selectPickerMonth(m) {
     const monthStr = `${currentPickerYear}-${String(m).padStart(2, '0')}`;
     const inputEl = document.getElementById(currentPickerTarget + '-month-input');
     
     if (inputEl) {
         inputEl.value = monthStr;
-        closeMonthPicker();
+        closeMonthPicker(); // ปิดหน้าต่างเลือกเดือน
         
-        // 🚀 สั่งให้ระบบทำงานต่อตามหน้าที่เรียกใช้ (เชื่อมกับฟังก์ชันเดิมของคุณรณรงค์ทั้งหมด)
+        // 🚀 ตรวจสอบเงื่อนไขว่าเปิดมาจากหน้าไหน และเรียกโหลดข้อมูลหน้าเฉพา่านั้นๆ
         if (currentPickerTarget === 'report') {
             loadMonthlyReport(monthStr); 
-        } else if (currentPickerTarget === 'exp') {
-            changeExpenseMonth(monthStr); // โหลดหน้ารายจ่าย
-        } else if (currentPickerTarget === 'fin') {
-            loadFinance(monthStr); // 🌟 เรียกฟังก์ชัน loadFinance
+        } 
+        else if (currentPickerTarget === 'exp') {
+            if (typeof changeExpenseMonth === "function") changeExpenseMonth(monthStr);
+        } 
+        else if (currentPickerTarget === 'fin') {
+            if (typeof loadFinance === "function") loadFinance(monthStr);
+        }
+        else if (currentPickerTarget === 'collector') {
+            // 🌟 เรียกใช้ฟังก์ชันเดิมของคุณรณรงค์ (บรรทัดที่ 741)
+            if (typeof loadCollectorReport === "function") loadCollectorReport(monthStr);
         }
     }
 }
