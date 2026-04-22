@@ -829,23 +829,21 @@
               <i class="fas fa-history text-slate-400"></i> ประวัติล่าสุด
             </h3>
 
-            <div
-              class="relative bg-slate-50 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden"
-              onclick="try { document.getElementById('fin-month-input').showPicker(); } catch(e){}">
+            <div onclick="openMonthPicker('fin')"
+  class="relative bg-slate-50 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden">
 
-              <input type="month" id="fin-month-input" onchange="changeFinanceMonth(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+  <input type="hidden" id="fin-month-input">
 
-              <div
-                class="w-7 h-7 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center shadow-sm relative z-0 pointer-events-none">
-                <i class="far fa-calendar-alt text-xs"></i>
-              </div>
-              <div class="text-right flex-1 min-w-[65px] relative z-0 pointer-events-none">
-                <div class="text-[9px] text-slate-400 font-medium mb-[1px] leading-none">เลือกเดือน</div>
-                <div id="fin-picker-display" class="font-bold text-slate-700 text-[11px] leading-none">กำลังโหลด...
-                </div>
-              </div>
-              <i class="fas fa-chevron-down text-[9px] text-slate-300 ml-0.5 relative z-0 pointer-events-none"></i>
-            </div>
+  <div class="w-7 h-7 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center shadow-sm relative z-0 pointer-events-none">
+    <i class="far fa-calendar-alt text-xs"></i>
+  </div>
+  <div class="text-right flex-1 min-w-[65px] relative z-0 pointer-events-none">
+    <div class="text-[9px] text-slate-400 font-medium mb-[1px] leading-none">เลือกเดือน</div>
+    <div id="fin-picker-display" class="font-bold text-slate-700 text-[11px] leading-none">กำลังโหลด...
+    </div>
+  </div>
+  <i class="fas fa-chevron-down text-[9px] text-slate-300 ml-0.5 relative z-0 pointer-events-none"></i>
+</div>
           </div>
 
           <div id="finance-history-body" class="space-y-3 min-h-[100px]"></div>
@@ -4439,16 +4437,15 @@ function selectPickerMonth(m) {
     
     if (inputEl) {
         inputEl.value = monthStr;
-        // ปิดหน้าต่างก่อน
         closeMonthPicker();
         
-        // สั่งให้ระบบทำงานต่อตามหน้าที่เรียกใช้
+        // 🚀 สั่งให้ระบบทำงานต่อตามหน้าที่เรียกใช้ (เชื่อมกับฟังก์ชันเดิมของคุณรณรงค์ทั้งหมด)
         if (currentPickerTarget === 'report') {
             loadMonthlyReport(monthStr); 
         } else if (currentPickerTarget === 'exp') {
-            if (typeof changeExpenseMonth === "function") {
-                changeExpenseMonth(monthStr);
-            }
+            changeExpenseMonth(monthStr); // โหลดหน้ารายจ่าย
+        } else if (currentPickerTarget === 'fin') {
+            loadFinance(monthStr); // 🌟 เรียกฟังก์ชัน loadFinance
         }
     }
 }
