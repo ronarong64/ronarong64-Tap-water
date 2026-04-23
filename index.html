@@ -1065,156 +1065,67 @@
         </div>
       </div>
 
-      <div id="secret-panel" onclick="if(event.target === this) closeSecretPanel()"
-    class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
-    <div class="glass-card w-full max-w-md p-6 anim-slide-up bg-white relative max-h-[90vh] flex flex-col font-kanit rounded-3xl shadow-2xl">
-
-      <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4 shrink-0">
-        <div>
-          <h2 class="text-2xl font-bold text-slate-800 flex items-center">
-            <i class="fas fa-user-shield text-purple-600 mr-2"></i>จัดการผู้ดูแล
-          </h2>
-          <p class="text-xs text-slate-400">เพิ่ม/ลบ/แก้ไข บัญชีเข้าระบบ</p>
-        </div>
-        <button onclick="closeSecretPanel()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 transition active:scale-95">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <div id="acc-add-btn-container" class="mb-4 shrink-0">
-        <button onclick="showAccForm('add')" class="w-full bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-600 hover:text-white py-3 rounded-2xl font-bold text-sm flex justify-center items-center gap-2 transition-all active:scale-95 shadow-sm">
-          <i class="fas fa-user-plus text-lg"></i> เพิ่มบัญชีผู้ใช้ใหม่
-        </button>
-      </div>
-
-      <div id="acc-form-container" class="bg-purple-50/50 p-4 rounded-2xl mb-4 border border-purple-100 shrink-0 hidden transition-all">
-        <h3 class="text-sm font-bold text-purple-700 mb-3 flex items-center" id="acc-form-title">
-          <i class="fas fa-user-plus mr-1"></i> เพิ่มบัญชีใหม่
-        </h3>
-        <input type="hidden" id="acc-edit-index">
-
-        <div class="space-y-3 mb-4">
-          <div class="grid grid-cols-2 gap-2">
-            <input type="text" id="acc-username" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-500" placeholder="Username">
-            <input type="text" id="acc-password" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-500" placeholder="Password (4 หลัก)">
-          </div>
-          <div>
-            <select id="acc-role" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-500 text-slate-600 font-medium">
-               <option value="admin">Admin (ผู้ดูแลสูงสุด)</option>
-               <option value="store">Store (จดมิเตอร์)</option>
-               <option value="user">User (ดูข้อมูลทั่วไป)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="flex gap-2">
-          <button type="button" onclick="saveAccount()" class="bg-purple-600 hover:bg-purple-700 text-white rounded-xl px-4 py-2 font-bold text-sm shadow-md active:scale-95 transition flex-1 flex items-center justify-center gap-1" id="btn-save-acc">
-            <i class="fas fa-save"></i> บันทึกข้อมูล
-          </button>
-          <button type="button" onclick="hideAccForm()" class="bg-slate-200 text-slate-600 hover:bg-slate-300 rounded-xl px-4 py-2 font-bold text-sm shadow-sm active:scale-95 transition flex items-center justify-center gap-1">
-            <i class="fas fa-times"></i> ยกเลิก
-          </button>
-        </div>
-      </div>
-
-      <div class="flex-1 overflow-y-auto hide-scrollbar space-y-2 pr-1" id="account-list-body"></div>
-    </div>
-  </div>
-
     </main>
   </div>
 
   <script>
-    
-      // ==========================================
-        // 1. ดักจับการพิมพ์รหัสอัตโนมัติ (แยกโหมดชัดเจน)
-        // ==========================================
-        const pinInputEl = document.getElementById('pin-input');
-        if (pinInputEl) {
-            pinInputEl.oninput = function() {
-                let val = this.value.trim();
-                
-                // 🚩 โหมดลับ: ต้องมี * หน้าและหลัง รวม 6 ตัว (เช่น *1234*)
-                if (val.length === 6 && val.startsWith('*') && val.endsWith('*')) {
-                    this.blur();
-                    let adminPin = val.substring(1, 5); // ตัด * ออกเหลือแค่ 1234
-                    executeLoginAPI(adminPin, true); // ส่งค่า true = บังคับเข้าโหมดแอดมิน
-                } 
-                // 🏠 โหมดปกติ: ตัวเลข 4 ตัวเท่านั้น และไม่มี *
-                else if (val.length === 4 && !val.includes('*')) {
-                    this.blur(); 
-                    executeLoginAPI(val, false); // ส่งค่า false = บังคับเข้าโหมดปกติ
-                }
-            };
-        }
-
-        // ==========================================
-        // 2. ฟังก์ชันสำหรับปุ่มกด "เข้าสู่ระบบ" (รองรับคนที่กดปุ่มเอง)
-        // ==========================================
-        function submitLogin() {
-            let val = document.getElementById('pin-input').value.trim();
-            
-            if (val.length === 6 && val.startsWith('*') && val.endsWith('*')) {
-                executeLoginAPI(val.substring(1, 5), true);
-            } else if (val.length === 4 && !val.includes('*')) {
-                executeLoginAPI(val, false);
+    // 1. จัดการตอนเปิดเว็บ (เช็คว่าเคยล๊อกอินไว้ไหม)
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedUser = sessionStorage.getItem('water_app_session');
+            if (savedUser) {
+                // ถ้าเคยล๊อกอินแล้ว ข้ามไปหน้าหลักเลย
+                const userData = JSON.parse(savedUser);
+                showMainScreen(userData);
             } else {
-                document.getElementById('error-text').innerText = "รหัสไม่ถูกต้อง";
-                document.getElementById('error-msg').classList.remove('hidden');
+                // ถ้ายังไม่ล๊อกอิน บังคับคีย์บอร์ดเด้งขึ้นมา
+                setTimeout(() => {
+                    const pinInput = document.getElementById('pin-input');
+                    if(pinInput) pinInput.focus();
+                }, 300);
             }
-        }
+        });
 
-        // ==========================================
-        // 3. ฟังก์ชัน API ยิงไปเช็คหลังบ้าน (ตัวแปรไม่ตีกัน 100%)
-        // ==========================================
-        async function executeLoginAPI(pinCode, isSecretMode) {
+        // 2. ฟังก์ชันตรวจสอบการล๊อกอิน (ส่ง PIN ไปเช็คกับ Google Sheets)
+        async function submitLogin() {
+            const pin = document.getElementById('pin-input').value.trim();
             const btn = document.getElementById('btn-login');
             const errorBox = document.getElementById('error-msg');
             const errorText = document.getElementById('error-text');
 
+            if (!pin) return;
+
+            // เปลี่ยนสถานะปุ่มตอนกำลังโหลด
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> ตรวจสอบสิทธิ์...';
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังตรวจสอบ...';
             errorBox.classList.add('hidden');
 
             try {
+                // 🚀 ยิงคำขอไปที่ API_URL ที่ตั้งไว้บนสุด
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "login", pin: pinCode })
+                    body: JSON.stringify({ action: "login", pin: pin })
                 });
                 const result = await response.json();
 
                 if (result.success) {
-                    let userRole = String(result.role || "").trim().toLowerCase();
-
-                    // 🛡️ เช็คเงื่อนไข: ถ้าเป็นโหมดแอดมิน (*1234*)
-                    if (isSecretMode === true) {
-                        if (userRole === 'admin') {
-                            document.getElementById('pin-input').value = '';
-                            openSecretPanel(); // 🟢 เปิดหน้าจัดการผู้ดูแล
-                        } else {
-                            errorText.innerText = "ท่านไม่มีสิทธิ์ผู้ดูแลระบบ";
-                            errorBox.classList.remove('hidden');
-                            document.getElementById('pin-input').value = '';
-                        }
-                    } 
-                    // 🏠 เช็คเงื่อนไข: ถ้าเป็นโหมดปกติ (1234)
-                    else {
-                        // บันทึก Session เข้าหน้าหลัก
-                        sessionStorage.setItem('water_app_session', JSON.stringify(result));
-                        localStorage.setItem("username", result.username || "User");
-                        document.getElementById('pin-input').value = '';
-                        showMainScreen(result); // 🟢 เปิดหน้า Dashboard
-                    }
+                    // จำค่า session รวมไว้ในเครื่อง (ของเดิมของคุณ)
+                    sessionStorage.setItem('water_app_session', JSON.stringify(result));
+                    
+                    // 🎯 สิ่งที่เพิ่มเข้ามา: สั่งให้จำ "ชื่อผู้ล็อกอิน" แยกไว้ต่างหาก
+                    // (เพื่อส่งไปให้คอลัมน์ M ตอนจดมิเตอร์ได้ดึงไปใช้)
+                    localStorage.setItem("username", result.username);
+                    
+                    showMainScreen(result);
                 } else {
-                    errorText.innerText = result.message || "รหัสไม่ถูกต้อง";
+                    errorText.innerText = result.message || "รหัส PIN ไม่ถูกต้อง";
                     errorBox.classList.remove('hidden');
-                    document.getElementById('pin-input').value = '';
                 }
             } catch (e) {
-                errorText.innerText = "เชื่อมต่อล้มเหลว";
+                errorText.innerText = "การเชื่อมต่อล้มเหลว ตรวจสอบอินเทอร์เน็ต";
                 errorBox.classList.remove('hidden');
             } finally {
+                // คืนค่าปุ่มกลับมาเหมือนเดิม
                 btn.disabled = false;
                 btn.innerHTML = 'เข้าสู่ระบบ <i class="fas fa-arrow-right ml-1 text-sm"></i>';
             }
@@ -1252,74 +1163,6 @@
             }, 400);
         }
 
-        // ==========================================
-        // 🔐 ฟังก์ชันตรวจสอบการล๊อกอิน (ป้องกันการทำงานซ้อน)
-        // ==========================================
-        async function executeLoginProcess(pin, isSecret) {
-            const btn = document.getElementById('btn-login');
-            const errorBox = document.getElementById('error-msg');
-            const errorText = document.getElementById('error-text');
-            const inputField = document.getElementById('pin-input');
-
-            // 🚫 ล็อกการกดปุ่มและช่องพิมพ์ทันที
-            btn.disabled = true;
-            inputField.disabled = true;
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังตรวจสอบ...';
-            errorBox.classList.add('hidden');
-
-            try {
-                const actionType = isSecret ? "adminLogin" : "login";
-
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: actionType, pin: pin })
-                });
-                const result = await response.json();
-
-                if (result.success) {
-                    // จำค่า Session ลงเครื่องทันที
-                    sessionStorage.setItem('water_app_session', JSON.stringify(result));
-                    localStorage.setItem("username", result.username);
-
-                    if (isSecret) {
-                        // 🛡️ เข้าโหมดแอดมิน
-                        inputField.value = '';
-                        openSecretPanel(); // เรียกฟังก์ชันเปิดหน้าจัดการ
-                    } else {
-                        // 🏠 เข้าหน้าหลัก Dashboard
-                        inputField.value = '';
-                        showMainScreen(result);
-                    }
-                } else {
-                    // แจ้งเตือนข้อผิดพลาด
-                    errorText.innerText = result.message || "เกิดข้อผิดพลาด";
-                    errorBox.classList.remove('hidden');
-                    inputField.value = '';
-                }
-            } catch (e) {
-                errorText.innerText = "การเชื่อมต่อขัดข้อง กรุณาลองใหม่";
-                errorBox.classList.remove('hidden');
-            } finally {
-                // 🔓 ปลดล็อกหน้าจอ
-                btn.disabled = false;
-                inputField.disabled = false;
-                btn.innerHTML = 'เข้าสู่ระบบ <i class="fas fa-arrow-right ml-1 text-sm"></i>';
-            }
-        }
-
-        // ฟังก์ชันเปิดหน้าจัดการผู้ดูแล (ตรวจสอบไอดี Modal ให้ตรงกัน)
-        function openSecretPanel() {
-            const panel = document.getElementById('secret-panel');
-            if (panel) {
-                panel.classList.remove('hidden');
-                // เรียกโหลดข้อมูลบัญชีทันทีที่เปิด
-                if (typeof loadAccounts === 'function') loadAccounts();
-            } else {
-                console.error("ไม่พบ element ที่ชื่อ secret-panel");
-            }
-        }
-
         // 4. ฟังก์ชันออกจากระบบ
         function logout() {
             // ล้างข้อมูลทั้งหมดในเครื่อง
@@ -1336,8 +1179,16 @@
             }, 100);
         }
 
-        
-     
+        // 5. เพิ่มลูกเล่น: พิมพ์ครบ 4 ตัว ให้ล๊อกอินอัตโนมัติ
+        document.getElementById('pin-input').addEventListener('input', function(e) {
+            if (this.value.length === 4) {
+                // เบลอช่องพิมพ์เพื่อเอาคีย์บอร์ดลง
+                this.blur(); 
+                // สั่งล๊อกอิน
+                submitLogin();
+            }
+        });
+
         // ==========================================
         // ระบบดึงข้อมูลและจัดการ Dashboard
         // ==========================================
@@ -5010,147 +4861,6 @@ function toggleYearlyHouse() {
         icon.classList.remove('rotate-180');
     }
 }
-
-// ==========================================
-        // ฟังก์ชันของระบบจัดการบัญชีผู้ดูแล (Secret Panel)
-        // ==========================================
-        function openSecretPanel() {
-            document.getElementById('secret-panel').classList.remove('hidden');
-            loadAccounts();
-        }
-
-        function closeSecretPanel() {
-            document.getElementById('secret-panel').classList.add('hidden');
-            hideAccForm();
-            
-            // ✨ เมื่อปิดหน้าผู้ดูแล ให้ตรวจสอบว่ามี Session ล๊อกอินอยู่ไหม ถ้ามีให้เข้าหน้าหลักเลย
-            let savedSession = sessionStorage.getItem('water_app_session');
-            if (savedSession) {
-                let userData = JSON.parse(savedSession);
-                showMainScreen(userData);
-            }
-        }
-
-        function showAccForm(mode, row = '', username = '', password = '', role = 'admin') {
-            document.getElementById('acc-add-btn-container').classList.add('hidden');
-            document.getElementById('acc-form-container').classList.remove('hidden');
-            document.getElementById('account-list-body').scrollTop = 0;
-
-            let btnSave = document.getElementById('btn-save-acc');
-            let formTitle = document.getElementById('acc-form-title');
-
-            document.getElementById('acc-edit-index').value = row;
-            document.getElementById('acc-username').value = username;
-            document.getElementById('acc-password').value = password;
-            document.getElementById('acc-role').value = role;
-
-            if (mode === 'add') {
-                formTitle.innerHTML = '<i class="fas fa-user-plus mr-1"></i> เพิ่มบัญชีใหม่';
-                btnSave.innerHTML = '<i class="fas fa-save"></i> บันทึกข้อมูล';
-                btnSave.className = "bg-purple-600 hover:bg-purple-700 text-white rounded-xl px-4 py-2 font-bold text-sm shadow-md active:scale-95 transition flex-1 flex items-center justify-center gap-1";
-            } else if (mode === 'edit') {
-                formTitle.innerHTML = '<i class="fas fa-user-edit mr-1"></i> แก้ไขบัญชีผู้ใช้';
-                btnSave.innerHTML = '<i class="fas fa-save"></i> อัปเดตข้อมูล';
-                btnSave.className = "bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4 py-2 font-bold text-sm shadow-md active:scale-95 transition flex-1 flex items-center justify-center gap-1";
-            }
-        }
-
-        function hideAccForm() {
-            document.getElementById('acc-add-btn-container').classList.remove('hidden');
-            document.getElementById('acc-form-container').classList.add('hidden');
-        }
-
-        async function loadAccounts() {
-            const listBody = document.getElementById('account-list-body');
-            listBody.innerHTML = '<div class="text-center text-slate-400 py-10 flex flex-col items-center"><i class="fas fa-circle-notch fa-spin text-2xl mb-2"></i><span>กำลังโหลดข้อมูล...</span></div>';
-
-            try {
-                const res = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "manageAccount", subAction: "get" })
-                });
-                const result = await res.json();
-
-                if (result.success && result.data.length > 0) {
-                    let html = '';
-                    result.data.forEach(acc => {
-                        let roleColor = acc.role.toLowerCase() === 'admin' ? 'bg-purple-100 text-purple-600 border-purple-200' :
-                                       acc.role.toLowerCase() === 'store' ? 'bg-blue-100 text-blue-600 border-blue-200' :
-                                       'bg-emerald-100 text-emerald-600 border-emerald-200';
-                        html += `
-                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 shadow-sm"><i class="fas fa-user"></i></div>
-                                <div>
-                                    <div class="font-bold text-slate-800 text-sm leading-tight">${acc.username}</div>
-                                    <div class="flex items-center gap-2 mt-1">
-                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${roleColor}">${String(acc.role).toUpperCase()}</span>
-                                        <span class="text-[10px] text-slate-400 font-mono bg-white px-2 py-0.5 rounded-md border border-slate-200"><i class="fas fa-key mr-1"></i>${acc.password}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex flex-col gap-1 shrink-0">
-                                <button onclick="showAccForm('edit', ${acc.row}, '${acc.username}', '${acc.password}', '${acc.role}')" class="w-8 h-8 bg-white border border-slate-200 text-slate-500 rounded-lg flex items-center justify-center hover:bg-orange-50 hover:text-orange-500 transition shadow-sm active:scale-95"><i class="fas fa-pen text-xs"></i></button>
-                                <button onclick="deleteAccount(${acc.row})" class="w-8 h-8 bg-white border border-slate-200 text-slate-500 rounded-lg flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 transition shadow-sm active:scale-95"><i class="fas fa-trash text-xs"></i></button>
-                            </div>
-                        </div>`;
-                    });
-                    listBody.innerHTML = html;
-                } else {
-                    listBody.innerHTML = '<div class="text-center text-slate-400 py-6 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">ไม่มีข้อมูลบัญชี</div>';
-                }
-            } catch (e) {
-                listBody.innerHTML = '<div class="text-center text-rose-500 py-6 text-sm">ข้อผิดพลาดในการโหลดข้อมูล</div>';
-            }
-        }
-
-        async function saveAccount() {
-            const row = document.getElementById('acc-edit-index').value;
-            const username = document.getElementById('acc-username').value;
-            const password = document.getElementById('acc-password').value;
-            const role = document.getElementById('acc-role').value;
-
-            if (!username || !password) {
-                alert("กรุณากรอก Username และ Password");
-                return;
-            }
-
-            const btn = document.getElementById('btn-save-acc');
-            const oldHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังบันทึก...';
-            btn.disabled = true;
-
-            try {
-                const res = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "manageAccount", subAction: "save", row: row, username: username, password: password, role: role })
-                });
-                const result = await res.json();
-                
-                if (result.success) {
-                    hideAccForm();
-                    loadAccounts();
-                } else {
-                    alert("บันทึกไม่สำเร็จ: " + result.message);
-                }
-            } catch(e) {
-                alert("เชื่อมต่อเซิร์ฟเวอร์ขัดข้อง");
-            } finally {
-                btn.innerHTML = oldHtml;
-                btn.disabled = false;
-            }
-        }
-
-        function deleteAccount(row) {
-            if(confirm('ยืนยันการลบบัญชีนี้?')) {
-                fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "manageAccount", subAction: "delete", row: row })
-                }).then(res => res.json()).then(result => {
-                    if(result.success) loadAccounts();
-                });
-            }
-        }
 
   </script>
 
