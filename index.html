@@ -1141,22 +1141,49 @@
             }
         });
 
-        // 2. ฟังก์ชันตรวจสอบการล๊อกอิน (ส่ง PIN ไปเช็คกับ Google Sheets)
-        async function submitLogin() {
-            const pin = document.getElementById('pin-input').value.trim();
+        // ==========================================
+        // 1. ดักจับการพิมพ์รหัส (แยกโหมดปกติ กับ โหมดผู้ดูแลอย่างเด็ดขาด)
+        // ==========================================
+        const pinInput = document.getElementById('pin-input');
+        
+        // ล้าง Event เดิมทิ้งก่อนเพื่อป้องกันการทำงานซ้อนกัน
+        let newPinInput = pinInput.cloneNode(true);
+        pinInput.parentNode.replaceChild(newPinInput, pinInput);
+
+        newPinInput.addEventListener('input', function(e) {
+            let val = this.value;
+            // 🚩 โหมดลับ: ต้องขึ้นต้นด้วย * และลงท้ายด้วย * (รวม 6 ตัว เช่น *1234*)
+            if (val.startsWith('*')) {
+                if (val.length === 6 && val.endsWith('*')) {
+                    this.blur();
+                    executeLogin(true); // โหมดแอดมิน
+                }
+            } 
+            // 🏠 โหมดปกติ: ตัวเลข 4 ตัวเท่านั้น และต้องไม่มีเครื่องหมาย *
+            else if (val.length === 4 && !val.includes('*')) {
+                this.blur(); 
+                executeLogin(false); // โหมดปกติ
+            }
+        });
+
+        // ==========================================
+        // 2. ฟังก์ชันตรวจสอบการเข้าสู่ระบบ (รวบเหลือตัวเดียว)
+        // ==========================================
+        async function executeLogin(isSecretMode) {
+            let rawInput = document.getElementById('pin-input').value.trim();
+            // ถ้าเป็นโหมดลับ ตัด * ออกเหลือแค่ 4 ตัวกลาง
+            let pin = isSecretMode ? rawInput.substring(1, 5) : rawInput;
+
             const btn = document.getElementById('btn-login');
             const errorBox = document.getElementById('error-msg');
             const errorText = document.getElementById('error-text');
 
             if (!pin) return;
-
-            // เปลี่ยนสถานะปุ่มตอนกำลังโหลด
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังตรวจสอบ...';
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> ตรวจสอบสิทธิ์...';
             errorBox.classList.add('hidden');
 
             try {
-                // 🚀 ยิงคำขอไปที่ API_URL ที่ตั้งไว้บนสุด
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1165,27 +1192,41 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // จำค่า session รวมไว้ในเครื่อง (ของเดิมของคุณ)
+                    // บันทึก Session ข้อมูลผู้ใช้
                     sessionStorage.setItem('water_app_session', JSON.stringify(result));
-                    
-                    // 🎯 สิ่งที่เพิ่มเข้ามา: สั่งให้จำ "ชื่อผู้ล็อกอิน" แยกไว้ต่างหาก
-                    // (เพื่อส่งไปให้คอลัมน์ M ตอนจดมิเตอร์ได้ดึงไปใช้)
                     localStorage.setItem("username", result.username);
-                    
-                    showMainScreen(result);
+
+                    let userRole = String(result.role || "").trim().toLowerCase();
+
+                    // 🛡️ ตรวจสอบเงื่อนไขการเข้าหน้า Admin
+                    if (isSecretMode) {
+                        if (userRole === 'admin') {
+                            document.getElementById('pin-input').value = '';
+                            openSecretPanel(); // เข้าหน้าจัดการบัญชี
+                        } else {
+                            // ถ้าใช้ *...* แต่ไม่ใช่ Admin ให้เตือนและไม่ให้เข้า
+                            errorText.innerText = "ท่านไม่มีสิทธิ์ผู้ดูแลระบบ";
+                            errorBox.classList.remove('hidden');
+                            document.getElementById('pin-input').value = '';
+                            sessionStorage.removeItem('water_app_session');
+                        }
+                    } else {
+                        // โหมดปกติ (1234) เข้าหน้าหลักเสมอ
+                        showMainScreen(result);
+                    }
                 } else {
-                    errorText.innerText = result.message || "รหัส PIN ไม่ถูกต้อง";
+                    errorText.innerText = result.message || "รหัสไม่ถูกต้อง";
                     errorBox.classList.remove('hidden');
+                    document.getElementById('pin-input').value = '';
                 }
             } catch (e) {
-                errorText.innerText = "การเชื่อมต่อล้มเหลว ตรวจสอบอินเทอร์เน็ต";
+                errorText.innerText = "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้";
                 errorBox.classList.remove('hidden');
             } finally {
-                // คืนค่าปุ่มกลับมาเหมือนเดิม
                 btn.disabled = false;
                 btn.innerHTML = 'เข้าสู่ระบบ <i class="fas fa-arrow-right ml-1 text-sm"></i>';
             }
-        };
+        }
 
         // 3. ฟังก์ชันสลับจากหน้าล๊อกอินไปหน้าหลัก
         function showMainScreen(data) {
@@ -1260,68 +1301,7 @@
                 }
             }
         });
-
-        // ==========================================
-        // 2. ฟังก์ชันตรวจสอบการล๊อกอิน 
-        // ==========================================
-        async function submitLogin(isSecretMode = false) {
-            let currentPinInput = document.getElementById('pin-input').value.trim();
-            let pin = isSecretMode ? currentPinInput.substring(1, 5) : currentPinInput;
-
-            const btn = document.getElementById('btn-login');
-            const errorBox = document.getElementById('error-msg');
-            const errorText = document.getElementById('error-text');
-
-            if (!pin) return;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังตรวจสอบ...';
-            errorBox.classList.add('hidden');
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "login", pin: pin })
-                });
-                const result = await response.json();
-
-                if (result.success) {
-                    // ✨ 1. บันทึก Session เสมอ ไม่ว่าจะเข้าโหมดไหน
-                    sessionStorage.setItem('water_app_session', JSON.stringify(result));
-                    localStorage.setItem("username", result.username);
-
-                    // ดึง Role มาแปลงเป็นตัวพิมพ์เล็กและตัดช่องว่างทิ้ง เพื่อป้องกันข้อผิดพลาด
-                    let userRole = result.role ? String(result.role).trim().toLowerCase() : '';
-
-                    // ✨ 2. แยกเส้นทางเข้าใช้งาน
-                    if (isSecretMode) {
-                        if (userRole === 'admin') {
-                            document.getElementById('pin-input').value = '';
-                            openSecretPanel(); // เปิดหน้าจัดการผู้ดูแล
-                        } else {
-                            errorText.innerText = "บัญชีของคุณไม่มีสิทธิ์ผู้ดูแลระบบ";
-                            errorBox.classList.remove('hidden');
-                            document.getElementById('pin-input').value = '';
-                            sessionStorage.removeItem('water_app_session'); // ลบเซสชันทิ้งถ้าแอบเข้า
-                        }
-                    } else {
-                        // โหมดปกติ (1234) เข้าหน้าหลักทันที
-                        showMainScreen(result);
-                    }
-                } else {
-                    errorText.innerText = result.message || "รหัส PIN ไม่ถูกต้อง";
-                    errorBox.classList.remove('hidden');
-                    document.getElementById('pin-input').value = '';
-                }
-            } catch (e) {
-                errorText.innerText = "การเชื่อมต่อล้มเหลว ตรวจสอบอินเทอร์เน็ต";
-                errorBox.classList.remove('hidden');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = 'เข้าสู่ระบบ <i class="fas fa-arrow-right ml-1 text-sm"></i>';
-            }
-        }
-
+     
         // ==========================================
         // ระบบดึงข้อมูลและจัดการ Dashboard
         // ==========================================
