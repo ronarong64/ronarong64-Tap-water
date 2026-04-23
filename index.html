@@ -3288,88 +3288,113 @@ function toggleOption(elementId, isChecked) {
         }
 
         function renderCollectorReport(data) {
-            const container = document.getElementById('collector-list-container');
-            
-            if(!data || data.length === 0) { 
-                container.innerHTML = `<div class="text-center py-10 bg-white rounded-[1.5rem] border border-dashed border-slate-200 text-slate-400"><div class="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-folder-open text-2xl text-slate-300"></i></div><p class="text-sm font-bold text-slate-500">ไม่มีรายการเก็บบิลในเดือนนี้</p></div>`;
-                return;
-            }
+    const container = document.getElementById('collector-list-container');
+    
+    if(!data || data.length === 0) { 
+        container.innerHTML = `<div class="text-center py-10 bg-white rounded-[1.5rem] border border-dashed border-slate-200 text-slate-400"><div class="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-folder-open text-2xl text-slate-300"></i></div><p class="text-sm font-bold text-slate-500">ไม่มีรายการเก็บบิลในเดือนนี้</p></div>`;
+        return;
+    }
 
-            let fullHtml = '';
+    let fullHtml = '';
+    
+    // วนลูปวาดกล่องของคนจัดเก็บแต่ละคน
+    data.forEach(c => {
+        let housesHtml = c.houses.map(h => {
+            // ปรับป้าย "ค้างเก่า" ไม่ให้โดนบีบเมื่อจอแคบ
+            let isOverdueTag = h.isOverdue ? `<span class="shrink-0 ml-1.5 text-[10px] bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded border border-rose-200 font-bold leading-none shadow-sm">ค้างเก่า</span>` : '';
             
-            // วนลูปวาดกล่องของคนจัดเก็บแต่ละคน
-            data.forEach(c => {
-                let housesHtml = c.houses.map(h => {
-                    let isOverdueTag = h.isOverdue ? `<span class="ml-2 text-[9px] bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded-md border border-rose-200 font-bold leading-none whitespace-nowrap shadow-sm">ค้างเก่า</span>` : '';
+            // แปลงวันที่
+            let pDateStr = h.paidDate ? h.paidDate : '-';
+            if (pDateStr !== '-' && pDateStr.includes('/')) {
+                const parts = pDateStr.split(' '); 
+                const dateParts = parts[0].split('/'); 
+                
+                if (dateParts.length === 3) {
+                    const d = dateParts[0];
+                    const mIndex = parseInt(dateParts[1], 10) - 1; 
+                    const y = dateParts[2];
+                    const timeStr = parts[1] ? parts[1] : '';
+                    const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
                     
-                    // ✨ [เพิ่มใหม่] โค้ดแปลงวันที่จาก 18/04/69 -> 18/เม.ย./69
-                    let pDateStr = h.paidDate ? h.paidDate : '-';
-                    if (pDateStr !== '-' && pDateStr.includes('/')) {
-                        const parts = pDateStr.split(' '); // แยกวันที่กับเวลาออกจากกัน
-                        const dateParts = parts[0].split('/'); // แยก วัน/เดือน/ปี
-                        
-                        if (dateParts.length === 3) {
-                            const d = dateParts[0];
-                            const mIndex = parseInt(dateParts[1], 10) - 1; // แปลงเลขเดือนเพื่อใช้หาชื่อย่อ
-                            const y = dateParts[2];
-                            const timeStr = parts[1] ? parts[1] : '';
-                            const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-                            
-                            // ประกอบร่างวันที่ใหม่
-                            if (mIndex >= 0 && mIndex < 12) {
-                                pDateStr = `${d}/${thMonths[mIndex]}/${y} ${timeStr}`.trim();
-                            }
-                        }
+                    if (mIndex >= 0 && mIndex < 12) {
+                        pDateStr = `${d}/${thMonths[mIndex]}/${y} ${timeStr}`.trim();
                     }
-                    
-                    // ปรับปรุง Tag ค้างเก่า ไม่ให้โดนบีบเวลาหน้าจอแคบ (เพิ่ม shrink-0)
-let isOverdueTag = h.isOverdue 
-    ? `<span class="shrink-0 ml-1 text-[9px] bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded border border-rose-200 font-bold leading-none shadow-sm">ค้างเก่า</span>` 
-    : '';
+                }
+            }
+            
+            let displayBillMonth = formatThaiMonth(h.billMonthStr).replace(" / ", "/");
 
-let displayBillMonth = formatThaiMonth(h.billMonthStr).replace(" / ", "/");
+            // ✨ ปรับปรุง: เรียงข้อมูล บิล/วันที่จ่าย เป็นแนวตั้ง (flex-col) 
+            let subText = h.isOverdue 
+                ? `<div class="flex flex-col gap-1 mt-1.5">
+                       <div class="text-[11px] text-rose-500 font-medium flex items-center gap-1.5">
+                           <i class="fas fa-file-invoice w-3 text-center opacity-70"></i> บิล: ${displayBillMonth}
+                       </div>
+                       <div class="text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
+                           <i class="fas fa-calendar-check w-3 text-center opacity-70"></i> จ่าย: ${pDateStr}
+                       </div>
+                   </div>`
+                : `<div class="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 mt-1.5">
+                       <i class="fas fa-calendar-check w-3 text-center opacity-70"></i> จ่าย: ${pDateStr}
+                   </div>`;
 
-// ปรับ subText ให้อยู่คนละบรรทัด (Flex Column) และตั้งความกว้างไอคอนให้ตรงกัน (w-3)
-let subText = h.isOverdue 
-    ? `<div class="flex flex-col gap-1 mt-1.5">
-           <div class="text-[11px] text-rose-500 font-medium flex items-center gap-1.5">
-               <i class="fas fa-file-invoice w-3 text-center opacity-70"></i> บิล: ${displayBillMonth}
-           </div>
-           <div class="text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
-               <i class="fas fa-calendar-check w-3 text-center opacity-70"></i> จ่าย: ${pDateStr}
-           </div>
-       </div>`
-    : `<div class="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 mt-1.5">
-           <i class="fas fa-calendar-check w-3 text-center opacity-70"></i> จ่าย: ${pDateStr}
-       </div>`;
+            // ✨ ปรับปรุง: แบ่งเลย์เอาต์ย่อยเป็น 3 คอลัมน์ (ซ้าย=บ้านเลขที่, กลาง=ชื่อ+รายละเอียด, ขวา=จำนวนเงิน)
+            return `
+            <div class="flex items-start py-3.5 border-b border-slate-100 last:border-none hover:bg-slate-50 transition px-2 rounded-xl">
+                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-[13px] font-bold shrink-0 shadow-inner border border-white mr-3">
+                    ${h.houseNo}
+                </div>
 
-return `
-<div class="flex items-start py-3.5 border-b border-slate-100 last:border-none hover:bg-slate-50 transition px-2 rounded-xl">
-    <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-[13px] font-bold shrink-0 shadow-inner border border-white mr-3">
-        ${h.houseNo}
-    </div>
+                <div class="flex-1 min-w-0 flex flex-col justify-center pr-2">
+                    <div class="flex items-start flex-wrap gap-1">
+                        <span class="font-bold text-[14px] text-slate-800 leading-tight">
+                            ${h.name.replace(' (', '<br><span class="text-[11px] text-slate-500 font-normal">(')}</span>
+                        </span>
+                        ${isOverdueTag}
+                    </div>
+                    ${subText}
+                </div>
 
-    <div class="flex-1 min-w-0 flex flex-col justify-center pr-2">
-        <div class="flex items-start flex-wrap gap-1">
-            <span class="font-bold text-[14px] text-slate-800 leading-tight">
-                ${h.name.replace(' (', '<br><span class="text-[11px] text-slate-500 font-normal">(')}</span>
-            </span>
-            ${isOverdueTag}
-        </div>
-        ${subText}
-    </div>
+                <div class="flex flex-col items-end justify-start shrink-0 ml-1 mt-0.5">
+                    <span class="font-black text-slate-700 text-[14px] bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
+                        ${Number(h.amount).toLocaleString()}
+                    </span>
+                    <span class="text-[10px] text-slate-400 font-medium mt-1 mr-1">บาท</span>
+                </div>
+            </div>`;
+        }).join('');
 
-    <div class="flex flex-col items-end justify-start shrink-0 ml-1">
-        <span class="font-black text-slate-700 text-[15px] bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
-            ${Number(h.amount).toLocaleString()}
-        </span>
-        <span class="text-[10px] text-slate-400 font-medium mt-1 mr-1">บาท</span>
-    </div>
-</div>`;
-            });
+        let isTransfer = c.name.includes("โอน");
+        let headerBg = isTransfer ? "bg-gradient-to-br from-blue-500 to-indigo-600" : "bg-gradient-to-br from-teal-500 to-emerald-600";
+        let iconClass = isTransfer ? "fa-university" : "fa-wallet";
+        let shadowClass = isTransfer ? "shadow-indigo-500/20" : "shadow-teal-500/20";
+        
+        fullHtml += `
+        <div class="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden mb-5">
+            <div class="${headerBg} p-5 text-white flex justify-between items-center relative overflow-hidden shadow-lg ${shadowClass}">
+                <div class="absolute -top-4 -right-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
+                <div class="absolute -bottom-4 -left-4 w-16 h-16 bg-white opacity-10 rounded-full blur-lg"></div>
+                
+                <div class="flex gap-3 relative z-10 items-center">
+                    <div class="w-12 h-12 rounded-[1rem] bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-inner border border-white/30">
+                        <i class="fas ${iconClass}"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-[17px] leading-tight drop-shadow-sm">${c.name}</div>
+                        <div class="text-[12px] font-medium opacity-90 mt-1 bg-white/10 w-fit px-2 py-0.5 rounded-md border border-white/10 shadow-sm"><i class="fas fa-list-ul mr-1 opacity-70"></i> ${c.count} รายการ</div>
+                    </div>
+                </div>
+                <div class="text-right relative z-10">
+                    <div class="text-[12px] opacity-80 uppercase tracking-wide font-bold mb-0.5">ยอดเงินรวม</div>
+                    <div class="text-2xl font-black leading-none tracking-tight drop-shadow-sm">${Number(c.total).toLocaleString()}</div>
+                </div>
+            </div>
+            <div class="p-2 px-3 max-h-[400px] overflow-y-auto hide-scrollbar bg-white">${housesHtml}</div>
+        </div>`;
+    });
 
-            container.innerHTML = fullHtml;
-        }
+    container.innerHTML = fullHtml;
+}
 
   </script>
 
