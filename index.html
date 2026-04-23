@@ -3500,17 +3500,17 @@ function toggleOption(elementId, isChecked) {
             </h3>
           </div>
           <div class="overflow-x-auto hide-scrollbar">
-            <table class="w-full text-[14px] text-left text-slate-600">
+            <table class="w-full text-[12px] text-left text-slate-600">
               <thead class="bg-gradient-to-r from-slate-700 to-slate-800 text-white text-[11px] tracking-wide">
                 <tr>
-                  <th class="px-4 py-3 font-medium">เดือน</th>
-                  <th class="px-3 py-3 text-right font-medium">รายรับ</th>
-                  <th class="px-3 py-3 text-right font-medium">รายจ่าย</th>
-                  <th class="px-4 py-3 text-right font-medium">คงเหลือ</th>
+                  <th class="px-4 py-3 font-medium align-middle">เดือน</th>
+                  <th class="px-3 py-3 text-right font-medium align-middle">รายรับ</th>
+                  <th class="px-3 py-3 text-right font-medium align-middle">รายจ่าย</th>
+                  <th class="px-4 py-3 text-right font-medium align-middle">คงเหลือ</th>
                 </tr>
               </thead>
               <tbody id="yearly-monthly-table-body">
-                <tr><td colspan="4" class="text-center py-6 text-slate-400"><i class="fas fa-circle-notch fa-spin mr-2"></i>รอข้อมูล...</td></tr>
+                <tr><td colspan="4" class="text-center py-6 text-slate-400 align-middle"><i class="fas fa-circle-notch fa-spin mr-2"></i>รอข้อมูล...</td></tr>
               </tbody>
             </table>
           </div>
@@ -4665,10 +4665,10 @@ async function loadYearlyReport() {
             if (tBodyMonthly && data.monthlyStats) {
                 let mHtml = '';
                 
-                // ✨ เปลี่ยนเป็นชื่อเดือนเต็ม
+                // เปลี่ยนเป็นชื่อเดือนเต็ม
                 const fullMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
                 
-                // ✨ ฟังก์ชันจัดการตัวเลข: ถ้าเป็น 0 ให้แสดงเป็นขีด "-" สีเทาอ่อน
+                // ฟังก์ชันจัดการตัวเลข: ถ้าเป็น 0 ให้แสดงเป็นขีด "-" สีเทาอ่อน
                 const formatDisplay = (val) => {
                     return val === 0 ? '<span class="text-slate-300 font-normal">-</span>' : val.toLocaleString();
                 };
@@ -4681,24 +4681,25 @@ async function loadYearlyReport() {
                     // จัดการสีของยอดคงเหลือ
                     let netTextColor = mNet < 0 ? 'text-rose-500' : (mNet === 0 ? 'text-slate-400' : 'text-slate-700');
 
+                    // ✨ เพิ่ม align-middle ให้ <td> ทุกตัว
                     mHtml += `
                     <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                        <td class="px-4 py-3.5 font-medium text-slate-600 whitespace-nowrap">${fullMonths[i]}</td>
-                        <td class="px-3 py-3.5 text-right text-emerald-500 font-medium">${formatDisplay(mInc)}</td>
-                        <td class="px-3 py-3.5 text-right text-rose-500 font-medium">${formatDisplay(mExp)}</td>
-                        <td class="px-4 py-3.5 text-right font-black ${netTextColor}">${formatDisplay(mNet)}</td>
+                        <td class="px-4 py-3.5 font-medium text-slate-600 whitespace-nowrap align-middle">${fullMonths[i]}</td>
+                        <td class="px-3 py-3.5 text-right text-emerald-500 font-medium align-middle">${formatDisplay(mInc)}</td>
+                        <td class="px-3 py-3.5 text-right text-rose-500 font-medium align-middle">${formatDisplay(mExp)}</td>
+                        <td class="px-4 py-3.5 text-right font-black ${netTextColor} align-middle">${formatDisplay(mNet)}</td>
                     </tr>`;
                 });
 
-                // ✨ ปรับแต่งท้ายตาราง (ยอดรวมปี) ให้ดูน่าสนใจและเป็นสัดส่วน
+                // ✨ ปรับแต่งท้ายตาราง (เพิ่ม align-middle และจัดกล่อง flex ให้สมดุล)
                 mHtml += `
                 <tr class="bg-indigo-50/80 font-bold border-t-2 border-indigo-200 text-[13px]">
-                    <td class="px-4 py-4 text-indigo-800 flex items-center gap-1.5 whitespace-nowrap">
-                        <i class="fas fa-chart-pie opacity-70"></i> ยอดรวมปีนี้
+                    <td class="px-4 py-4 text-indigo-800 whitespace-nowrap align-middle">
+                        <div class="flex items-center gap-1.5"><i class="fas fa-chart-pie opacity-70"></i> ยอดรวมปีนี้</div>
                     </td>
-                    <td class="px-3 py-4 text-right text-emerald-600">${formatDisplay(data.income)}</td>
-                    <td class="px-3 py-4 text-right text-rose-600">${formatDisplay(data.expense)}</td>
-                    <td class="px-4 py-4 text-right text-indigo-700 text-[15px] font-black">${formatDisplay(data.net)}</td>
+                    <td class="px-3 py-4 text-right text-emerald-600 align-middle">${formatDisplay(data.income)}</td>
+                    <td class="px-3 py-4 text-right text-rose-600 align-middle">${formatDisplay(data.expense)}</td>
+                    <td class="px-4 py-4 text-right text-indigo-700 text-[15px] font-black align-middle">${formatDisplay(data.net)}</td>
                 </tr>`;
                 
                 tBodyMonthly.innerHTML = mHtml;
