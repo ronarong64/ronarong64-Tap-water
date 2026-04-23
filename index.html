@@ -3894,6 +3894,7 @@ function toggleOption(elementId, isChecked) {
   </div>
 
   <div id="receipt-modal"
+    onclick="if(event.target === this) document.getElementById('receipt-modal').classList.add('hidden')"
     class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300">
     <div class="w-full max-w-[320px] p-0 overflow-hidden bg-white rounded-2xl shadow-2xl relative">
 
