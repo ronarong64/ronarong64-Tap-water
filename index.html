@@ -1252,6 +1252,74 @@
             }, 400);
         }
 
+        // ==========================================
+        // 🔐 ฟังก์ชันตรวจสอบการล๊อกอิน (ป้องกันการทำงานซ้อน)
+        // ==========================================
+        async function executeLoginProcess(pin, isSecret) {
+            const btn = document.getElementById('btn-login');
+            const errorBox = document.getElementById('error-msg');
+            const errorText = document.getElementById('error-text');
+            const inputField = document.getElementById('pin-input');
+
+            // 🚫 ล็อกการกดปุ่มและช่องพิมพ์ทันที
+            btn.disabled = true;
+            inputField.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังตรวจสอบ...';
+            errorBox.classList.add('hidden');
+
+            try {
+                const actionType = isSecret ? "adminLogin" : "login";
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: actionType, pin: pin })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    // จำค่า Session ลงเครื่องทันที
+                    sessionStorage.setItem('water_app_session', JSON.stringify(result));
+                    localStorage.setItem("username", result.username);
+
+                    if (isSecret) {
+                        // 🛡️ เข้าโหมดแอดมิน
+                        inputField.value = '';
+                        openSecretPanel(); // เรียกฟังก์ชันเปิดหน้าจัดการ
+                    } else {
+                        // 🏠 เข้าหน้าหลัก Dashboard
+                        inputField.value = '';
+                        showMainScreen(result);
+                    }
+                } else {
+                    // แจ้งเตือนข้อผิดพลาด
+                    errorText.innerText = result.message || "เกิดข้อผิดพลาด";
+                    errorBox.classList.remove('hidden');
+                    inputField.value = '';
+                }
+            } catch (e) {
+                errorText.innerText = "การเชื่อมต่อขัดข้อง กรุณาลองใหม่";
+                errorBox.classList.remove('hidden');
+            } finally {
+                // 🔓 ปลดล็อกหน้าจอ
+                btn.disabled = false;
+                inputField.disabled = false;
+                btn.innerHTML = 'เข้าสู่ระบบ <i class="fas fa-arrow-right ml-1 text-sm"></i>';
+            }
+        }
+
+        // ฟังก์ชันเปิดหน้าจัดการผู้ดูแล (ตรวจสอบไอดี Modal ให้ตรงกัน)
+        function openSecretPanel() {
+            const panel = document.getElementById('secret-panel');
+            if (panel) {
+                panel.classList.remove('hidden');
+                // เรียกโหลดข้อมูลบัญชีทันทีที่เปิด
+                if (typeof loadAccounts === 'function') loadAccounts();
+            } else {
+                console.error("ไม่พบ element ที่ชื่อ secret-panel");
+            }
+        }
+
         // 4. ฟังก์ชันออกจากระบบ
         function logout() {
             // ล้างข้อมูลทั้งหมดในเครื่อง
