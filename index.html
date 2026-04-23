@@ -712,15 +712,18 @@
       </div>
 
       <div id="page-yearly" class="hidden space-y-5 animate-fade-in pb-20">
-        
-        <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 flex justify-between items-center relative overflow-hidden">
+
+        <div
+          class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 flex justify-between items-center relative overflow-hidden">
           <div>
             <h2 class="font-bold text-slate-800 text-[16px] flex items-center gap-2">
               <i class="fas fa-calendar-alt text-indigo-500"></i> สรุปรายปี
             </h2>
           </div>
-          <div class="relative bg-slate-50 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer shadow-inner">
-            <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-sm pointer-events-none">
+          <div
+            class="relative bg-slate-50 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer shadow-inner">
+            <div
+              class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-sm pointer-events-none">
               <i class="fas fa-calendar text-xs"></i>
             </div>
             <select id="yearly-picker" onchange="loadYearlyReport()" class="bg-transparent font-bold text-slate-700 text-[13px] outline-none cursor-pointer appearance-none pr-4 relative z-10 w-full">
@@ -735,11 +738,13 @@
 
           <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-5">
             <div>
-              <div class="text-[12px] text-slate-400 mb-1"><i class="fas fa-arrow-down text-emerald-500 mr-1"></i>รายรับ</div>
+              <div class="text-[12px] text-slate-400 mb-1"><i class="fas fa-arrow-down text-emerald-500 mr-1"></i>รายรับ
+              </div>
               <div class="font-bold text-emerald-600 text-xl" id="yearly-income">0</div>
             </div>
             <div class="border-l border-slate-100">
-              <div class="text-[12px] text-slate-400 mb-1"><i class="fas fa-arrow-up text-rose-500 mr-1"></i>รายจ่าย</div>
+              <div class="text-[12px] text-slate-400 mb-1"><i class="fas fa-arrow-up text-rose-500 mr-1"></i>รายจ่าย
+              </div>
               <div class="font-bold text-rose-500 text-xl" id="yearly-expense">0</div>
             </div>
           </div>
@@ -764,22 +769,30 @@
 
         <div class="grid grid-cols-4 gap-2">
           <div class="bg-white p-2.5 rounded-xl shadow-sm text-center border border-slate-100">
-            <div class="w-8 h-8 mx-auto bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mb-1 text-sm"><i class="fas fa-tools"></i></div>
+            <div
+              class="w-8 h-8 mx-auto bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mb-1 text-sm">
+              <i class="fas fa-tools"></i></div>
             <div class="text-[10px] text-slate-400 mb-0.5">ซ่อมแซม</div>
             <div class="font-bold text-slate-700 text-[13px]" id="yearly-repair">0</div>
           </div>
           <div class="bg-white p-2.5 rounded-xl shadow-sm text-center border border-slate-100">
-            <div class="w-8 h-8 mx-auto bg-yellow-50 text-yellow-500 rounded-full flex items-center justify-center mb-1 text-sm"><i class="fas fa-bolt"></i></div>
+            <div
+              class="w-8 h-8 mx-auto bg-yellow-50 text-yellow-500 rounded-full flex items-center justify-center mb-1 text-sm">
+              <i class="fas fa-bolt"></i></div>
             <div class="text-[10px] text-slate-400 mb-0.5">ไฟฟ้า</div>
             <div class="font-bold text-slate-700 text-[13px]" id="yearly-elec">0</div>
           </div>
           <div class="bg-white p-2.5 rounded-xl shadow-sm text-center border border-slate-100">
-            <div class="w-8 h-8 mx-auto bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-1 text-sm"><i class="fas fa-user-tie"></i></div>
+            <div
+              class="w-8 h-8 mx-auto bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-1 text-sm">
+              <i class="fas fa-user-tie"></i></div>
             <div class="text-[10px] text-slate-400 mb-0.5">จัดเก็บ</div>
             <div class="font-bold text-slate-700 text-[13px]" id="yearly-fee">0</div>
           </div>
           <div class="bg-white p-2.5 rounded-xl shadow-sm text-center border border-slate-100">
-            <div class="w-8 h-8 mx-auto bg-pink-50 text-pink-500 rounded-full flex items-center justify-center mb-1 text-sm"><i class="fas fa-ellipsis-h"></i></div>
+            <div
+              class="w-8 h-8 mx-auto bg-pink-50 text-pink-500 rounded-full flex items-center justify-center mb-1 text-sm">
+              <i class="fas fa-ellipsis-h"></i></div>
             <div class="text-[10px] text-slate-400 mb-0.5">อื่นๆ</div>
             <div class="font-bold text-slate-700 text-[13px]" id="yearly-other">0</div>
           </div>
@@ -790,26 +803,28 @@
             <i class="fas fa-chart-line text-indigo-500"></i> กราฟสถิติรายเดือน
           </h3>
           <div class="relative h-56 w-full">
-             <canvas id="yearlyChart"></canvas>
+            <canvas id="yearlyChart"></canvas>
           </div>
         </div>
 
-        <div class="bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100">
-          <h3 class="font-bold text-slate-700 mb-3 text-[14px] flex items-center gap-2">
-            <i class="fas fa-table text-blue-500"></i> ภาพรวมรายรับ - รายจ่าย
-          </h3>
+        <div class="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden">
+          <div class="p-4 pb-3 border-b border-slate-50">
+            <h3 class="font-bold text-slate-700 text-[14px] flex items-center gap-2">
+              <i class="fas fa-table text-blue-500"></i> ภาพรวมรายรับ - รายจ่าย
+            </h3>
+          </div>
           <div class="overflow-x-auto hide-scrollbar">
-            <table class="w-full text-[12px] text-left text-slate-500">
-              <thead class="text-[11px] text-slate-500 bg-slate-50 border-b border-slate-200">
+            <table class="w-full text-[12px] text-left text-slate-600">
+              <thead class="bg-gradient-to-r from-slate-700 to-slate-800 text-white text-[11px] tracking-wide">
                 <tr>
-                  <th class="px-2 py-2 rounded-tl-lg">เดือน</th>
-                  <th class="px-2 py-2 text-right">รายรับ</th>
-                  <th class="px-2 py-2 text-right">รายจ่าย</th>
-                  <th class="px-2 py-2 text-right rounded-tr-lg">คงเหลือ</th>
+                  <th class="px-4 py-3 font-medium align-middle">เดือน</th>
+                  <th class="px-3 py-3 text-right font-medium align-middle">รายรับ</th>
+                  <th class="px-3 py-3 text-right font-medium align-middle">รายจ่าย</th>
+                  <th class="px-4 py-3 text-right font-medium align-middle">คงเหลือ</th>
                 </tr>
               </thead>
               <tbody id="yearly-monthly-table-body">
-                <tr><td colspan="4" class="text-center py-6 text-slate-400"><i class="fas fa-circle-notch fa-spin mr-2"></i>รอข้อมูล...</td></tr>
+                <tr><td colspan="4" class="text-center py-6 text-slate-400 align-middle"><i class="fas fa-circle-notch fa-spin mr-2"></i>รอข้อมูล...</td></tr>
               </tbody>
             </table>
           </div>
@@ -821,7 +836,7 @@
               <i class="fas fa-home text-emerald-500"></i> สรุปการใช้น้ำรายบ้าน (ปีนี้)
             </h3>
             <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
-                <i class="fas fa-chevron-down text-slate-400 transition-transform duration-300 transform" id="icon-yearly-house"></i>
+              <i class="fas fa-chevron-down text-slate-400 transition-transform duration-300 transform" id="icon-yearly-house"></i>
             </div>
           </div>
           <div id="content-yearly-house" class="overflow-hidden transition-all duration-300" style="max-height: 0px;">
