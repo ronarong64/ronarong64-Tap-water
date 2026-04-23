@@ -1127,59 +1127,47 @@
   <script>
     
       // ==========================================
-        // 1. จัดการตอนเปิดเว็บ (เช็คว่าเคยล๊อกอินไว้ไหม)
-        // ==========================================
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedUser = sessionStorage.getItem('water_app_session');
-            if (savedUser) {
-                const userData = JSON.parse(savedUser);
-                showMainScreen(userData);
-            } else {
-                setTimeout(() => {
-                    const pinInput = document.getElementById('pin-input');
-                    if(pinInput) pinInput.focus();
-                }, 300);
-            }
-        });
-
-        // ==========================================
-        // 2. ดักจับการพิมพ์รหัส (Auto Submit เมื่อพิมพ์ครบ)
+        // 1. ดักจับการพิมพ์รหัสอัตโนมัติ (แยกโหมดชัดเจน)
         // ==========================================
         const pinInputEl = document.getElementById('pin-input');
         if (pinInputEl) {
-            // ใช้ .oninput แทนการดักจับแบบเก่า เพื่อความเสถียร
-            pinInputEl.oninput = function(e) {
-                let val = this.value;
+            pinInputEl.oninput = function() {
+                let val = this.value.trim();
                 
-                // 🚩 โหมดลับ: ต้องขึ้นต้นด้วย * และลงท้ายด้วย * (รวม 6 ตัว เช่น *1234*)
-                if (val.startsWith('*') && val.endsWith('*') && val.length === 6) {
+                // 🚩 โหมดลับ: ต้องมี * หน้าและหลัง รวม 6 ตัว (เช่น *1234*)
+                if (val.length === 6 && val.startsWith('*') && val.endsWith('*')) {
                     this.blur();
-                    submitLogin(); // เรียกฟังก์ชันล๊อกอิน
+                    let adminPin = val.substring(1, 5); // ตัด * ออกเหลือแค่ 1234
+                    executeLoginAPI(adminPin, true); // ส่งค่า true = บังคับเข้าโหมดแอดมิน
                 } 
-                // 🏠 โหมดปกติ: ตัวเลข 4 ตัวเท่านั้น และต้องไม่มีเครื่องหมาย *
+                // 🏠 โหมดปกติ: ตัวเลข 4 ตัวเท่านั้น และไม่มี *
                 else if (val.length === 4 && !val.includes('*')) {
                     this.blur(); 
-                    submitLogin(); // เรียกฟังก์ชันล๊อกอิน
+                    executeLoginAPI(val, false); // ส่งค่า false = บังคับเข้าโหมดปกติ
                 }
             };
         }
 
         // ==========================================
-        // 3. ฟังก์ชันตรวจสอบการเข้าสู่ระบบ (รวบจบในตัวเดียว)
+        // 2. ฟังก์ชันสำหรับปุ่มกด "เข้าสู่ระบบ" (รองรับคนที่กดปุ่มเอง)
         // ==========================================
-        async function submitLogin() {
-            const rawInput = document.getElementById('pin-input').value.trim();
-            if (!rawInput) return;
-
-            let pin = rawInput;
-            let isSecretMode = false;
-
-            // ตรวจสอบว่าเป็นการกรอกรหัสแบบผู้ดูแลหรือไม่ (*....*)
-            if (rawInput.startsWith('*') && rawInput.endsWith('*') && rawInput.length === 6) {
-                isSecretMode = true;
-                pin = rawInput.substring(1, 5); // ตัดเอาแค่ตัวเลข 4 ตัวตรงกลางไปเช็คกับฐานข้อมูล
+        function submitLogin() {
+            let val = document.getElementById('pin-input').value.trim();
+            
+            if (val.length === 6 && val.startsWith('*') && val.endsWith('*')) {
+                executeLoginAPI(val.substring(1, 5), true);
+            } else if (val.length === 4 && !val.includes('*')) {
+                executeLoginAPI(val, false);
+            } else {
+                document.getElementById('error-text').innerText = "รหัสไม่ถูกต้อง";
+                document.getElementById('error-msg').classList.remove('hidden');
             }
+        }
 
+        // ==========================================
+        // 3. ฟังก์ชัน API ยิงไปเช็คหลังบ้าน (ตัวแปรไม่ตีกัน 100%)
+        // ==========================================
+        async function executeLoginAPI(pinCode, isSecretMode) {
             const btn = document.getElementById('btn-login');
             const errorBox = document.getElementById('error-msg');
             const errorText = document.getElementById('error-text');
@@ -1192,31 +1180,31 @@
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "login", pin: pin })
+                    body: JSON.stringify({ action: "login", pin: pinCode })
                 });
                 const result = await response.json();
 
                 if (result.success) {
-                    // บันทึก Session ข้อมูลผู้ใช้
-                    sessionStorage.setItem('water_app_session', JSON.stringify(result));
-                    localStorage.setItem("username", result.username);
-
                     let userRole = String(result.role || "").trim().toLowerCase();
 
-                    // 🛡️ ตรวจสอบเงื่อนไขการเข้าหน้า Admin
-                    if (isSecretMode) {
+                    // 🛡️ เช็คเงื่อนไข: ถ้าเป็นโหมดแอดมิน (*1234*)
+                    if (isSecretMode === true) {
                         if (userRole === 'admin') {
                             document.getElementById('pin-input').value = '';
-                            openSecretPanel(); // เข้าหน้าจัดการผู้ดูแล
+                            openSecretPanel(); // 🟢 เปิดหน้าจัดการผู้ดูแล
                         } else {
                             errorText.innerText = "ท่านไม่มีสิทธิ์ผู้ดูแลระบบ";
                             errorBox.classList.remove('hidden');
                             document.getElementById('pin-input').value = '';
-                            sessionStorage.removeItem('water_app_session');
                         }
-                    } else {
-                        // โหมดปกติ (1234) เข้าหน้าหลักเสมอ
-                        showMainScreen(result);
+                    } 
+                    // 🏠 เช็คเงื่อนไข: ถ้าเป็นโหมดปกติ (1234)
+                    else {
+                        // บันทึก Session เข้าหน้าหลัก
+                        sessionStorage.setItem('water_app_session', JSON.stringify(result));
+                        localStorage.setItem("username", result.username || "User");
+                        document.getElementById('pin-input').value = '';
+                        showMainScreen(result); // 🟢 เปิดหน้า Dashboard
                     }
                 } else {
                     errorText.innerText = result.message || "รหัสไม่ถูกต้อง";
@@ -1224,7 +1212,7 @@
                     document.getElementById('pin-input').value = '';
                 }
             } catch (e) {
-                errorText.innerText = "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้";
+                errorText.innerText = "เชื่อมต่อล้มเหลว";
                 errorBox.classList.remove('hidden');
             } finally {
                 btn.disabled = false;
@@ -1280,31 +1268,7 @@
             }, 100);
         }
 
-        // ==========================================
-        // 1. ดักจับการพิมพ์รหัส (แยกโหมดปกติ กับ โหมดผู้ดูแลอย่างเด็ดขาด)
-        // ==========================================
-        const pinInput = document.getElementById('pin-input');
         
-        // ล้าง Event เดิมทิ้งก่อนเพื่อป้องกันการทำงานซ้อนกัน
-        let newPinInput = pinInput.cloneNode(true);
-        pinInput.parentNode.replaceChild(newPinInput, pinInput);
-
-        newPinInput.addEventListener('input', function(e) {
-            let val = this.value;
-            // ถ้านำหน้าด้วย * เราจะรอจนกว่าจะครบ 6 ตัวและลงท้ายด้วย * (เช่น *1234*)
-            if (val.startsWith('*')) {
-                if (val.length === 6 && val.endsWith('*')) {
-                    this.blur();
-                    submitLogin(true); // โหมดแอดมิน
-                }
-            } else {
-                // ถ้ารหัสปกติ 4 ตัว
-                if (val.length === 4 && !val.includes('*')) {
-                    this.blur(); 
-                    submitLogin(false); // โหมดปกติ
-                }
-            }
-        });
      
         // ==========================================
         // ระบบดึงข้อมูลและจัดการ Dashboard
