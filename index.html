@@ -3779,18 +3779,19 @@ function toggleOption(elementId, isChecked) {
       class="glass-card w-full sm:max-w-sm p-0 transform scale-95 transition-all duration-300 relative overflow-hidden bg-white rounded-[2rem] shadow-2xl">
       <button onclick="closeBillingModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/10 text-white flex items-center justify-center hover:bg-black/20 z-20 transition-colors"><i class="fas fa-times"></i></button>
 
-      <div class="bg-gradient-to-r from-purple-600 to-purple-400 p-4 text-center pt-5 pb-8 rounded-b-[1.5rem] shadow-md relative z-10">
-        <h3 class="text-2xl font-bold text-white mb-2">จดมิเตอร์</h3>
-        <div class="inline-flex flex-col items-center gap-1.5">
-          <p class="text-white font-bold bg-white/20 border border-white/30 px-4 py-1.5 rounded-full text-sm shadow-sm tracking-wide" id="bill-house-display">...</p>
-          <p class="text-purple-100 text-[13px] font-medium flex items-center gap-1.5" id="bill-house-name-display">
-            <i class="fas fa-user-circle opacity-80 text-sm"></i> <span>...</span>
-          </p>
+      <div class="bg-gradient-to-r from-purple-600 to-purple-400 p-4 text-center pt-4 pb-6 rounded-b-[1.5rem] shadow-md relative z-10">
+        <h3 class="text-xl font-bold text-white">จดมิเตอร์</h3>
+        
+        <div class="mt-2.5 inline-flex flex-col items-center justify-center bg-white/20 border border-white/30 px-5 py-1.5 rounded-xl shadow-sm backdrop-blur-sm">
+          <span class="text-white font-bold text-[14px] tracking-wide leading-tight" id="bill-house-display">...</span>
+          <span class="text-purple-100 text-[11.5px] font-medium flex items-center gap-1.5 mt-0.5" id="bill-house-name-display">
+            <i class="fas fa-user-circle opacity-80 text-[10px]"></i> <span>...</span>
+          </span>
         </div>
       </div>
 
-      <div class="p-6 -mt-6 relative z-0">
-        <div id="bill-content" class="space-y-6 pt-4">
+      <div class="p-5 -mt-4 relative z-0">
+        <div id="bill-content" class="space-y-5 pt-3">
 
           <div
             class="flex items-end justify-center gap-4 bg-purple-50/50 p-4 rounded-[1.5rem] border border-purple-100 shadow-inner">
@@ -3851,7 +3852,7 @@ function toggleOption(elementId, isChecked) {
             </div>
           </div>
 
-          <div class="pt-2 flex gap-3">
+          <div class="pt-1 flex gap-3">
             <button id="btn-save-waiting" onclick="saveBillingData('Waiting')" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2 border border-slate-200 shadow-sm">
                 <i class="fas fa-clock text-amber-500"></i> รอชำระ
               </button>
