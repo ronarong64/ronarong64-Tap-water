@@ -3292,7 +3292,7 @@ function toggleOption(elementId, isChecked) {
                                         <i class="fas fa-file-invoice text-slate-300 w-4"></i> บิลปัจจุบัน 
                                         <span class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">${item.currentCount} บ้าน</span>
                                     </div>
-                                    <div class="font-medium text-slate-700">${Number(item.currentAmt).toLocaleString()} ฿</div>
+                                    <div class="font-medium text-slate-700">${Number(item.currentAmt).toLocaleString()} บ.</div>
                                 </div>
                                 
                                 <div class="flex justify-between items-center text-sm">
@@ -3300,12 +3300,12 @@ function toggleOption(elementId, isChecked) {
                                         <i class="fas fa-exclamation-circle text-rose-300 w-4"></i> บิลค้างเก่า 
                                         <span class="text-[10px] bg-rose-50 text-rose-500 px-1.5 py-0.5 rounded">${item.overdueCount} บ้าน</span>
                                     </div>
-                                    <div class="font-medium text-slate-700">${Number(item.overdueAmt).toLocaleString()} ฿</div>
+                                    <div class="font-medium text-slate-700">${Number(item.overdueAmt).toLocaleString()} บ.</div>
                                 </div>
                                 
                                 <div class="border-t border-dashed border-slate-200 pt-2 mt-2 flex justify-between items-center">
                                     <span class="text-xs font-bold text-slate-500">รวมเก็บเงินสดได้ทั้งสิ้น</span>
-                                    <span class="font-bold text-slate-800 text-base">${Number(item.totalAmt).toLocaleString()} ฿</span>
+                                    <span class="font-bold text-slate-800 text-base">${Number(item.totalAmt).toLocaleString()} บ.</span>
                                 </div>
                             </div>
 
@@ -4454,10 +4454,10 @@ function renderReportListAccordion(id, list, color) {
         const total = (parseFloat(item.amount) || 0) + (parseFloat(item.overdueAmount) || 0);
 
         if (color === 'emerald') {
-            amountText = `<span class="font-bold text-emerald-600">${total.toLocaleString()} ฿</span>`;
+            amountText = `<span class="font-bold text-emerald-600">${total.toLocaleString()} บ.</span>`;
             subText = `<div class="text-[10px] text-slate-400 mt-0.5"><i class="fas fa-check text-emerald-300"></i> ${item.paidDate || '-'}</div>`;
         } else if (color === 'orange') {
-            amountText = `<span class="font-bold text-orange-500">${total.toLocaleString()} ฿</span>`;
+            amountText = `<span class="font-bold text-orange-500">${total.toLocaleString()} บ.</span>`;
             subText = `<div class="text-[10px] text-slate-400 mt-0.5"><i class="fas fa-tint text-blue-300"></i> ${item.usage || 0} หน่วย</div>`;
         } else {
             amountText = `<span class="font-bold text-slate-300">-</span>`;
@@ -4495,7 +4495,7 @@ function renderExpenseListAccordion(id, list) {
                 <div class="text-[13px] font-bold text-slate-700">${item.type}</div>
                 <div class="text-[10px] text-slate-400 mt-0.5 truncate">${item.detail}</div>
             </div>
-            <div class="font-bold text-rose-500 text-sm shrink-0">-${Number(item.amount).toLocaleString()} ฿</div>
+            <div class="font-bold text-rose-500 text-sm shrink-0">-${Number(item.amount).toLocaleString()} บ.</div>
         </div>`;
     });
     el.innerHTML = html;
