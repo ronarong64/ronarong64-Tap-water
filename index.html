@@ -3493,26 +3493,27 @@ function toggleOption(elementId, isChecked) {
         let shadowClass = isTransfer ? "shadow-indigo-500/20" : "shadow-teal-500/20";
         
         fullHtml += `
-        <div class="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden mb-5">
-            <div class="${headerBg} p-5 text-white flex justify-between items-center relative overflow-hidden shadow-lg ${shadowClass}">
-                <div class="absolute -top-4 -right-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
-                <div class="absolute -bottom-4 -left-4 w-16 h-16 bg-white opacity-10 rounded-full blur-lg"></div>
-                
-                <div class="flex gap-3 relative z-10 items-center">
-                    <div class="w-12 h-12 rounded-[1rem] bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-inner border border-white/30">
-                        <i class="fas ${iconClass}"></i>
-                    </div>
-                    <div>
-                        <div class="font-bold text-[17px] leading-tight drop-shadow-sm">${c.name}</div>
-                        <div class="text-[12px] font-medium opacity-90 mt-1 bg-white/10 w-fit px-2 py-0.5 rounded-md border border-white/10 shadow-sm"><i class="fas fa-list-ul mr-1 opacity-70"></i> ${c.count} รายการ</div>
-                    </div>
-                </div>
-                <div class="text-right relative z-10">
-                    <div class="text-[12px] opacity-80 uppercase tracking-wide font-bold mb-0.5">ยอดเงินรวม</div>
-                    <div class="text-2xl font-black leading-none tracking-tight drop-shadow-sm">${Number(c.total).toLocaleString()}</div>
-                </div>
-            </div>
-            <div class="p-2 px-3 max-h-[400px] overflow-y-auto hide-scrollbar bg-white">${housesHtml}</div>
+       <div class="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden">
+          <div class="p-4 pb-3 border-b border-slate-50">
+            <h3 class="font-bold text-slate-700 text-[14px] flex items-center gap-2">
+              <i class="fas fa-table text-blue-500"></i> ภาพรวมรายรับ - รายจ่าย
+            </h3>
+          </div>
+          <div class="overflow-x-auto hide-scrollbar">
+            <table class="w-full text-[12px] text-left text-slate-600">
+              <thead class="bg-gradient-to-r from-slate-700 to-slate-800 text-white text-[11px] tracking-wide">
+                <tr>
+                  <th class="px-4 py-3 font-medium">เดือน</th>
+                  <th class="px-3 py-3 text-right font-medium">รายรับ</th>
+                  <th class="px-3 py-3 text-right font-medium">รายจ่าย</th>
+                  <th class="px-4 py-3 text-right font-medium">คงเหลือ</th>
+                </tr>
+              </thead>
+              <tbody id="yearly-monthly-table-body">
+                <tr><td colspan="4" class="text-center py-6 text-slate-400"><i class="fas fa-circle-notch fa-spin mr-2"></i>รอข้อมูล...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>`;
     });
 
@@ -4663,26 +4664,43 @@ async function loadYearlyReport() {
             const tBodyMonthly = document.getElementById('yearly-monthly-table-body');
             if (tBodyMonthly && data.monthlyStats) {
                 let mHtml = '';
-                const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+                
+                // ✨ เปลี่ยนเป็นชื่อเดือนเต็ม
+                const fullMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+                
+                // ✨ ฟังก์ชันจัดการตัวเลข: ถ้าเป็น 0 ให้แสดงเป็นขีด "-" สีเทาอ่อน
+                const formatDisplay = (val) => {
+                    return val === 0 ? '<span class="text-slate-300 font-normal">-</span>' : val.toLocaleString();
+                };
+
                 data.monthlyStats.forEach((m, i) => {
                     let mInc = m.income || 0;
                     let mExp = m.expense || 0;
                     let mNet = mInc - mExp;
+                    
+                    // จัดการสีของยอดคงเหลือ
+                    let netTextColor = mNet < 0 ? 'text-rose-500' : (mNet === 0 ? 'text-slate-400' : 'text-slate-700');
+
                     mHtml += `
-                    <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
-                        <td class="px-2 py-2.5 font-bold text-slate-600 whitespace-nowrap">${thMonths[i]}</td>
-                        <td class="px-2 py-2.5 text-right text-emerald-500 font-medium">${mInc.toLocaleString()}</td>
-                        <td class="px-2 py-2.5 text-right text-rose-500 font-medium">${mExp.toLocaleString()}</td>
-                        <td class="px-2 py-2.5 text-right font-black ${mNet < 0 ? 'text-rose-500' : 'text-slate-700'}">${mNet.toLocaleString()}</td>
+                    <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3.5 font-medium text-slate-600 whitespace-nowrap">${fullMonths[i]}</td>
+                        <td class="px-3 py-3.5 text-right text-emerald-500 font-medium">${formatDisplay(mInc)}</td>
+                        <td class="px-3 py-3.5 text-right text-rose-500 font-medium">${formatDisplay(mExp)}</td>
+                        <td class="px-4 py-3.5 text-right font-black ${netTextColor}">${formatDisplay(mNet)}</td>
                     </tr>`;
                 });
+
+                // ✨ ปรับแต่งท้ายตาราง (ยอดรวมปี) ให้ดูน่าสนใจและเป็นสัดส่วน
                 mHtml += `
-                <tr class="bg-indigo-50/50 font-bold border-t-2 border-indigo-100 text-[13px]">
-                    <td class="px-2 py-3 text-indigo-700">รวม</td>
-                    <td class="px-2 py-3 text-right text-emerald-600">${data.income.toLocaleString()}</td>
-                    <td class="px-2 py-3 text-right text-rose-600">${data.expense.toLocaleString()}</td>
-                    <td class="px-2 py-3 text-right text-indigo-700">${data.net.toLocaleString()}</td>
+                <tr class="bg-indigo-50/80 font-bold border-t-2 border-indigo-200 text-[13px]">
+                    <td class="px-4 py-4 text-indigo-800 flex items-center gap-1.5 whitespace-nowrap">
+                        <i class="fas fa-chart-pie opacity-70"></i> ยอดรวมปีนี้
+                    </td>
+                    <td class="px-3 py-4 text-right text-emerald-600">${formatDisplay(data.income)}</td>
+                    <td class="px-3 py-4 text-right text-rose-600">${formatDisplay(data.expense)}</td>
+                    <td class="px-4 py-4 text-right text-indigo-700 text-[15px] font-black">${formatDisplay(data.net)}</td>
                 </tr>`;
+                
                 tBodyMonthly.innerHTML = mHtml;
             }
 
