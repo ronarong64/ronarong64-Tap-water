@@ -1236,36 +1236,37 @@
         }
 
         // ==========================================
-        // 1. ดักจับการพิมพ์รหัส (แยกโหมดปกติ กับ โหมดผู้ดูแล)
+        // 1. ดักจับการพิมพ์รหัส (แยกโหมดปกติ กับ โหมดผู้ดูแลอย่างเด็ดขาด)
         // ==========================================
-        document.getElementById('pin-input').addEventListener('input', function(e) {
+        const pinInput = document.getElementById('pin-input');
+        
+        // ล้าง Event เดิมทิ้งก่อนเพื่อป้องกันการทำงานซ้อนกัน
+        let newPinInput = pinInput.cloneNode(true);
+        pinInput.parentNode.replaceChild(newPinInput, pinInput);
+
+        newPinInput.addEventListener('input', function(e) {
             let val = this.value;
             // ถ้านำหน้าด้วย * เราจะรอจนกว่าจะครบ 6 ตัวและลงท้ายด้วย * (เช่น *1234*)
             if (val.startsWith('*')) {
                 if (val.length === 6 && val.endsWith('*')) {
                     this.blur();
-                    submitLogin(true); // ส่ง true เพื่อบอกว่าเป็นโหมดพิเศษผู้ดูแล
+                    submitLogin(true); // โหมดแอดมิน
                 }
             } else {
                 // ถ้ารหัสปกติ 4 ตัว
-                if (val.length === 4) {
+                if (val.length === 4 && !val.includes('*')) {
                     this.blur(); 
-                    submitLogin(false); // ส่ง false เพื่อล๊อกอินปกติ
+                    submitLogin(false); // โหมดปกติ
                 }
             }
         });
 
         // ==========================================
-        // 2. ฟังก์ชันตรวจสอบการล๊อกอิน (ส่ง PIN ไปเช็คกับ Google Sheets)
+        // 2. ฟังก์ชันตรวจสอบการล๊อกอิน 
         // ==========================================
         async function submitLogin(isSecretMode = false) {
-            let pinInput = document.getElementById('pin-input').value.trim();
-            let pin = pinInput;
-            
-            if (isSecretMode) {
-                // ถ้าเป็นโหมดลับ ให้ตัดเครื่องหมาย * หน้าหลังออก เหลือแค่ตัวเลขตรงกลางส่งไปเช็ค
-                pin = pinInput.substring(1, 5); 
-            }
+            let currentPinInput = document.getElementById('pin-input').value.trim();
+            let pin = isSecretMode ? currentPinInput.substring(1, 5) : currentPinInput;
 
             const btn = document.getElementById('btn-login');
             const errorBox = document.getElementById('error-msg');
@@ -1285,26 +1286,32 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // ✨ [เพิ่มใหม่] ตรวจสอบว่าเป็นโหมดผู้ดูแล (*...*) หรือไม่
+                    // ✨ 1. บันทึก Session เสมอ ไม่ว่าจะเข้าโหมดไหน
+                    sessionStorage.setItem('water_app_session', JSON.stringify(result));
+                    localStorage.setItem("username", result.username);
+
+                    // ดึง Role มาแปลงเป็นตัวพิมพ์เล็กและตัดช่องว่างทิ้ง เพื่อป้องกันข้อผิดพลาด
+                    let userRole = result.role ? String(result.role).trim().toLowerCase() : '';
+
+                    // ✨ 2. แยกเส้นทางเข้าใช้งาน
                     if (isSecretMode) {
-                        if (String(result.role).toLowerCase() === 'admin') {
-                            document.getElementById('pin-input').value = ''; // เคลียร์ช่อง 
-                            openSecretPanel(); // เปิดหน้าต่างจัดการผู้ดูแล
+                        if (userRole === 'admin') {
+                            document.getElementById('pin-input').value = '';
+                            openSecretPanel(); // เปิดหน้าจัดการผู้ดูแล
                         } else {
                             errorText.innerText = "บัญชีของคุณไม่มีสิทธิ์ผู้ดูแลระบบ";
                             errorBox.classList.remove('hidden');
                             document.getElementById('pin-input').value = '';
+                            sessionStorage.removeItem('water_app_session'); // ลบเซสชันทิ้งถ้าแอบเข้า
                         }
-                        return; // จบการทำงานโหมดลับ ไม่ต้องเข้าหน้าหลัก
+                    } else {
+                        // โหมดปกติ (1234) เข้าหน้าหลักทันที
+                        showMainScreen(result);
                     }
-
-                    // ล๊อกอินโหมดปกติ... (เข้าหน้าหลัก)
-                    sessionStorage.setItem('water_app_session', JSON.stringify(result));
-                    localStorage.setItem("username", result.username);
-                    showMainScreen(result);
                 } else {
                     errorText.innerText = result.message || "รหัส PIN ไม่ถูกต้อง";
                     errorBox.classList.remove('hidden');
+                    document.getElementById('pin-input').value = '';
                 }
             } catch (e) {
                 errorText.innerText = "การเชื่อมต่อล้มเหลว ตรวจสอบอินเทอร์เน็ต";
@@ -4999,6 +5006,13 @@ function toggleYearlyHouse() {
         function closeSecretPanel() {
             document.getElementById('secret-panel').classList.add('hidden');
             hideAccForm();
+            
+            // ✨ เมื่อปิดหน้าผู้ดูแล ให้ตรวจสอบว่ามี Session ล๊อกอินอยู่ไหม ถ้ามีให้เข้าหน้าหลักเลย
+            let savedSession = sessionStorage.getItem('water_app_session');
+            if (savedSession) {
+                let userData = JSON.parse(savedSession);
+                showMainScreen(userData);
+            }
         }
 
         function showAccForm(mode, row = '', username = '', password = '', role = 'admin') {
