@@ -11,6 +11,7 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbz_rkhS9bIVqcWGTNa2PhGfdw0Ik3cWy6rHzSU_pYtR9nQY7PupMSUdfqLaUgUGBLtj/exec";
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
@@ -708,6 +709,127 @@
         <button onclick="window.print()" class="w-full mt-4 py-3.5 bg-slate-800 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition shadow-lg">
           <i class="fas fa-print"></i> พิมพ์รายงานสรุปเดือนนี้
       </button>
+      </div>
+
+      <div id="page-yearly" class="hidden space-y-5 animate-fade-in pb-20">
+        
+        <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 flex justify-between items-center relative overflow-hidden">
+          <div>
+            <h2 class="font-bold text-slate-800 text-[16px] flex items-center gap-2">
+              <i class="fas fa-calendar-alt text-indigo-500"></i> สรุปรายปี
+            </h2>
+          </div>
+          <div class="relative bg-slate-50 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer shadow-inner">
+            <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-sm pointer-events-none">
+              <i class="fas fa-calendar text-xs"></i>
+            </div>
+            <select id="yearly-picker" onchange="loadYearlyReport()" class="bg-transparent font-bold text-slate-700 text-[13px] outline-none cursor-pointer appearance-none pr-4 relative z-10 w-full">
+              </select>
+            <i class="fas fa-chevron-down text-[9px] text-slate-400 absolute right-3 pointer-events-none"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-[1.5rem] shadow-sm text-center border-t-4 border-indigo-500">
+          <div class="text-[13px] font-medium text-slate-500 mb-1">คงเหลือสุทธิ (ปีนี้)</div>
+          <div class="text-4xl font-black text-indigo-600 mb-6" id="yearly-net">0</div>
+
+          <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-5">
+            <div>
+              <div class="text-[12px] text-slate-400 mb-1"><i class="fas fa-arrow-down text-emerald-500 mr-1"></i>รายรับ</div>
+              <div class="font-bold text-emerald-600 text-xl" id="yearly-income">0</div>
+            </div>
+            <div class="border-l border-slate-100">
+              <div class="text-[12px] text-slate-400 mb-1"><i class="fas fa-arrow-up text-rose-500 mr-1"></i>รายจ่าย</div>
+              <div class="font-bold text-rose-500 text-xl" id="yearly-expense">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-800 text-white p-5 rounded-[1.5rem] shadow-lg relative overflow-hidden">
+          <div class="absolute right-[-20px] top-[-20px] w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
+          <h3 class="text-sm font-bold opacity-90 mb-4 flex items-center gap-2">
+            <i class="fas fa-wallet text-yellow-400"></i> ยอดทุนทรัพย์สะสมปัจจุบัน
+          </h3>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white/10 p-3 rounded-xl border border-white/5">
+              <div class="text-[11px] text-indigo-200 mb-1"><i class="fas fa-landmark mr-1"></i>ธนาคาร</div>
+              <div class="text-lg font-bold" id="yearly-current-bank">0</div>
+            </div>
+            <div class="bg-white/10 p-3 rounded-xl border border-white/5">
+              <div class="text-[11px] text-teal-200 mb-1"><i class="fas fa-coins mr-1"></i>เงินสด</div>
+              <div class="text-lg font-bold" id="yearly-current-cash">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-2">
+          <div class="bg-white p-2.5 rounded-xl shadow-sm text-center border border-slate-100">
+            <div class="w-8 h-8 mx-auto bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mb-1 text-sm"><i class="fas fa-tools"></i></div>
+            <div class="text-[10px] text-slate-400 mb-0.5">ซ่อมแซม</div>
+            <div class="font-bold text-slate-700 text-[13px]" id="yearly-repair">0</div>
+          </div>
+          <div class="bg-white p-2.5 rounded-xl shadow-sm text-center border border-slate-100">
+            <div class="w-8 h-8 mx-auto bg-yellow-50 text-yellow-500 rounded-full flex items-center justify-center mb-1 text-sm"><i class="fas fa-bolt"></i></div>
+            <div class="text-[10px] text-slate-400 mb-0.5">ไฟฟ้า</div>
+            <div class="font-bold text-slate-700 text-[13px]" id="yearly-elec">0</div>
+          </div>
+          <div class="bg-white p-2.5 rounded-xl shadow-sm text-center border border-slate-100">
+            <div class="w-8 h-8 mx-auto bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-1 text-sm"><i class="fas fa-user-tie"></i></div>
+            <div class="text-[10px] text-slate-400 mb-0.5">จัดเก็บ</div>
+            <div class="font-bold text-slate-700 text-[13px]" id="yearly-fee">0</div>
+          </div>
+          <div class="bg-white p-2.5 rounded-xl shadow-sm text-center border border-slate-100">
+            <div class="w-8 h-8 mx-auto bg-pink-50 text-pink-500 rounded-full flex items-center justify-center mb-1 text-sm"><i class="fas fa-ellipsis-h"></i></div>
+            <div class="text-[10px] text-slate-400 mb-0.5">อื่นๆ</div>
+            <div class="font-bold text-slate-700 text-[13px]" id="yearly-other">0</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100">
+          <h3 class="font-bold text-slate-700 mb-3 text-[14px] flex items-center gap-2">
+            <i class="fas fa-chart-line text-indigo-500"></i> กราฟสถิติรายเดือน
+          </h3>
+          <div class="relative h-56 w-full">
+             <canvas id="yearlyChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100">
+          <h3 class="font-bold text-slate-700 mb-3 text-[14px] flex items-center gap-2">
+            <i class="fas fa-table text-blue-500"></i> ภาพรวมรายรับ - รายจ่าย
+          </h3>
+          <div class="overflow-x-auto hide-scrollbar">
+            <table class="w-full text-[12px] text-left text-slate-500">
+              <thead class="text-[11px] text-slate-500 bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th class="px-2 py-2 rounded-tl-lg">เดือน</th>
+                  <th class="px-2 py-2 text-right">รายรับ</th>
+                  <th class="px-2 py-2 text-right">รายจ่าย</th>
+                  <th class="px-2 py-2 text-right rounded-tr-lg">คงเหลือ</th>
+                </tr>
+              </thead>
+              <tbody id="yearly-monthly-table-body">
+                <tr><td colspan="4" class="text-center py-6 text-slate-400"><i class="fas fa-circle-notch fa-spin mr-2"></i>รอข้อมูล...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-[1.5rem] p-4 shadow-sm border border-slate-100">
+          <div class="flex justify-between items-center cursor-pointer select-none" onclick="toggleYearlyHouse()">
+            <h3 class="font-bold text-slate-700 text-[14px] flex items-center gap-2">
+              <i class="fas fa-home text-emerald-500"></i> สรุปการใช้น้ำรายบ้าน (ปีนี้)
+            </h3>
+            <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
+                <i class="fas fa-chevron-down text-slate-400 transition-transform duration-300 transform" id="icon-yearly-house"></i>
+            </div>
+          </div>
+          <div id="content-yearly-house" class="overflow-hidden transition-all duration-300" style="max-height: 0px;">
+            <div class="mt-3 pt-3 border-t border-slate-100">
+              <div id="yearly-list-body" class="space-y-0 max-h-80 overflow-y-auto hide-scrollbar pr-1"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div id="page-expenses" class="hidden space-y-6 animate-fade-in pb-20">
@@ -2579,6 +2701,7 @@ function toggleOption(elementId, isChecked) {
             if (pageId === 'finance' && typeof loadFinance === "function") loadFinance();
             if (pageId === 'collector' && typeof loadCollectorReport === "function") loadCollectorReport();
             if (pageId === 'reports' && typeof loadMonthlyReport === "function") loadMonthlyReport();
+            if (pageId === 'yearly') { initYearlyPicker(); loadYearlyReport(); }
         }
 
         // ==========================================
@@ -4479,6 +4602,197 @@ function selectPickerMonth(m) {
             // 🌟 เรียกใช้ฟังก์ชันเดิมของคุณรณรงค์ (บรรทัดที่ 741)
             if (typeof loadCollectorReport === "function") loadCollectorReport(monthStr);
         }
+    }
+}
+
+// ==========================================
+// 📊 ระบบรายงานสรุปรายปี (Yearly Report)
+// ==========================================
+let yearlyChartInstance = null;
+
+function initYearlyPicker() {
+    const picker = document.getElementById('yearly-picker');
+    if (!picker || picker.options.length > 0) return; // ทำครั้งเดียว
+    const now = new Date();
+    const currentYearBE = now.getFullYear() + 543;
+    let options = '';
+    // สร้างตัวเลือก ย้อนหลัง 3 ปี และล่วงหน้า 1 ปี
+    for (let y = currentYearBE + 1; y >= currentYearBE - 3; y--) {
+        options += `<option value="${y}" ${y === currentYearBE ? 'selected' : ''}>ปี พ.ศ. ${y}</option>`;
+    }
+    picker.innerHTML = options;
+}
+
+async function loadYearlyReport() {
+    const yearPicker = document.getElementById('yearly-picker');
+    if (!yearPicker) return;
+    const year = yearPicker.value; 
+
+    // แสดง Loading ในช่องตัวเลข
+    const loadIds = ['yearly-net', 'yearly-income', 'yearly-expense', 'yearly-current-bank', 'yearly-current-cash', 'yearly-repair', 'yearly-elec', 'yearly-fee', 'yearly-other'];
+    loadIds.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.innerHTML = '<i class="fas fa-circle-notch fa-spin text-slate-300 text-base"></i>';
+    });
+
+    try {
+        const response = await fetch(API_URL + "?action=getYearlyReport&year=" + year);
+        const result = await response.json();
+        
+        if (result.success) {
+            const data = result.data;
+            
+            // 1. อัปเดตตัวเลข
+            document.getElementById('yearly-income').innerText = (data.income || 0).toLocaleString();
+            document.getElementById('yearly-expense').innerText = (data.expense || 0).toLocaleString();
+            document.getElementById('yearly-net').innerText = (data.net || 0).toLocaleString();       
+            
+            if(data.currentBalance) {
+                document.getElementById('yearly-current-bank').innerText = (data.currentBalance.bank || 0).toLocaleString();
+                document.getElementById('yearly-current-cash').innerText = (data.currentBalance.cash || 0).toLocaleString();
+            }
+            
+            if(data.breakdown) {
+                document.getElementById('yearly-repair').innerText = (data.breakdown.repair || 0).toLocaleString();
+                document.getElementById('yearly-fee').innerText = (data.breakdown.fee || 0).toLocaleString();
+                document.getElementById('yearly-elec').innerText = (data.breakdown.elec || 0).toLocaleString();
+                document.getElementById('yearly-other').innerText = (data.breakdown.other || 0).toLocaleString();
+            }
+
+            // 2. วาดตารางรายเดือน
+            const tBodyMonthly = document.getElementById('yearly-monthly-table-body');
+            if (tBodyMonthly && data.monthlyStats) {
+                let mHtml = '';
+                const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+                data.monthlyStats.forEach((m, i) => {
+                    let mInc = m.income || 0;
+                    let mExp = m.expense || 0;
+                    let mNet = mInc - mExp;
+                    mHtml += `
+                    <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
+                        <td class="px-2 py-2.5 font-bold text-slate-600 whitespace-nowrap">${thMonths[i]}</td>
+                        <td class="px-2 py-2.5 text-right text-emerald-500 font-medium">${mInc.toLocaleString()}</td>
+                        <td class="px-2 py-2.5 text-right text-rose-500 font-medium">${mExp.toLocaleString()}</td>
+                        <td class="px-2 py-2.5 text-right font-black ${mNet < 0 ? 'text-rose-500' : 'text-slate-700'}">${mNet.toLocaleString()}</td>
+                    </tr>`;
+                });
+                mHtml += `
+                <tr class="bg-indigo-50/50 font-bold border-t-2 border-indigo-100 text-[13px]">
+                    <td class="px-2 py-3 text-indigo-700">รวม</td>
+                    <td class="px-2 py-3 text-right text-emerald-600">${data.income.toLocaleString()}</td>
+                    <td class="px-2 py-3 text-right text-rose-600">${data.expense.toLocaleString()}</td>
+                    <td class="px-2 py-3 text-right text-indigo-700">${data.net.toLocaleString()}</td>
+                </tr>`;
+                tBodyMonthly.innerHTML = mHtml;
+            }
+
+            // 3. วาดสรุปรายบ้าน
+            const houseBody = document.getElementById('yearly-list-body');
+            if (houseBody && data.houses) {
+                if (data.houses.length === 0) {
+                    houseBody.innerHTML = '<div class="text-center text-slate-400 py-6 text-xs">ไม่มีข้อมูลการชำระเงินในปีนี้</div>';
+                } else {
+                    let hHtml = '';
+                    data.houses.forEach((h, index) => {
+                        hHtml += `
+                        <div class="flex justify-between items-center py-3 border-b border-slate-50 last:border-0">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0 border border-white shadow-inner">${index + 1}</div>
+                                <div class="min-w-0">
+                                    <div class="text-[13px] font-bold text-slate-700 leading-tight">บ้านเลขที่ ${h.houseNo}</div>
+                                    <div class="text-[10px] text-slate-400 mt-0.5">ใช้น้ำรวม ${h.totalUsage.toLocaleString()} หน่วย</div>
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <span class="font-black text-emerald-500 text-[14px] bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">${h.totalAmount.toLocaleString()} บ.</span>
+                            </div>
+                        </div>`;
+                    });
+                    houseBody.innerHTML = hHtml;
+                }
+            }
+
+            // 4. วาดกราฟ
+            if (typeof Chart !== 'undefined') {
+                renderYearlyChart(data.monthlyStats);
+            }
+        } else {
+            showToast(result.message, 'error');
+        }
+    } catch (e) {
+        showToast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
+    }
+}
+
+function renderYearlyChart(monthlyStats) {
+    const ctx = document.getElementById('yearlyChart');
+    if (!ctx) return;
+    if (yearlyChartInstance) yearlyChartInstance.destroy();
+
+    const labels = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    const incomeData = monthlyStats.map(m => m.income);
+    const expenseData = monthlyStats.map(m => m.expense);
+    const usageData = monthlyStats.map(m => m.usage);
+
+    yearlyChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'รายรับ',
+                    data: incomeData,
+                    backgroundColor: '#10b981',
+                    borderRadius: 4,
+                    order: 2
+                },
+                {
+                    label: 'รายจ่าย',
+                    data: expenseData,
+                    backgroundColor: '#f43f5e',
+                    borderRadius: 4,
+                    order: 3
+                },
+                {
+                    label: 'ใช้น้ำ (หน่วย)',
+                    data: usageData,
+                    type: 'line',
+                    borderColor: '#6366f1',
+                    backgroundColor: '#6366f1',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 2,
+                    order: 1,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                y: { type: 'linear', display: true, position: 'left', grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Kanit', size: 10 } } },
+                y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#6366f1', font: { family: 'Kanit', size: 10 } } },
+                x: { grid: { display: false }, ticks: { font: { family: 'Kanit', size: 10 } } }
+            },
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 6, font: { family: 'Kanit', size: 11 } } },
+                tooltip: { titleFont: { family: 'Kanit' }, bodyFont: { family: 'Kanit' } }
+            }
+        }
+    });
+}
+
+function toggleYearlyHouse() {
+    const content = document.getElementById('content-yearly-house');
+    const icon = document.getElementById('icon-yearly-house');
+    if (content.style.maxHeight === '0px') {
+        content.style.maxHeight = content.scrollHeight + 'px';
+        icon.classList.add('rotate-180');
+    } else {
+        content.style.maxHeight = '0px';
+        icon.classList.remove('rotate-180');
     }
 }
 
