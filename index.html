@@ -2303,6 +2303,15 @@ function toggleOption(elementId, isChecked) {
     const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
     if (!user) return;
 
+    // ✨ เพิ่มเงื่อนไขที่นี่: ล็อคสิทธิ์ User ห้ามเปิด "รอชำระ" และ "ยังไม่จดมิเตอร์"
+    if (window.currentUserRole === 'user') {
+        const status = user.statusCode || 'none';
+        if (status === 'waiting' || status === 'none') {
+            alert('⚠️ สิทธิ์ User ไม่สามารถเปิดดูข้อมูลบ้านที่ "รอชำระ" หรือ "ยังไม่จดมิเตอร์" ได้ครับ');
+            return; // สั่งหยุดการทำงานทันที ไม่เปิดหน้าฟอร์ม
+        }
+    }
+
     // 🎯 ถ้ายอดของเดือนปัจจุบันถูกจ่ายแล้ว ให้เปิดหน้าใบเสร็จทันที
     if (user.statusCode === 'paid' || user.statusCode === 'free') {
         const receiptPayload = { 
