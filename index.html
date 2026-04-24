@@ -143,8 +143,7 @@
       </p>
 
       <div class="w-full relative mb-6">
-        <input type="tel" inputmode="tel" id="pin-input" placeholder="ป้อนรหัส PIN" maxlength="6" autofocus
-          style="-webkit-text-security: disc;"
+        <input type="password" inputmode="numeric" id="pin-input" placeholder="ป้อนรหัส PIN" maxlength="6" autofocus
           class="w-full h-16 bg-slate-50 border border-slate-200 rounded-2xl text-center text-3xl font-bold tracking-[0.5em] focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:tracking-normal placeholder:font-normal placeholder:text-base shadow-inner text-slate-700">
       </div>
 
@@ -1088,7 +1087,7 @@
             }
         });
 
-        // 2. ฟังก์ชันตรวจสอบการล๊อกอิน (ส่ง PIN ไปเช็คกับ Google Sheets)
+        // 2. ฟังก์ชันตรวจสอบการล๊อกอิน
         async function submitLogin() {
             let pinInput = document.getElementById('pin-input').value.trim();
             if (!pinInput) return;
@@ -1096,10 +1095,10 @@
             let pin = pinInput;
             let isSuperAdminMode = false;
 
-            // ตรวจสอบว่าเป็นโหมดผู้ดูแลระบบหรือไม่ (*1234*)
-            if (pinInput.startsWith('*') && pinInput.endsWith('*') && pinInput.length === 6) {
+            // ตรวจสอบว่าเป็นโหมดผู้ดูแลระบบหรือไม่ (พิมพ์ 00 นำหน้า และยาว 6 หลัก)
+            if (pinInput.startsWith('00') && pinInput.length === 6) {
                 isSuperAdminMode = true;
-                pin = pinInput.substring(1, pinInput.length - 1); // ตัด * ออกเหลือ 4 หลัก ส่งไปเช็ค
+                pin = pinInput.substring(2); // ตัด 00 สองตัวหน้าออก เหลือแค่รหัส 4 หลักส่งไปเช็คในระบบ
             }
 
             const btn = document.getElementById('btn-login');
@@ -1107,7 +1106,7 @@
             const errorText = document.getElementById('error-text');
 
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังตรวจสอบสิทธิ์...';
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังตรวจสอบ...';
             errorBox.classList.add('hidden');
 
             try {
@@ -1121,12 +1120,14 @@
                 if (result.success) {
                     sessionStorage.setItem('water_app_session', JSON.stringify(result));
                     localStorage.setItem("username", result.username);
+                    localStorage.setItem("role", result.role); // เก็บสิทธิ์ไว้ใช้กับระบบอื่นด้วย
 
-                    // 🌟 ถ้าเข้าด้วย *...* และมีสิทธิ์เป็น admin
+                    // 🌟 ถ้าเข้าด้วย 00... และมีสิทธิ์เป็น admin ให้พาไปหน้าจัดการระบบ
                     if (isSuperAdminMode && result.role.toLowerCase() === 'admin') {
                         openAdminAccountScreen();
                     } else {
                         showMainScreen(result);
+                        if(typeof checkOverdueLimit === 'function') checkOverdueLimit(); // แจ้งเตือนค้างชำระ
                     }
                 } else {
                     errorText.innerText = result.message || "รหัส PIN ไม่ถูกต้อง";
@@ -1276,11 +1277,11 @@ function applyRolePermissions() {
     }
 }
 
-        // 5. พิมพ์ครบ 4 ตัว (ปกติ) หรือ 6 ตัว (มี * หน้าหลัง) ล๊อกอินอัตโนมัติ
+        // 5. พิมพ์ครบ 4 ตัว (ปกติ) หรือ 6 ตัว (มี 00 นำหน้า) ล๊อกอินอัตโนมัติ
         document.getElementById('pin-input').addEventListener('input', function(e) {
             let val = this.value;
-            // ถ้านำหน้าด้วย * ระบบจะรอให้พิมพ์ครบ 6 ตัว (เช่น *1234*)
-            if (val.startsWith('*')) {
+            // ถ้านำหน้าด้วย 00 ระบบจะรอให้พิมพ์ครบ 6 ตัว (เช่น 001234)
+            if (val.startsWith('00')) {
                 if (val.length === 6) {
                     this.blur();
                     submitLogin();
