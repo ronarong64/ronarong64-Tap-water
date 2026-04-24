@@ -566,53 +566,54 @@
       </div>
 
       <section id="accounts-mgr-page" class="page-content hidden px-4 pt-4 pb-20">
-    <div class="flex items-center justify-between mb-6">
-        <div>
+        <div class="flex items-center justify-between mb-6">
+          <div>
             <h2 class="text-2xl font-bold text-slate-800">จัดการผู้ใช้งาน</h2>
             <p class="text-slate-500 text-sm">เพิ่ม ลบ แก้ไข สิทธิ์การเข้าใช้งาน</p>
-        </div>
-        <button onclick="openAccountModal()" class="w-12 h-12 bg-indigo-600 text-white rounded-2xl shadow-lg flex items-center justify-center active:scale-90 transition-transform">
+          </div>
+          <button onclick="openAccountModal()" class="w-12 h-12 bg-indigo-600 text-white rounded-2xl shadow-lg flex items-center justify-center active:scale-90 transition-transform">
             <i class="fas fa-user-plus"></i>
         </button>
-    </div>
-
-    <div id="accounts-list-container" class="space-y-3">
-        <div class="flex justify-center py-10">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
         </div>
-    </div>
-</section>
 
-<div id="account-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-    <div class="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl transform transition-all">
-        <div class="p-6">
+        <div id="accounts-list-container" class="space-y-3">
+          <div class="flex justify-center py-10">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          </div>
+        </div>
+      </section>
+
+      <div id="account-modal"
+        class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl transform transition-all">
+          <div class="p-6">
             <h3 id="account-modal-title" class="text-xl font-bold text-slate-800 mb-4">เพิ่มผู้ใช้งาน</h3>
             <div class="space-y-4">
-                <input type="hidden" id="acc-row">
-                <div>
-                    <label class="text-xs font-bold text-slate-400 uppercase ml-1">ชื่อผู้ใช้งาน</label>
-                    <input type="text" id="acc-user" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500" placeholder="Username">
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-400 uppercase ml-1">รหัสผ่าน</label>
-                    <input type="text" id="acc-pass" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500" placeholder="Password">
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-400 uppercase ml-1">สถานะ (Role)</label>
-                    <select id="acc-role" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500">
+              <input type="hidden" id="acc-row">
+              <div>
+                <label class="text-xs font-bold text-slate-400 uppercase ml-1">ชื่อผู้ใช้งาน</label>
+                <input type="text" id="acc-user" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500" placeholder="Username">
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-400 uppercase ml-1">รหัสผ่าน</label>
+                <input type="text" id="acc-pass" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500" placeholder="Password">
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-400 uppercase ml-1">สถานะ (Role)</label>
+                <select id="acc-role" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500">
                         <option value="admin">Admin</option>
                         <option value="user">User</option>
                         <option value="store">Store</option>
                     </select>
-                </div>
+              </div>
             </div>
             <div class="mt-6 flex gap-3">
-                <button onclick="closeAccountModal()" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl">ยกเลิก</button>
-                <button onclick="saveAccountData()" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg active:scale-95">บันทึก</button>
+              <button onclick="closeAccountModal()" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl">ยกเลิก</button>
+              <button onclick="saveAccountData()" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg active:scale-95">บันทึก</button>
             </div>
+          </div>
         </div>
-    </div>
-</div>
+      </div>
 
       <div id="page-reports" class="hidden space-y-5 anim-slide-up pb-20">
 
@@ -1317,15 +1318,25 @@ function applyRolePermissions() {
     }
 }
 
-        // 5. เพิ่มลูกเล่น: พิมพ์ครบ 4 ตัว ให้ล๊อกอินอัตโนมัติ
-        document.getElementById('pin-input').addEventListener('input', function(e) {
-            if (this.value.length === 4) {
-                // เบลอช่องพิมพ์เพื่อเอาคีย์บอร์ดลง
-                this.blur(); 
-                // สั่งล๊อกอิน
-                submitLogin();
-            }
-        });
+        // 5. ปรับปรุงลูกเล่น: รองรับ PIN ปกติ 4 ตัว และรหัสพิเศษ *...*
+document.getElementById('pin-input').addEventListener('input', function(e) {
+    const val = this.value;
+
+    // ตรวจสอบว่าเป็นการพิมพ์รหัสพิเศษ (ขึ้นต้นด้วย *) หรือไม่
+    if (val.startsWith('*')) {
+        // กรณีรหัสพิเศษ: รอจนกว่าจะพิมพ์ตัวปิดท้าย (*) และมีความยาวที่เหมาะสม (เช่นอย่างน้อย 3 ตัว)
+        if (val.length >= 3 && val.endsWith('*')) {
+            this.blur(); 
+            handleLogin(); // เรียกฟังก์ชันล็อกอินที่เราปรับปรุงใหม่
+        }
+    } else {
+        // กรณี PIN ปกติ: พิมพ์ครบ 4 ตัว ให้ล็อกอินอัตโนมัติ
+        if (val.length === 4) {
+            this.blur();
+            handleLogin();
+        }
+    }
+});
 
         // ==========================================
         // ระบบดึงข้อมูลและจัดการ Dashboard
@@ -5192,20 +5203,21 @@ function deleteAccount(row) {
     </div>
   </div>
 
-  <div id="custom-alert-modal" onclick="if(event.target === this) closeCustomAlert()" 
-       class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300 opacity-0">
-    <div id="custom-alert-box" 
-         class="bg-white rounded-[2rem] p-6 shadow-2xl max-w-xs sm:max-w-sm w-full text-center transform scale-95 transition-all duration-300 relative border border-slate-100">
-      
-      <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-rose-50 mb-4 shadow-inner border border-rose-100">
+  <div id="custom-alert-modal" onclick="if(event.target === this) closeCustomAlert()"
+    class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300 opacity-0">
+    <div id="custom-alert-box"
+      class="bg-white rounded-[2rem] p-6 shadow-2xl max-w-xs sm:max-w-sm w-full text-center transform scale-95 transition-all duration-300 relative border border-slate-100">
+
+      <div
+        class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-rose-50 mb-4 shadow-inner border border-rose-100">
         <i class="fas fa-lock text-2xl text-rose-500"></i>
       </div>
-      
+
       <h3 class="text-xl font-bold text-slate-800 mb-2">ไม่มีสิทธิ์เข้าถึง</h3>
       <p id="custom-alert-message" class="text-[14px] text-slate-500 mb-6 leading-relaxed font-medium">
-        </p>
-      
-      <button onclick="closeCustomAlert()" 
+      </p>
+
+      <button onclick="closeCustomAlert()"
               class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 shadow-md shadow-rose-500/30">
         รับทราบ
       </button>
