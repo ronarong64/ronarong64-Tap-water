@@ -1181,20 +1181,32 @@
     }, 400);
 }
 
-/**
- * ฟังก์ชันสำหรับควบคุมการมองเห็นของเมนูและปุ่มบันทึกต่างๆ
- */
+// ✨ ฟังก์ชันจัดการสิทธิ์ของระบบ
 function applyPermissions(role) {
-    const menuButtons = document.querySelectorAll('.menu-btn'); // สมมติว่าปุ่มเมนูมี class นี้
+    // 1. ดึงอิลิเมนต์ทั้งหมดที่มีคลาส admin-only (เช่น เมนูตั้งค่า, เส้นคั่น, ข้อความ)
+    const adminElements = document.querySelectorAll('.admin-only');
     
-    if (role === 'user') {
-        // User: ดูได้แค่ หน้าหลัก, รายงานเดือน, รายงานปี
-        // ซ่อนปุ่ม "เพิ่มสมาชิก" หรือเมนูตั้งค่าอื่นๆ
-        document.getElementById('btn-add-member')?.classList.add('hidden');
+    // 2. ดึงปุ่ม "เพิ่มสมาชิก" จากหน้าหลัก (ที่เราตั้ง id="btn-add-member" ไว้)
+    const btnAddMember = document.getElementById('btn-add-member');
+
+    if (role === 'admin') {
+        // 🟢 Admin: โชว์ทุกเมนู และเห็นปุ่มเพิ่มสมาชิก
+        adminElements.forEach(el => el.classList.remove('hidden'));
+        if (btnAddMember) btnAddMember.classList.remove('hidden');
     } 
     else if (role === 'store') {
-        // Store: ดูได้ทุกอย่าง แต่จะไปซ่อนปุ่ม "บันทึก" ในหน้า Modal ต่างๆ แทน
-        // (ให้ไปเช็คเงื่อนไข window.currentUserRole === 'store' ในฟังก์ชันเปิด Modal)
+        // 🟡 Store: โชว์ทุกเมนูเช่นกัน แต่ "ซ่อนปุ่มเพิ่มสมาชิก"
+        adminElements.forEach(el => el.classList.remove('hidden'));
+        if (btnAddMember) btnAddMember.classList.add('hidden');
+        
+        // (ส่วนการซ่อนปุ่มบันทึก/แก้ไข เราได้ทำไว้ในฟังก์ชันเปิด Modal ต่างๆ แล้ว)
+    } 
+    else if (role === 'user') {
+        // 🔵 User: ซ่อนเมนูระดับสูงทั้งหมด (เหลือแค่ หน้าหลัก, รายงานเดือน, ปี)
+        adminElements.forEach(el => el.classList.add('hidden'));
+        
+        // ซ่อนปุ่มเพิ่มสมาชิกด้วย
+        if (btnAddMember) btnAddMember.classList.add('hidden');
     }
 }
 
