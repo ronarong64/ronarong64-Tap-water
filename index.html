@@ -336,7 +336,8 @@
         </div>
 
         <div id="overdue-warning-banner"
-          class="hidden bg-gradient-to-r from-red-500 to-rose-600 rounded-2xl p-4 shadow-lg shadow-red-500/30 text-white flex items-center justify-between">
+          class="hidden bg-gradient-to-r from-red-500 to-rose-600 rounded-2xl p-4 shadow-lg shadow-red-500/30 text-white flex items-center justify-between"
+          onclick="openSuspensionModal()">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center animate-pulse">
               <i class="fas fa-exclamation-triangle text-xl"></i>
@@ -5130,6 +5131,32 @@ function closeCustomAlert() {
     </div>
   </div>
 
+  <div id="suspension-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+  <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+    <div class="p-5 border-b flex justify-between items-center bg-rose-50">
+      <h3 class="font-bold text-rose-700"><i class="fas fa-file-invoice-dollar mr-2"></i>รายชื่อเตรียมงดจ่ายน้ำ</h3>
+      <button onclick="closeSuspensionModal()" class="text-slate-400 hover:text-rose-500"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="overdue-list-container" class="flex-1 overflow-y-auto p-4 space-y-3">
+      </div>
+  </div>
+</div>
+
+<div id="print-area" class="hidden">
+  <div id="notice-content" style="font-family: 'TH Sarabun New', sans-serif; padding: 40px; color: black; line-height: 1.6;">
+    </div>
+</div>
+
+<style>
+  /* CSS สำหรับการพิมพ์หนังสือโดยเฉพาะ */
+  @media print {
+    body * { visibility: hidden; }
+    #print-area, #print-area * { visibility: visible; }
+    #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+    @page { size: A4; margin: 20mm; }
+  }
+</style>
+
   <script>
     // ==========================================
     // ฟังก์ชันจัดการ Accounts (Super Admin)
@@ -5271,6 +5298,77 @@ function closeCustomAlert() {
             } catch (e) {}
         });
     }
+
+    async function openSuspensionModal() {
+    const modal = document.getElementById('suspension-modal');
+    const container = document.getElementById('overdue-list-container');
+    modal.classList.remove('hidden');
+    container.innerHTML = '<div class="text-center py-10"><i class="fas fa-sync fa-spin text-2xl text-rose-500"></i></div>';
+
+    try {
+        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getOverdueMembers" }) });
+        const result = await res.json();
+        
+        if (result.success && result.data.length > 0) {
+            let html = '';
+            result.data.forEach(item => {
+                html += `
+                <div class="flex items-center justify-between p-4 bg-slate-50 border rounded-2xl hover:border-rose-300 transition">
+                    <div>
+                        <div class="font-bold text-slate-800">${item.name}</div>
+                        <div class="text-xs text-slate-500">บ้านเลขที่: ${item.address} | ค้าง: ${item.amount} บ.</div>
+                    </div>
+                    <button onclick="prepareAndPrint('${encodeURIComponent(JSON.stringify(item))}')" 
+                            class="bg-rose-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-rose-600 transition">
+                        <i class="fas fa-print mr-1"></i> พิมพ์
+                    </button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="text-center py-10 text-slate-400">ไม่พบข้อมูลผู้ค้างชำระ</div>';
+        }
+    } catch (e) {
+        showToast("ไม่สามารถโหลดข้อมูลได้", "error");
+    }
+}
+
+function closeSuspensionModal() {
+    document.getElementById('suspension-modal').classList.add('hidden');
+}
+
+function prepareAndPrint(encodedData) {
+    const item = JSON.parse(decodeURIComponent(encodedData));
+    const today = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+    
+    // สร้างเนื้อหาหนังสือตาม Template ที่คุณต้องการ
+    const content = `
+        <div style="text-align: center;">
+            <h2 style="margin-bottom: 5px;">หนังสืองดจ่ายน้ำประปา</h2>
+            <p>คณะกรรมการน้ำประปาหมู่บ้าน บ้านหนองบัว หมู่ที่ 2</p>
+        </div>
+        <div style="text-align: right; margin-top: 20px;">วันที่ ${today}</div>
+        <p><strong>เรื่อง:</strong> ขอแจ้งงดจ่ายน้ำประปาเนื่องจากการค้างชำระเกินกำหนด</p>
+        <p><strong>เรียน:</strong> คุณ ${item.name} (บ้านเลขที่ ${item.address})</p>
+        <div style="margin-top: 20px; text-indent: 50px;">
+            ตามที่ท่านได้ใช้น้ำประปาของหมู่บ้าน และพบว่ามีการค้างชำระเงินค่าย้ำประปา 
+            ประจำเดือน <strong>${item.month}</strong> เป็นจำนวนเงินทั้งสิ้น <strong>${item.amount} บาท</strong> 
+            ซึ่งเกินกำหนดระยะเวลาที่ทางคณะกรรมการฯ กำหนดไว้
+        </div>
+        <div style="margin-top: 15px; text-indent: 50px;">
+            จึงขอแจ้งให้ท่านดำเนินการชำระยอดค้างดังกล่าวภายใน 3 วัน นับจากวันที่ได้รับหนังสือฉบับนี้ 
+            หากพ้นกำหนดทางคณะกรรมการฯ มีความจำเป็นต้องงดจ่ายน้ำประปาเข้าสู่บ้านของท่านชั่วคราว จนกว่าจะมีการชำระหนี้เสร็จสิ้น
+        </div>
+        <div style="margin-top: 40px; text-align: center; float: right; width: 250px;">
+            ลงชื่อ..........................................................<br>
+            (..........................................................)<br>
+            ประธาน/กรรมการน้ำประปาหมู่บ้าน
+        </div>
+    `;
+    
+    document.getElementById('notice-content').innerHTML = content;
+    window.print();
+}
     
   </script>
 
