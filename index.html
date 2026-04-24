@@ -143,8 +143,7 @@
       </p>
 
       <div class="w-full relative mb-6">
-        <input type="password" id="pin-input" placeholder="ป้อนรหัส PIN" maxlength="6" inputmode="numeric" autofocus
-                    class="w-full h-16 bg-slate-50 border border-slate-200 rounded-2xl text-center text-3xl font-bold tracking-[0.5em] focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:tracking-normal placeholder:font-normal placeholder:text-base shadow-inner text-slate-700">
+        <input type="password" id="pin-input" placeholder="ป้อนรหัส PIN" maxlength="10" autofocus class="w-full h-16 bg-slate-50 border border-slate-200 rounded-2xl text-center text-3xl font-bold tracking-[0.5em] focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:tracking-normal placeholder:font-normal placeholder:text-base shadow-inner text-slate-700">
       </div>
 
       <button onclick="submitLogin()" id="btn-login"
@@ -1068,24 +1067,74 @@
       </div>
 
     </main>
+
+    <div id="superadmin-screen" class="hidden fixed inset-0 flex flex-col bg-slate-50 w-full max-w-md mx-auto shadow-2xl overflow-hidden z-[90]">
+    <header class="bg-gradient-to-r from-slate-800 to-slate-900 px-5 py-4 flex justify-between items-center shadow-lg rounded-b-xl shrink-0">
+      <div class="text-white">
+        <h2 class="font-bold text-lg"><i class="fas fa-users-cog mr-2 text-blue-400"></i>จัดการบัญชีระบบ</h2>
+        <p class="text-[11px] text-slate-300">เฉพาะผู้ดูแลระบบขั้นสูงสุด</p>
+      </div>
+      <button onclick="logout()" class="text-rose-400 bg-white/10 px-3 py-1.5 rounded-xl text-sm font-bold active:scale-95 transition"><i class="fas fa-power-off mr-1"></i> ออก</button>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-4 pb-20 hide-scrollbar space-y-4">
+       <button onclick="openAccountModal()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-blue-500/30 active:scale-95 transition flex items-center justify-center gap-2">
+         <i class="fas fa-plus-circle text-lg"></i> เพิ่มบัญชีผู้ใช้ใหม่
+       </button>
+       <div id="accounts-list" class="space-y-3"></div>
+    </main>
+
+    <div id="account-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 transition-opacity">
+      <div id="account-modal-box" class="bg-white rounded-[2rem] w-full max-w-sm p-6 transform scale-95 transition-transform shadow-2xl">
+         <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2" id="acc-modal-title"> <i class="fas fa-user-edit text-blue-500"></i> จัดการบัญชี</h3>
+         <input type="hidden" id="acc-row">
+         <div class="space-y-4">
+           <div>
+             <label class="text-xs font-bold text-slate-500 ml-1">ชื่อผู้ใช้งาน (Username)</label>
+             <input type="text" id="acc-username" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 font-bold text-slate-700 mt-1">
+           </div>
+           <div>
+             <label class="text-xs font-bold text-slate-500 ml-1">รหัสผ่าน (Password)</label>
+             <input type="text" id="acc-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 font-mono text-slate-700 mt-1">
+           </div>
+           <div>
+             <label class="text-xs font-bold text-slate-500 ml-1">ระดับสิทธิ์ (Role)</label>
+             <select id="acc-role" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 font-bold text-slate-700 mt-1">
+                <option value="admin">Admin (ผู้ดูแลระบบ)</option>
+                <option value="user">User (ผู้ใช้งานทั่วไป)</option>
+                <option value="store">Store (ดูรายงานอย่างเดียว)</option>
+             </select>
+           </div>
+         </div>
+         <div class="flex gap-3 mt-6">
+           <button onclick="closeAccountModal()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl active:scale-95 transition">ยกเลิก</button>
+           <button onclick="saveAccount()" id="btn-save-acc" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md shadow-blue-500/30 active:scale-95 transition">บันทึก</button>
+         </div>
+      </div>
+    </div>
+  </div>
+
   </div>
 
   <script>
     // 1. จัดการตอนเปิดเว็บ (เช็คว่าเคยล๊อกอินไว้ไหม)
         document.addEventListener('DOMContentLoaded', () => {
-            const savedUser = sessionStorage.getItem('water_app_session');
-            if (savedUser) {
-                // ถ้าเคยล๊อกอินแล้ว ข้ามไปหน้าหลักเลย
-                const userData = JSON.parse(savedUser);
-                showMainScreen(userData);
+        const savedUser = sessionStorage.getItem('water_app_session');
+        if (savedUser) {
+            const userData = JSON.parse(savedUser);
+            // ✨ แยกทางเข้าว่าไปหน้าไหน
+            if (userData.isSuperAdminMode) {
+               showSuperAdminScreen(userData);
             } else {
-                // ถ้ายังไม่ล๊อกอิน บังคับคีย์บอร์ดเด้งขึ้นมา
-                setTimeout(() => {
-                    const pinInput = document.getElementById('pin-input');
-                    if(pinInput) pinInput.focus();
-                }, 300);
+               showMainScreen(userData);
             }
-        });
+        } else {
+            setTimeout(() => {
+                const pinInput = document.getElementById('pin-input');
+                if(pinInput) pinInput.focus();
+            }, 300);
+        }
+    });
 
         // 2. ฟังก์ชันตรวจสอบการล๊อกอิน (ส่ง PIN ไปเช็คกับ Google Sheets)
         async function submitLogin() {
@@ -1111,14 +1160,14 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // จำค่า session รวมไว้ในเครื่อง (ของเดิมของคุณ)
                     sessionStorage.setItem('water_app_session', JSON.stringify(result));
-                    
-                    // 🎯 สิ่งที่เพิ่มเข้ามา: สั่งให้จำ "ชื่อผู้ล็อกอิน" แยกไว้ต่างหาก
-                    // (เพื่อส่งไปให้คอลัมน์ M ตอนจดมิเตอร์ได้ดึงไปใช้)
                     localStorage.setItem("username", result.username);
-                    
-                    showMainScreen(result);
+                    // ✨ แยกว่าจะเปิดหน้าฟอร์มบัญชี หรือ หน้าจัดการน้ำปกติ
+                    if(result.isSuperAdminMode) {
+                        showSuperAdminScreen(result);
+                    } else {
+                        showMainScreen(result);
+                    }
                 } else {
                     errorText.innerText = result.message || "รหัส PIN ไม่ถูกต้อง";
                     errorBox.classList.remove('hidden');
@@ -5000,6 +5049,127 @@ function closeCustomAlert() {
         modal.classList.add('hidden');
     }, 300);
 }
+
+// ==========================================
+      // โค้ดระบบ Super Admin (จัดการบัญชี Accounts)
+      // ==========================================
+      let accountsDataList = [];
+
+      function showSuperAdminScreen(data) {
+         document.getElementById('login-screen').classList.add('opacity-0', 'pointer-events-none');
+         setTimeout(() => {
+             document.getElementById('login-screen').classList.add('hidden');
+             document.getElementById('superadmin-screen').classList.remove('hidden');
+             
+             accountsDataList = data.accountsData || [];
+             renderAccountsList();
+         }, 400);
+      }
+
+      function renderAccountsList() {
+         const container = document.getElementById('accounts-list');
+         let html = '';
+         accountsDataList.forEach(acc => {
+            let roleColor = acc.role === 'admin' ? 'text-purple-600 bg-purple-100 border-purple-200' : (acc.role === 'store' ? 'text-orange-600 bg-orange-100 border-orange-200' : 'text-blue-600 bg-blue-100 border-blue-200');
+            let iconRole = acc.role === 'admin' ? 'fa-user-shield' : (acc.role === 'store' ? 'fa-store' : 'fa-user');
+            
+            html += `
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center transition hover:shadow-md">
+               <div class="flex items-center gap-3 min-w-0">
+                 <div class="w-10 h-10 rounded-full ${roleColor} flex items-center justify-center shrink-0 border"><i class="fas ${iconRole}"></i></div>
+                 <div class="min-w-0">
+                   <div class="font-bold text-slate-800 text-[15px] truncate">${acc.username}</div>
+                   <div class="text-xs text-slate-400 mt-0.5">PIN: <span class="font-mono font-bold text-slate-600 tracking-widest">${acc.password}</span></div>
+                 </div>
+               </div>
+               <div class="flex flex-col gap-1.5 shrink-0 ml-2">
+                 <button onclick="editAccount(${acc.row})" class="w-8 h-8 rounded-xl bg-slate-50 text-blue-500 hover:bg-blue-100 border border-slate-100 flex items-center justify-center active:scale-90 transition"><i class="fas fa-edit text-sm"></i></button>
+                 <button onclick="deleteAccountConfirm(${acc.row})" class="w-8 h-8 rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-100 border border-rose-100 flex items-center justify-center active:scale-90 transition"><i class="fas fa-trash-alt text-sm"></i></button>
+               </div>
+            </div>`;
+         });
+         container.innerHTML = html || '<div class="text-center text-slate-400 py-10 bg-white rounded-2xl border border-dashed border-slate-200"><i class="fas fa-box-open text-2xl mb-2 opacity-50"></i><br>ไม่มีข้อมูลบัญชี</div>';
+      }
+
+      function openAccountModal() {
+         document.getElementById('acc-row').value = "";
+         document.getElementById('acc-username').value = "";
+         document.getElementById('acc-password').value = "";
+         document.getElementById('acc-role').value = "user";
+         document.getElementById('acc-modal-title').innerHTML = '<i class="fas fa-user-plus text-emerald-500"></i> เพิ่มบัญชีใหม่';
+         
+         const modal = document.getElementById('account-modal');
+         const box = document.getElementById('account-modal-box');
+         modal.classList.remove('hidden');
+         setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+      }
+
+      function editAccount(row) {
+         const acc = accountsDataList.find(a => a.row === row);
+         if(!acc) return;
+         document.getElementById('acc-row').value = acc.row;
+         document.getElementById('acc-username').value = acc.username;
+         document.getElementById('acc-password').value = acc.password;
+         document.getElementById('acc-role').value = acc.role;
+         document.getElementById('acc-modal-title').innerHTML = '<i class="fas fa-user-edit text-blue-500"></i> แก้ไขบัญชี';
+         
+         const modal = document.getElementById('account-modal');
+         const box = document.getElementById('account-modal-box');
+         modal.classList.remove('hidden');
+         setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+      }
+
+      function closeAccountModal() {
+         const modal = document.getElementById('account-modal');
+         const box = document.getElementById('account-modal-box');
+         modal.classList.add('opacity-0'); box.classList.add('scale-95');
+         setTimeout(() => modal.classList.add('hidden'), 300);
+      }
+
+      async function saveAccount() {
+         const row = document.getElementById('acc-row').value;
+         const user = document.getElementById('acc-username').value.trim();
+         const pass = document.getElementById('acc-password').value.trim();
+         const role = document.getElementById('acc-role').value;
+         
+         if(!user || !pass) { showToast("กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบ", "warning"); return; }
+         
+         const btn = document.getElementById('btn-save-acc');
+         btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> บันทึก...';
+         
+         try {
+            const payload = {
+               action: "saveAccount",
+               accountData: { row: row ? Number(row) : null, username: user, password: pass, role: role }
+            };
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await res.json();
+            
+            if(result.success) {
+               showToast(result.message, "success");
+               closeAccountModal();
+               // ✨ สั่งให้หน้าต่างโหลดตัวเองใหม่เพื่อดึงข้อมูล Accounts ล่าสุดมาแสดง
+               setTimeout(() => { location.reload(); }, 1500);
+            }
+         } catch(e) {
+            showToast("เกิดข้อผิดพลาด", "error");
+         } finally {
+            btn.disabled = false; btn.innerHTML = 'บันทึก';
+         }
+      }
+
+      function deleteAccountConfirm(row) {
+         openConfirmModal("ยืนยันการลบ", "คุณแน่ใจหรือไม่ที่จะลบบัญชีผู้ใช้นี้ออกจากระบบ?", "ลบข้อมูล", async () => {
+             try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({action: "deleteAccount", row: row}) });
+                const result = await res.json();
+                if(result.success) {
+                   showToast("ลบบัญชีสำเร็จ", "success");
+                   setTimeout(() => { location.reload(); }, 1500);
+                }
+             } catch(e) { showToast("ลบไม่สำเร็จ", "error"); }
+         });
+      }
 
   </script>
 
