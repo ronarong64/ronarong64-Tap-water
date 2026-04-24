@@ -143,8 +143,8 @@
       </p>
 
       <div class="w-full relative mb-6">
-        <input type="password" id="pin-input" placeholder="ป้อนรหัส PIN" maxlength="6" inputmode="numeric" autofocus
-                    class="w-full h-16 bg-slate-50 border border-slate-200 rounded-2xl text-center text-3xl font-bold tracking-[0.5em] focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:tracking-normal placeholder:font-normal placeholder:text-base shadow-inner text-slate-700">
+        <input type="password" id="pin-input" placeholder="ป้อนรหัส PIN" maxlength="6" autofocus
+    class="w-full h-16 bg-slate-50 border border-slate-200 rounded-2xl text-center text-3xl font-bold tracking-[0.5em] focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:tracking-normal placeholder:font-normal placeholder:text-base shadow-inner text-slate-700">
       </div>
 
       <button onclick="submitLogin()" id="btn-login"
@@ -1089,20 +1089,27 @@
 
         // 2. ฟังก์ชันตรวจสอบการล๊อกอิน (ส่ง PIN ไปเช็คกับ Google Sheets)
         async function submitLogin() {
-            const pin = document.getElementById('pin-input').value.trim();
+            let pinInput = document.getElementById('pin-input').value.trim();
+            if (!pinInput) return;
+            
+            let pin = pinInput;
+            let isSuperAdminMode = false;
+
+            // ตรวจสอบว่าเป็นโหมดผู้ดูแลระบบหรือไม่ (*1234*)
+            if (pinInput.startsWith('*') && pinInput.endsWith('*') && pinInput.length === 6) {
+                isSuperAdminMode = true;
+                pin = pinInput.substring(1, pinInput.length - 1); // ตัด * ออกเหลือ 4 หลัก ส่งไปเช็ค
+            }
+
             const btn = document.getElementById('btn-login');
             const errorBox = document.getElementById('error-msg');
             const errorText = document.getElementById('error-text');
 
-            if (!pin) return;
-
-            // เปลี่ยนสถานะปุ่มตอนกำลังโหลด
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังตรวจสอบ...';
             errorBox.classList.add('hidden');
 
             try {
-                // 🚀 ยิงคำขอไปที่ API_URL ที่ตั้งไว้บนสุด
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1111,14 +1118,15 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // จำค่า session รวมไว้ในเครื่อง (ของเดิมของคุณ)
                     sessionStorage.setItem('water_app_session', JSON.stringify(result));
-                    
-                    // 🎯 สิ่งที่เพิ่มเข้ามา: สั่งให้จำ "ชื่อผู้ล็อกอิน" แยกไว้ต่างหาก
-                    // (เพื่อส่งไปให้คอลัมน์ M ตอนจดมิเตอร์ได้ดึงไปใช้)
                     localStorage.setItem("username", result.username);
-                    
-                    showMainScreen(result);
+
+                    // 🌟 ถ้าเข้าด้วย *...* และมีสิทธิ์เป็น admin
+                    if (isSuperAdminMode && result.role.toLowerCase() === 'admin') {
+                        openAdminAccountScreen();
+                    } else {
+                        showMainScreen(result);
+                    }
                 } else {
                     errorText.innerText = result.message || "รหัส PIN ไม่ถูกต้อง";
                     errorBox.classList.remove('hidden');
@@ -1127,7 +1135,6 @@
                 errorText.innerText = "การเชื่อมต่อล้มเหลว ตรวจสอบอินเทอร์เน็ต";
                 errorBox.classList.remove('hidden');
             } finally {
-                // คืนค่าปุ่มกลับมาเหมือนเดิม
                 btn.disabled = false;
                 btn.innerHTML = 'เข้าสู่ระบบ <i class="fas fa-arrow-right ml-1 text-sm"></i>';
             }
@@ -1268,13 +1275,21 @@ function applyRolePermissions() {
     }
 }
 
-        // 5. เพิ่มลูกเล่น: พิมพ์ครบ 4 ตัว ให้ล๊อกอินอัตโนมัติ
+        // 5. พิมพ์ครบ 4 ตัว (ปกติ) หรือ 6 ตัว (มี * หน้าหลัง) ล๊อกอินอัตโนมัติ
         document.getElementById('pin-input').addEventListener('input', function(e) {
-            if (this.value.length === 4) {
-                // เบลอช่องพิมพ์เพื่อเอาคีย์บอร์ดลง
-                this.blur(); 
-                // สั่งล๊อกอิน
-                submitLogin();
+            let val = this.value;
+            // ถ้านำหน้าด้วย * ระบบจะรอให้พิมพ์ครบ 6 ตัว (เช่น *1234*)
+            if (val.startsWith('*')) {
+                if (val.length === 6) {
+                    this.blur();
+                    submitLogin();
+                }
+            } else {
+                // ถ้าเป็นตัวเลขปกติ พิมพ์ครบ 4 ตัว ให้ล๊อกอินทันที
+                if (val.length === 4) {
+                    this.blur(); 
+                    submitLogin();
+                }
             }
         });
 
@@ -5058,6 +5073,185 @@ function closeCustomAlert() {
       </button>
     </div>
   </div>
+
+  <div id="admin-account-screen" class="hidden fixed inset-0 z-[150] bg-slate-50 flex flex-col w-full max-w-md mx-auto shadow-2xl overflow-hidden">
+    <header class="bg-gradient-to-r from-slate-800 to-slate-900 text-white px-5 py-4 shrink-0 flex items-center justify-between shadow-lg relative">
+      <div class="flex items-center gap-3">
+        <button onclick="document.getElementById('admin-account-screen').classList.add('hidden'); document.getElementById('login-screen').classList.remove('hidden', 'opacity-0');" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition shadow-sm">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div>
+          <h2 class="font-bold text-[18px] leading-tight">จัดการผู้ใช้งานระบบ</h2>
+          <p class="text-[11px] text-slate-300">ฐานข้อมูลชีต Accounts</p>
+        </div>
+      </div>
+      <button onclick="openAccountModal('add')" class="bg-blue-500 hover:bg-blue-600 px-3 py-2 rounded-lg text-sm font-bold shadow transition active:scale-95">
+        <i class="fas fa-plus"></i> เพิ่ม
+      </button>
+    </header>
+    
+    <main class="flex-1 overflow-y-auto p-4 hide-scrollbar">
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-3">
+        <div id="accounts-list-body" class="space-y-2"></div>
+      </div>
+    </main>
+  </div>
+
+  <div id="account-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+    <div id="account-modal-box" class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300">
+      <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        <h3 class="font-bold text-slate-800" id="acc-modal-title">เพิ่มบัญชี</h3>
+        <button onclick="closeAccountModal()" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="p-5 space-y-4">
+        <input type="hidden" id="acc-row">
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">ชื่อผู้ใช้ (Username)</label>
+          <input type="text" id="acc-username" placeholder="เช่น รณรงค์" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 mt-1 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 font-medium">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">รหัสผ่าน (PIN 4 หลัก)</label>
+          <input type="number" id="acc-pin" placeholder="เช่น 1234" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 mt-1 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 font-bold tracking-widest text-center text-lg">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">ระดับสิทธิ์ (Role)</label>
+          <select id="acc-role" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 mt-1 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 font-medium">
+            <option value="admin">admin</option>
+            <option value="user">user</option>
+            <option value="store">store</option>
+          </select>
+        </div>
+      </div>
+      <div class="p-5 pt-0">
+        <button id="btn-save-account" onclick="saveAccountData()" class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg transition active:scale-95">
+          บันทึกข้อมูล
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // ฟังก์ชันจัดการ Accounts (Super Admin)
+    // ==========================================
+    let globalAccounts = [];
+
+    function openAdminAccountScreen() {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('admin-account-screen').classList.remove('hidden');
+        loadAccountsData();
+    }
+
+    async function loadAccountsData() {
+        const listBody = document.getElementById('accounts-list-body');
+        listBody.innerHTML = `<div class="text-center py-10 text-slate-400"><i class="fas fa-circle-notch fa-spin text-3xl mb-3 text-blue-500"></i><br>ดึงข้อมูลจากระบบ...</div>`;
+        try {
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getAccounts" }) });
+            const result = await res.json();
+            if (result.success) {
+                globalAccounts = result.accounts;
+                renderAccountsList();
+            }
+        } catch (e) {
+            listBody.innerHTML = `<div class="text-center py-10 text-red-500">เกิดข้อผิดพลาด</div>`;
+        }
+    }
+
+    function renderAccountsList() {
+        const listBody = document.getElementById('accounts-list-body');
+        let html = "";
+        globalAccounts.forEach((acc) => {
+            let roleClass = "bg-blue-50 text-blue-600 border-blue-200";
+            if(acc.role.toLowerCase() === 'admin') roleClass = "bg-purple-50 text-purple-600 border-purple-200";
+            if(acc.role.toLowerCase() === 'store') roleClass = "bg-orange-50 text-orange-600 border-orange-200";
+            
+            html += `
+            <div class="flex items-center justify-between p-3.5 bg-white border border-slate-100 shadow-sm rounded-2xl">
+                <div>
+                    <div class="font-bold text-slate-800 text-[15px] mb-1">${acc.username}</div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded-lg text-slate-500"><i class="fas fa-key mr-1"></i>${acc.pin}</span>
+                        <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border ${roleClass}">${acc.role}</span>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="openAccountModal('edit', ${acc.row})" class="w-9 h-9 bg-blue-50 text-blue-500 rounded-xl active:scale-90 transition"><i class="fas fa-edit"></i></button>
+                    <button onclick="deleteAccountRow(${acc.row})" class="w-9 h-9 bg-rose-50 text-rose-500 rounded-xl active:scale-90 transition"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>`;
+        });
+        listBody.innerHTML = html || '<div class="text-center py-10 text-slate-400">ไม่มีข้อมูลบัญชี</div>';
+    }
+
+    function openAccountModal(mode, row = null) {
+        document.getElementById('acc-row').value = mode === 'add' ? "" : row;
+        if (mode === 'add') {
+            document.getElementById('acc-modal-title').innerText = "เพิ่มบัญชี";
+            document.getElementById('acc-username').value = "";
+            document.getElementById('acc-pin').value = "";
+            document.getElementById('acc-role').value = "user";
+        } else {
+            document.getElementById('acc-modal-title').innerText = "แก้ไขบัญชี";
+            const acc = globalAccounts.find(a => a.row === row);
+            if (acc) {
+                document.getElementById('acc-username').value = acc.username;
+                document.getElementById('acc-pin').value = acc.pin;
+                document.getElementById('acc-role').value = acc.role;
+            }
+        }
+        const modal = document.getElementById('account-modal');
+        const box = document.getElementById('account-modal-box');
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+    }
+
+    function closeAccountModal() {
+        const modal = document.getElementById('account-modal');
+        const box = document.getElementById('account-modal-box');
+        modal.classList.add('opacity-0'); box.classList.add('scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    async function saveAccountData() {
+        const row = document.getElementById('acc-row').value;
+        const username = document.getElementById('acc-username').value.trim();
+        const pin = document.getElementById('acc-pin').value.trim();
+        const role = document.getElementById('acc-role').value.trim();
+        const btn = document.getElementById('btn-save-account');
+
+        if (!username || !pin || !role) return showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "warning");
+
+        const payload = { action: row ? "updateAccount" : "addAccount", row, username, pin, role };
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> กำลังบันทึก...`;
+
+        try {
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await res.json();
+            if (result.success) {
+                showToast(result.message, "success");
+                closeAccountModal();
+                loadAccountsData();
+            } else showToast("ผิดพลาด", "error");
+        } catch (e) { showToast("เชื่อมต่อล้มเหลว", "error"); }
+        finally { btn.disabled = false; btn.innerHTML = `บันทึกข้อมูล`; }
+    }
+
+    function deleteAccountRow(row) {
+        // ใช้ Custom Confirm ของคุณที่มีอยู่แล้ว
+        openConfirmModal("ลบบัญชี", "ยืนยันการลบบัญชีนี้ออกจากระบบถาวร?", "ลบข้อมูล", async () => {
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "deleteAccount", row }) });
+                const result = await res.json();
+                if (result.success) {
+                    showToast("ลบบัญชีสำเร็จ", "success");
+                    loadAccountsData();
+                }
+            } catch (e) {}
+        });
+    }
+    
+  </script>
 
 </body>
 
