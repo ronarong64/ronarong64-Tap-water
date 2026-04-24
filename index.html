@@ -1181,12 +1181,12 @@
     }, 400);
 }
 
-// ✨ ฟังก์ชันจัดการสิทธิ์ของระบบ
+// ✨ ฟังก์ชันจัดการสิทธิ์การเข้าถึงเมนูและปุ่มต่างๆ
 function applyPermissions(role) {
-    // 1. ดึงอิลิเมนต์ทั้งหมดที่มีคลาส admin-only (เช่น เมนูตั้งค่า, เส้นคั่น, ข้อความ)
+    // 1. ดึงอิลิเมนต์ทั้งหมดที่มีคลาส admin-only (เมนูระดับสูง)
     const adminElements = document.querySelectorAll('.admin-only');
     
-    // 2. ดึงปุ่ม "เพิ่มสมาชิก" จากหน้าหลัก (ที่เราตั้ง id="btn-add-member" ไว้)
+    // 2. ดึงปุ่ม "เพิ่มสมาชิก" จากหน้าหลัก
     const btnAddMember = document.getElementById('btn-add-member');
 
     if (role === 'admin') {
@@ -1194,18 +1194,10 @@ function applyPermissions(role) {
         adminElements.forEach(el => el.classList.remove('hidden'));
         if (btnAddMember) btnAddMember.classList.remove('hidden');
     } 
-    else if (role === 'store') {
-        // 🟡 Store: โชว์ทุกเมนูเช่นกัน แต่ "ซ่อนปุ่มเพิ่มสมาชิก"
-        adminElements.forEach(el => el.classList.remove('hidden'));
-        if (btnAddMember) btnAddMember.classList.add('hidden');
-        
-        // (ส่วนการซ่อนปุ่มบันทึก/แก้ไข เราได้ทำไว้ในฟังก์ชันเปิด Modal ต่างๆ แล้ว)
-    } 
-    else if (role === 'user') {
-        // 🔵 User: ซ่อนเมนูระดับสูงทั้งหมด (เหลือแค่ หน้าหลัก, รายงานเดือน, ปี)
+    else {
+        // 🔵 ทั้ง User และ Store: ซ่อนเมนูระดับสูงทั้งหมด (admin-only)
+        // และซ่อนปุ่มเพิ่มสมาชิกด้วย
         adminElements.forEach(el => el.classList.add('hidden'));
-        
-        // ซ่อนปุ่มเพิ่มสมาชิกด้วย
         if (btnAddMember) btnAddMember.classList.add('hidden');
     }
 }
