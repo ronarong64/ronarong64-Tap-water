@@ -361,9 +361,10 @@
               <div class="h-6 w-24 bg-white/20 rounded animate-pulse"></div>
             </div>
           </div>
-          <button onclick="openAddMemberModal()" class="admin-only w-12 h-12 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-xl flex items-center justify-center text-white text-xl transition-all shadow-sm backdrop-blur-md">
-                        <i class="fas fa-user-plus"></i>
-                    </button>
+
+          <button id="btn-add-member" onclick="openAddMemberModal()" class="admin-only w-12 h-12 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-xl flex items-center justify-center text-white text-xl transition-all shadow-sm backdrop-blur-md">
+        <i class="fas fa-user-plus"></i>
+    </button>
         </div>
 
         <div class="grid grid-cols-2 gap-2">
@@ -830,7 +831,8 @@
               <tbody id="yearly-monthly-table-body">
                 <tr>
                   <td colspan="4" class="text-center py-6 text-slate-400 align-middle">
-                    <i class="fas fa-circle-notch fa-spin mr-2"></i>รอข้อมูล...</td>
+                    <i class="fas fa-circle-notch fa-spin mr-2"></i>รอข้อมูล...
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -1133,35 +1135,68 @@
 
         // 3. ฟังก์ชันสลับจากหน้าล๊อกอินไปหน้าหลัก
         function showMainScreen(data) {
-            document.getElementById('login-screen').classList.add('opacity-0', 'pointer-events-none');
-            setTimeout(() => {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('main-screen').classList.remove('hidden');
-                
-                document.getElementById('display-username').innerText = data.username;
-                const roleEl = document.getElementById('display-role');
-                roleEl.innerText = data.role;
-                if(String(data.role).toLowerCase() === 'admin') {
-                    roleEl.className = "text-[10px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full font-bold uppercase mt-0.5 border border-purple-200 shadow-sm";
-                }
+    // 1. ซ่อนหน้าล็อกอิน
+    document.getElementById('login-screen').classList.add('opacity-0', 'pointer-events-none');
+    
+    setTimeout(() => {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('main-screen').classList.remove('hidden');
+        
+        // 2. แสดงชื่อผู้ใช้และจัดการป้ายสถานะ (Role)
+        document.getElementById('display-username').innerText = data.username;
+        const roleEl = document.getElementById('display-role');
+        const role = String(data.role).toLowerCase(); // แปลงเป็นตัวพิมพ์เล็กเพื่อให้เช็คง่าย
+        roleEl.innerText = data.role;
 
-                updateCurrentMonth();
+        // ✨ บันทึก Role ลงในตัวแปร Global เพื่อใช้เช็คสิทธิ์ในฟังก์ชันอื่นๆ
+        window.currentUserRole = role;
 
-                // 🚀 อัปเกรดความเร็ว: นำข้อมูลที่เซิร์ฟเวอร์ส่งมาพร้อมล็อกอินไปใช้งานทันที!
-                if (data.settingsData) {
-                    applySettingsToUI(data.settingsData);
-                } else {
-                    loadSettingsData(); // สำหรับกรณีผู้ใช้กดรีเฟรชหน้าเว็บ (ไม่มี data แนบมา)
-                }
-
-                if (data.usersData) {
-                    renderRealData(data.usersData);
-                } else {
-                    loadDashboardData(); // สำหรับกรณีผู้ใช้กดรีเฟรชหน้าเว็บ
-                }
-
-            }, 400);
+        // 3. ปรับสีป้าย Role ตามสถานะ
+        if (role === 'admin') {
+            roleEl.className = "text-[10px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full font-bold uppercase mt-0.5 border border-purple-200 shadow-sm";
+        } else if (role === 'user') {
+            roleEl.className = "text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold uppercase mt-0.5 border border-blue-200 shadow-sm";
+        } else if (role === 'store') {
+            roleEl.className = "text-[10px] bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-bold uppercase mt-0.5 border border-orange-200 shadow-sm";
         }
+
+        // 4. ✨ เรียกฟังก์ชันจัดการสิทธิ์เมนูและปุ่ม (สร้างฟังก์ชันนี้เพิ่มด้านล่าง)
+        applyPermissions(role);
+
+        updateCurrentMonth();
+
+        // 🚀 แสดงข้อมูลจาก Server ทันที
+        if (data.settingsData) {
+            applySettingsToUI(data.settingsData);
+        } else {
+            loadSettingsData();
+        }
+
+        if (data.usersData) {
+            renderRealData(data.usersData);
+        } else {
+            loadDashboardData();
+        }
+
+    }, 400);
+}
+
+/**
+ * ฟังก์ชันสำหรับควบคุมการมองเห็นของเมนูและปุ่มบันทึกต่างๆ
+ */
+function applyPermissions(role) {
+    const menuButtons = document.querySelectorAll('.menu-btn'); // สมมติว่าปุ่มเมนูมี class นี้
+    
+    if (role === 'user') {
+        // User: ดูได้แค่ หน้าหลัก, รายงานเดือน, รายงานปี
+        // ซ่อนปุ่ม "เพิ่มสมาชิก" หรือเมนูตั้งค่าอื่นๆ
+        document.getElementById('btn-add-member')?.classList.add('hidden');
+    } 
+    else if (role === 'store') {
+        // Store: ดูได้ทุกอย่าง แต่จะไปซ่อนปุ่ม "บันทึก" ในหน้า Modal ต่างๆ แทน
+        // (ให้ไปเช็คเงื่อนไข window.currentUserRole === 'store' ในฟังก์ชันเปิด Modal)
+    }
+}
 
         // 4. ฟังก์ชันออกจากระบบ
         function logout() {
@@ -1178,6 +1213,56 @@
                 window.location.href = "about:blank"; // ไปที่หน้าขาวว่างๆ
             }, 100);
         }
+
+        // ✨ ฟังก์ชันจัดการสิทธิ์ตาม Role (Admin, User, Store)
+function applyRolePermissions() {
+    const role = window.currentUserRole;
+    
+    // ปุ่มบันทึกข้อมูลต่างๆ ในระบบ
+    const saveSettingsBtn = document.getElementById('btn-save-settings');
+    const saveBankBtn = document.querySelector('button[onclick="openBankModal()"]');
+    const addMemberBtn = document.querySelector('button[onclick="openAddMemberModal()"]');
+    
+    // ปุ่มเมนูด้านซ้ายทั้งหมด
+    const allMenus = document.querySelectorAll('.menu-btn');
+
+    if (role === 'admin') {
+        // 🟢 Admin: เห็นและทำได้ทุกอย่าง
+        allMenus.forEach(btn => btn.style.display = 'flex');
+        if(addMemberBtn) addMemberBtn.style.display = 'flex';
+        if(saveSettingsBtn) saveSettingsBtn.style.display = 'flex';
+        if(saveBankBtn) saveBankBtn.style.display = 'flex';
+        
+    } else if (role === 'user') {
+        // 🔵 User: เห็นแค่ หน้าหลัก, รายงานเดือน, รายงานปี
+        const allowedPages = ['home', 'reports', 'yearly'];
+        allMenus.forEach(btn => {
+            const onclickText = btn.getAttribute('onclick') || "";
+            let isAllowed = false;
+            allowedPages.forEach(p => {
+                if (onclickText.includes(`showPage('${p}')`)) isAllowed = true;
+            });
+            if (onclickText.includes('openAboutModal')) isAllowed = true; // อนุญาตให้ดูหน้า 'เกี่ยวกับเรา'
+            
+            if (isAllowed) {
+                btn.style.display = 'flex';
+            } else {
+                btn.style.display = 'none';
+            }
+        });
+        
+        // ไม่อนุญาตให้เพิ่มบ้านใหม่
+        if(addMemberBtn) addMemberBtn.style.display = 'none';
+        
+    } else if (role === 'store') {
+        // 🟡 Store: เห็นทุกเมนู แต่ห้ามเพิ่ม/แก้ไข/บันทึก (ดูอย่างเดียว)
+        allMenus.forEach(btn => btn.style.display = 'flex');
+        
+        if(addMemberBtn) addMemberBtn.style.display = 'none';
+        if(saveSettingsBtn) saveSettingsBtn.style.display = 'none';
+        if(saveBankBtn) saveBankBtn.style.display = 'none';
+    }
+}
 
         // 5. เพิ่มลูกเล่น: พิมพ์ครบ 4 ตัว ให้ล๊อกอินอัตโนมัติ
         document.getElementById('pin-input').addEventListener('input', function(e) {
@@ -1221,7 +1306,6 @@
                 return escapeMap[match];
             });
         }
-
         function renderRealData(users) {
     window.globalUsersList = users;
     const listContainer = document.getElementById('user-list');
@@ -1242,6 +1326,9 @@
     const currentY = now.getFullYear() + 543;
     const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
     const currentMonthStr2 = `${currentM}/${currentY}`; 
+
+    // ✨ เช็คสิทธิ์ว่าเป็น Admin หรือไม่ (ทำครั้งเดียวก่อนวนลูป เพื่อความรวดเร็ว)
+    const isAdmin = (window.currentUserRole === 'admin');
 
     users.forEach(user => {
         const houseNo = escapeHTML(user.houseNo || "-");
@@ -1309,10 +1396,8 @@
         if (fileId) {
             const mainImage = "https://lh3.googleusercontent.com/d/" + fileId;
             const backupImage = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w200";
-            // 🌟 1. เปลี่ยนจาก rounded-full เป็น rounded-xl
             avatarHtml = `<img src="${mainImage}" alt="profile" class="w-full h-full object-cover rounded-xl" onerror="this.onerror=null; this.src='${backupImage}';">`;
         } else if (rawProfilePic && (rawProfilePic.startsWith("http") || rawProfilePic.startsWith("data:"))) {
-            // 🌟 2. เปลี่ยนจาก rounded-full เป็น rounded-xl
             avatarHtml = `<img src="${rawProfilePic}" alt="profile" class="w-full h-full object-cover rounded-xl">`;
         }
 
@@ -1320,6 +1405,18 @@
             ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[11px] font-medium text-slate-500 flex items-center gap-1"><div class="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-phone-alt text-[7px]"></i></div><span class="phone-text">${phone}</span></a>`
             : `<span class="text-[11px] text-slate-400 italic">ไม่มีเบอร์โทร</span>`;
         let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
+
+        // ✨ จัดการแสดงผลปุ่ม "แก้ไข" ตามสิทธิ์
+        let actionButtonsHtml = "";
+        if (isAdmin) {
+            actionButtonsHtml = `
+            <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-400 hover:text-blue-500 active:scale-90 px-2 py-1">
+                <i class="fas fa-edit text-[15px]"></i>
+            </button>`;
+            
+            // ถ้าอนาคตมีปุ่มลบ ก็สามารถต่อท้ายตรงนี้ได้เลย เช่น:
+            // actionButtonsHtml += `<button onclick="..." class="text-red-400 hover:text-red-500 ..."><i class="fas fa-trash"></i></button>`;
+        }
 
         htmlContent += `
             <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="openBillingModal('${houseNo}')">
@@ -1334,10 +1431,7 @@
                                 ${lineIconHtml}
                                 ${overdueBadge}
                             </div>
-                            <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-400 hover:text-blue-500 active:scale-90 px-2 py-1">
-                                <i class="fas fa-edit text-[15px]"></i>
-                            </button>
-                        </div>
+                            ${actionButtonsHtml} </div>
                         <p class="name-text text-[14px] font-medium text-slate-500 truncate leading-none mt-1 mb-2">${safeName}</p>
                         <div class="flex items-center justify-between pt-1 border-t border-slate-100">
                             <div class="phone-box">${phoneDisplayHtml}</div>
@@ -2193,7 +2287,7 @@ function toggleOption(elementId, isChecked) {
         // ==========================================
 
         // 🎯 1. ฟังก์ชันสำหรับตรวจสอบและเปิดหน้าต่างๆ       
-    function openBillingModal(houseNo) {
+        function openBillingModal(houseNo) {
     const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
     if (!user) return;
 
@@ -2218,6 +2312,9 @@ function toggleOption(elementId, isChecked) {
 
     const currUnitInput = document.getElementById('bill-curr-unit');
     const btnWaiting = document.getElementById('btn-save-waiting');
+    // ✨ ดึงปุ่มชำระเงินมาไว้จัดการสิทธิ์
+    const btnPaid = document.getElementById('btn-save-paid'); 
+    
     const priceInput = document.getElementById('set-price');
     let priceVal = parseFloat(priceInput && priceInput.value !== "" ? priceInput.value : 0) || 0;
 
@@ -2303,6 +2400,16 @@ function toggleOption(elementId, isChecked) {
     if (houseNameDisplay) {
         let displayName = user.name || "ไม่ระบุชื่อ";
         houseNameDisplay.querySelector('span').innerText = displayName;
+    }
+
+    // ✨✨ เพิ่มการตรวจสิทธิ์ของ Role Store ที่นี่ ✨✨
+    // ถ้าสิทธิ์เป็น 'store' ให้ซ่อนปุ่มบันทึกทั้ง 2 ปุ่มออกไปเลย
+    if (window.currentUserRole === 'store') {
+        if (btnWaiting) btnWaiting.style.display = 'none';
+        if (btnPaid) btnPaid.style.display = 'none';
+    } else {
+        if (btnWaiting) btnWaiting.style.display = 'flex';
+        if (btnPaid) btnPaid.style.display = 'flex';
     }
 
     // เปิดหน้าต่าง Modal
@@ -3772,17 +3879,18 @@ function toggleOption(elementId, isChecked) {
     </div>
   </div>
 
-  <div id="billing-modal"
-    onclick="if(event.target === this) closeBillingModal()"
+  <div id="billing-modal" onclick="if(event.target === this) closeBillingModal()"
     class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300 opacity-0">
     <div id="billing-modal-box"
       class="glass-card w-full sm:max-w-sm p-0 transform scale-95 transition-all duration-300 relative overflow-hidden bg-white rounded-[2rem] shadow-2xl">
       <button onclick="closeBillingModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/10 text-white flex items-center justify-center hover:bg-black/20 z-20 transition-colors"><i class="fas fa-times"></i></button>
 
-      <div class="bg-gradient-to-r from-purple-600 to-purple-400 p-4 text-center pt-4 pb-6 rounded-b-[1.5rem] shadow-md relative z-10">
+      <div
+        class="bg-gradient-to-r from-purple-600 to-purple-400 p-4 text-center pt-4 pb-6 rounded-b-[1.5rem] shadow-md relative z-10">
         <h3 class="text-xl font-bold text-white">จดมิเตอร์</h3>
-        
-        <div class="mt-2.5 inline-flex flex-col items-center justify-center bg-white/20 border border-white/30 px-5 py-1.5 rounded-xl shadow-sm backdrop-blur-sm">
+
+        <div
+          class="mt-2.5 inline-flex flex-col items-center justify-center bg-white/20 border border-white/30 px-5 py-1.5 rounded-xl shadow-sm backdrop-blur-sm">
           <span class="text-white font-bold text-[14px] tracking-wide leading-tight" id="bill-house-display">...</span>
           <span class="text-purple-100 text-[11.5px] font-medium flex items-center gap-1.5 mt-0.5" id="bill-house-name-display">
             <i class="fas fa-user-circle opacity-80 text-[10px]"></i> <span>...</span>
