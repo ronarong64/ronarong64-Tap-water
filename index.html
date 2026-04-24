@@ -143,8 +143,9 @@
       </p>
 
       <div class="w-full relative mb-6">
-        <input type="password" id="pin-input" placeholder="ป้อนรหัส PIN" maxlength="6" autofocus
-    class="w-full h-16 bg-slate-50 border border-slate-200 rounded-2xl text-center text-3xl font-bold tracking-[0.5em] focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:tracking-normal placeholder:font-normal placeholder:text-base shadow-inner text-slate-700">
+        <input type="tel" inputmode="tel" id="pin-input" placeholder="ป้อนรหัส PIN" maxlength="6" autofocus
+          style="-webkit-text-security: disc;"
+          class="w-full h-16 bg-slate-50 border border-slate-200 rounded-2xl text-center text-3xl font-bold tracking-[0.5em] focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:tracking-normal placeholder:font-normal placeholder:text-base shadow-inner text-slate-700">
       </div>
 
       <button onclick="submitLogin()" id="btn-login"
