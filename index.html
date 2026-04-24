@@ -5064,7 +5064,10 @@ function closeCustomAlert() {
 // ✨ ฟังก์ชันล็อกอินพร้อมเงื่อนไขพิเศษ *รหัสผ่าน*
 function handleLogin() {
     const userInp = document.getElementById('login-user').value.trim();
-    const passInp = document.getElementById('login-pass').value.trim();
+    
+    // ❌ ของเดิมเขียนเป็น 'login-pass' ทำให้ระบบหาไม่เจอ
+    // ✅ แก้เป็น 'pin-input' ให้ตรงกับ HTML
+    const passInp = document.getElementById('pin-input').value.trim(); 
     
     if(!userInp || !passInp) return showToast('กรุณากรอกข้อมูลให้ครบ', 'error');
 
@@ -5073,7 +5076,20 @@ function handleLogin() {
     // ตัดเครื่องหมาย * ออกเพื่อใช้รหัสผ่านจริงไปเช็คในระบบ
     const cleanPass = isSpecialAdmin ? passInp.slice(1, -1) : passInp;
 
+    // เปลี่ยนสถานะปุ่มเพื่อแสดงว่ากำลังโหลด
+    const btn = document.querySelector('button[onclick="handleLogin()"]');
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังเข้าสู่ระบบ...';
+        btn.disabled = true;
+    }
+
     google.script.run.withSuccessHandler(function(response) {
+        // คืนค่าปุ่มกลับมาเหมือนเดิม
+        if (btn) {
+            btn.innerHTML = 'เข้าสู่ระบบ <i class="fas fa-arrow-right ml-2"></i>';
+            btn.disabled = false;
+        }
+
         if (response.success) {
             showMainScreen(response);
             
@@ -5084,6 +5100,8 @@ function handleLogin() {
             }
         } else {
             showToast(response.message, 'error');
+            // ถ้ารหัสผิด ให้ล้างช่องรหัสผ่านเพื่อให้พิมพ์ใหม่
+            document.getElementById('pin-input').value = '';
         }
     }).checkLogin(userInp, cleanPass);
 }
