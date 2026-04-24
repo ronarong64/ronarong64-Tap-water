@@ -5161,19 +5161,40 @@ function closeCustomAlert() {
         const listBody = document.getElementById('accounts-list-body');
         let html = "";
         globalAccounts.forEach((acc) => {
+            // กำหนดค่าเริ่มต้นสำหรับ USER
             let roleClass = "bg-blue-50 text-blue-600 border-blue-200";
-            if(acc.role.toLowerCase() === 'admin') roleClass = "bg-purple-50 text-purple-600 border-purple-200";
-            if(acc.role.toLowerCase() === 'store') roleClass = "bg-orange-50 text-orange-600 border-orange-200";
-            
+            let roleDesc = "สิทธิ์(ดูข้อมูล)"; 
+
+            // เช็คเงื่อนไขเพื่อเปลี่ยนสีและข้อความอธิบายตามสิทธิ์
+            if (acc.role.toLowerCase() === 'admin') {
+                roleClass = "bg-purple-50 text-purple-600 border-purple-200";
+                roleDesc = "สิทธิ์ใช้งานทุกฟังก์ชัน";
+            } else if (acc.role.toLowerCase() === 'store') {
+                roleClass = "bg-orange-50 text-orange-600 border-orange-200";
+                roleDesc = "สิทธิ์(จัดเก็บได้)";
+            }
+
             html += `
-            <div class="flex items-center justify-between p-3.5 bg-white border border-slate-100 shadow-sm rounded-2xl">
+            <div class="flex items-center justify-between p-3.5 bg-white border border-slate-100 shadow-sm rounded-2xl mb-2">
                 <div>
-                    <div class="font-bold text-slate-800 text-[15px] mb-1">${acc.username}</div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded-lg text-slate-500"><i class="fas fa-key mr-1"></i>${acc.pin}</span>
-                        <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border ${roleClass}">${acc.role}</span>
+                    <div class="font-bold text-slate-800 text-[15px] mb-1.5">${acc.username}</div>
+                    
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded-lg text-slate-500">
+                                <i class="fas fa-key mr-1"></i>${acc.pin}
+                            </span>
+                            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border ${roleClass}">
+                                ${acc.role}
+                            </span>
+                        </div>
+                        
+                        <div class="text-[11px] text-slate-500 flex items-center gap-1.5">
+                            <i class="fas fa-info-circle text-slate-400"></i> ${roleDesc}
+                        </div>
                     </div>
                 </div>
+                
                 <div class="flex gap-2">
                     <button onclick="openAccountModal('edit', ${acc.row})" class="w-9 h-9 bg-blue-50 text-blue-500 rounded-xl active:scale-90 transition"><i class="fas fa-edit"></i></button>
                     <button onclick="deleteAccountRow(${acc.row})" class="w-9 h-9 bg-rose-50 text-rose-500 rounded-xl active:scale-90 transition"><i class="fas fa-trash"></i></button>
