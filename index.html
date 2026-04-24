@@ -1269,13 +1269,30 @@ function applyRolePermissions() {
 }
 
         // 5. เพิ่มลูกเล่น: พิมพ์ครบ 4 ตัว ให้ล๊อกอินอัตโนมัติ
-        document.getElementById('pin-input').addEventListener('input', function(e) {
-            if (this.value.length === 4) {
-                // เบลอช่องพิมพ์เพื่อเอาคีย์บอร์ดลง
-                this.blur(); 
-                // สั่งล๊อกอิน
-                submitLogin();
+        const pinInput = document.getElementById('pin-input');
+
+        pinInput.addEventListener('input', function(e) {
+          let val = this.value;
+
+          if (val.startsWith('*')) {
+            // 🔴 โหมดเข้าสู่หน้าแอดมิน: ถ้านำหน้าด้วย * ระบบจะรอให้พิมพ์ครบ 6 หลัก (เช่น *1234*)
+            if (val.length === 6) {
+              if (val.endsWith('*')) {
+                this.blur(); // ซ่อนคีย์บอร์ด
+                submitLogin(val); // เรียกฟังก์ชันล็อกอินและส่งค่า *1234* ไป
+              } else {
+                // กรณีตัวสุดท้ายไม่ใช่ * อาจจะเคลียร์ช่องหรือแจ้งเตือน
+                showCustomAlert("รูปแบบรหัสผ่านไม่ถูกต้อง", "error");
+                this.value = '';
+              }
             }
+          } else {
+            // 🔵 โหมดผู้ใช้ปกติ: ถ้าไม่มี * นำหน้า ระบบจะรอให้ครบ 4 หลักแล้วล็อกอินทันที
+            if (val.length === 4) {
+              this.blur(); // ซ่อนคีย์บอร์ด
+              submitLogin(val); // ส่งค่า 1234 ไป
+            }
+          }
         });
 
         // ==========================================
@@ -4999,6 +5016,26 @@ function closeCustomAlert() {
     setTimeout(() => {
         modal.classList.add('hidden');
     }, 300);
+}
+
+// ในฟังก์ชันล๊อกอินหลังจากได้รับ Response จาก API
+function handleLoginResponse(result) {
+  if (result.success) {
+    // ซ่อนหน้าล็อกอิน
+    document.getElementById('login-screen').classList.add('hidden');
+    
+    if (result.mode === "admin_panel") {
+      // เปิดหน้าจัดการ Accounts
+      document.getElementById('admin-accounts-screen').classList.remove('hidden');
+      loadAccountsData(); // ฟังก์ชันดึงข้อมูลมาวาดลงตาราง
+    } else {
+      // เปิดหน้าหลักของระบบปกติ
+      document.getElementById('main-screen').classList.remove('hidden');
+      applyPermissions(result.role);
+    }
+  } else {
+    showCustomAlert(result.message, "error");
+  }
 }
 
   </script>
