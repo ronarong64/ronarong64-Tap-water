@@ -2416,16 +2416,6 @@ function toggleOption(elementId, isChecked) {
         houseNameDisplay.querySelector('span').innerText = displayName;
     }
 
-    // ✨✨ เพิ่มการตรวจสิทธิ์ของ Role Store ที่นี่ ✨✨
-    // ถ้าสิทธิ์เป็น 'store' ให้ซ่อนปุ่มบันทึกทั้ง 2 ปุ่มออกไปเลย
-    if (window.currentUserRole === 'store') {
-        if (btnWaiting) btnWaiting.style.display = 'none';
-        if (btnPaid) btnPaid.style.display = 'none';
-    } else {
-        if (btnWaiting) btnWaiting.style.display = 'flex';
-        if (btnPaid) btnPaid.style.display = 'flex';
-    }
-
     // เปิดหน้าต่าง Modal
     const modal = document.getElementById('billing-modal');
     const box = document.getElementById('billing-modal-box');
