@@ -9,6 +9,7 @@
   <script>
     // 👇 นำ URL ที่ลงท้ายด้วย /exec จาก Google Apps Script มาใส่ในเครื่องหมายคำพูดด้านล่าง
         const API_URL = "https://script.google.com/macros/s/AKfycbz_rkhS9bIVqcWGTNa2PhGfdw0Ik3cWy6rHzSU_pYtR9nQY7PupMSUdfqLaUgUGBLtj/exec";
+        
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -5143,40 +5144,38 @@ function closeCustomAlert() {
     </div>
   </div>
 
-  <div id="suspension-modal"
-    class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300">
-    <div
-      class="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col transform transition-all">
-
-      <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-rose-50/50">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-2xl bg-rose-500 flex items-center justify-center shadow-lg shadow-rose-200">
-            <i class="fas fa-file-invoice-dollar text-white text-xl"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-slate-800 text-lg">รายชื่อสมาชิกค้างชำระ</h3>
-            <p class="text-xs text-slate-500">เลือกบ้านเลขที่เพื่อสั่งพิมพ์ใบแจ้งเตือน</p>
-          </div>
+  <div id="suspension-modal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300">
+  <div class="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
+    
+    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-rose-50/50">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-rose-500 flex items-center justify-center shadow-lg shadow-rose-200">
+          <i class="fas fa-file-invoice-dollar text-white text-xl"></i>
         </div>
-        <button onclick="closeSuspensionModal()" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors">
+        <div>
+          <h3 class="font-bold text-slate-800 text-lg">รายชื่อสมาชิกค้างชำระ</h3>
+          <p class="text-xs text-slate-500">เลือกบ้านเลขที่เพื่อสั่งพิมพ์ใบแจ้งเตือน</p>
+        </div>
+      </div>
+      <button onclick="closeSuspensionModal()" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors">
         <i class="fas fa-times"></i>
       </button>
+    </div>
+
+    <div id="suspension-list-body" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30">
       </div>
 
-      <div id="suspension-list-body" class="flex-1 overflow-y-auto p-4 space-y-3 hide-scrollbar bg-slate-50/30">
+    <div class="p-6 border-t border-slate-100 bg-white flex flex-col sm:flex-row gap-3">
+      <div class="flex-1 flex items-center gap-2 px-2">
+        <input type="checkbox" id="select-all-suspension" onchange="toggleSelectAllSuspension(this)" checked class="w-5 h-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+        <label for="select-all-suspension" class="text-sm font-medium text-slate-600">เลือกทั้งหมด</label>
       </div>
-
-      <div class="p-6 border-t border-slate-100 bg-white flex flex-col sm:flex-row gap-3">
-        <div class="flex-1 flex items-center gap-2 px-2">
-          <input type="checkbox" id="select-all-suspension" onchange="toggleSelectAllSuspension(this)" checked class="w-5 h-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500">
-          <label for="select-all-suspension" class="text-sm font-medium text-slate-600">เลือกทั้งหมด</label>
-        </div>
-        <button onclick="printSelectedNotices()" class="flex-[2] py-4 bg-gradient-to-r from-rose-500 to-red-600 text-white font-bold rounded-2xl shadow-lg shadow-rose-200 flex items-center justify-center gap-2 active:scale-95 transition-all">
+      <button onclick="printSelectedNotices()" class="flex-[2] py-4 bg-gradient-to-r from-rose-500 to-red-600 text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all">
         <i class="fas fa-print"></i> พิมพ์ใบแจ้งเตือน (<span id="selected-print-count">0</span> หลัง)
       </button>
-      </div>
     </div>
   </div>
+</div>
 
   <script>
     // ==========================================
@@ -5320,24 +5319,69 @@ function closeCustomAlert() {
         });
     }
 
-    // 1. ฟังก์ชันเปิดหน้าต่างรายชื่อ
+    // ==========================================
+// 🔴 ฟังก์ชันเปิดหน้าต่างรายชื่อผู้ค้างชำระ (อัปเดตใหม่ให้ตรงกับระบบของคุณ)
+// ==========================================
 function openSuspensionModal() {
     const modal = document.getElementById('suspension-modal');
+    const box = modal.querySelector('.bg-white'); // หากล่องด้านในเพื่อทำแอนิเมชัน
     const listBody = document.getElementById('suspension-list-body');
+    
+    // ดึงเกณฑ์ค้างชำระจากหน้าตั้งค่า (หรือให้เป็น 1 ค่าเริ่มต้น)
     const limitInput = document.getElementById('set-max-overdue');
-    const limit = limitInput ? parseInt(limitInput.value) : 3;
+    const limit = limitInput && limitInput.value ? parseInt(limitInput.value) : 1;
 
-    // กรองสมาชิกที่ค้างเกินกำหนด
-    const targetUsers = allUsers.filter(u => (parseInt(u.overdueCount) || 0) >= limit);
+    // 🌟 ดึงข้อมูลจากตัวแปรที่คุณมีอยู่แล้ว (globalUsersList)
+    if (!window.globalUsersList) {
+        showToast("ข้อมูลยังโหลดไม่เสร็จ กรุณารอสักครู่", "warning");
+        return;
+    }
 
+    // หาวันที่ปัจจุบันเพื่อกรองบิลของ "เดือนปัจจุบัน" ออกไป
+    const now = new Date();
+    const currentM = now.getMonth() + 1;
+    const currentY = now.getFullYear() + 543;
+    const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
+    const currentMonthStr2 = `${currentM}/${currentY}`;
+
+    // กรองรายชื่อเฉพาะคนที่ค้างเกินเกณฑ์
+    const targetUsers = [];
+    window.globalUsersList.forEach(u => {
+        let overdueMonthsCount = 0;
+        let totalOverdueAmount = 0;
+        
+        if (u.overdueList && u.overdueList.length > 0) {
+            // นับและรวมยอดเงินเฉพาะบิลเก่า
+            u.overdueList.forEach(bill => {
+                if (bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2) {
+                    overdueMonthsCount++;
+                    totalOverdueAmount += Number(bill.amount);
+                }
+            });
+        }
+        
+        // ถ้าค้างเกินเกณฑ์ ให้เพิ่มเข้าในรายการเตรียมงดจ่ายน้ำ
+        if (overdueMonthsCount >= limit && overdueMonthsCount > 0) {
+            targetUsers.push({ 
+                ...u, 
+                computedOverdueCount: overdueMonthsCount,
+                computedTotalDebt: totalOverdueAmount
+            });
+        }
+    });
+
+    // ล้างข้อมูลเก่าออก
     listBody.innerHTML = '';
     
+    // วาดข้อมูลลงในหน้าต่าง
     if (targetUsers.length === 0) {
         listBody.innerHTML = '<div class="text-center py-20 text-slate-400">ไม่พบรายชื่อที่ตรงตามเงื่อนไข</div>';
     } else {
         targetUsers.forEach(u => {
+            const pricePerUnit = u.price || (document.getElementById('set-price') ? document.getElementById('set-price').value : 0);
+            
             const rowHtml = `
-                <label class="flex items-start gap-4 p-4 bg-white rounded-3xl border border-slate-100 shadow-sm hover:border-rose-300 transition-all cursor-pointer group">
+                <label class="flex items-start gap-4 p-4 bg-white rounded-3xl border border-slate-100 shadow-sm hover:border-rose-300 transition-all cursor-pointer group mb-3">
                     <div class="mt-1">
                         <input type="checkbox" name="suspend-check" value="${u.houseNo}" checked 
                                onchange="updatePrintCount()"
@@ -5346,14 +5390,14 @@ function openSuspensionModal() {
                     <div class="flex-1">
                         <div class="flex justify-between items-start mb-1">
                             <span class="font-bold text-slate-800 text-lg">บ้านเลขที่ ${u.houseNo}</span>
-                            <span class="bg-rose-100 text-rose-600 text-[10px] font-bold px-2 py-1 rounded-full">ค้าง ${u.overdueCount} เดือน</span>
+                            <span class="bg-rose-100 text-rose-600 text-[10px] font-bold px-2 py-1 rounded-full">ค้าง ${u.computedOverdueCount} เดือน</span>
                         </div>
-                        <p class="text-sm text-slate-600 mb-2 font-medium">${u.name}</p>
+                        <p class="text-sm text-slate-600 mb-2 font-medium">${u.name || "ไม่ระบุชื่อ"}</p>
                         <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 p-2 rounded-xl border border-slate-100">
-                            <div class="text-slate-500">เลขจด: <span class="text-slate-800 font-bold">${u.lastMonthReading || 0} - ${u.currentReading || 0}</span></div>
-                            <div class="text-slate-500 text-right">ราคา/หน่วย: <span class="text-slate-800 font-bold">${u.pricePerUnit || 0} บ.</span></div>
+                            <div class="text-slate-500">เลขมิเตอร์ล่าสุด: <span class="text-slate-800 font-bold">${u.prevUnit || 0}</span></div>
+                            <div class="text-slate-500 text-right">ราคา/หน่วย: <span class="text-slate-800 font-bold">${pricePerUnit} บ.</span></div>
                             <div class="col-span-2 text-rose-600 font-bold border-t border-slate-200 pt-1 mt-1 text-right text-sm">
-                                รวมค้างชำระ: ${u.totalDebt || 0} บาท
+                                รวมค้างชำระ: ${u.computedTotalDebt.toLocaleString()} บาท
                             </div>
                         </div>
                     </div>
@@ -5363,22 +5407,30 @@ function openSuspensionModal() {
         });
     }
 
+    // แสดงหน้าต่าง
     modal.classList.remove('hidden');
     setTimeout(() => {
-        modal.classList.add('opacity-100');
+        modal.classList.remove('opacity-0');
+        if(box) box.classList.remove('scale-95');
     }, 10);
+    
     updatePrintCount();
 }
 
 function closeSuspensionModal() {
     const modal = document.getElementById('suspension-modal');
-    modal.classList.remove('opacity-100');
+    const box = modal.querySelector('.bg-white');
+    
+    modal.classList.add('opacity-0');
+    if(box) box.classList.add('scale-95');
+    
     setTimeout(() => modal.classList.add('hidden'), 300);
 }
 
 function updatePrintCount() {
     const checked = document.querySelectorAll('input[name="suspend-check"]:checked').length;
-    document.getElementById('selected-print-count').innerText = checked;
+    const countSpan = document.getElementById('selected-print-count');
+    if(countSpan) countSpan.innerText = checked;
 }
 
 function toggleSelectAllSuspension(master) {
@@ -5387,7 +5439,7 @@ function toggleSelectAllSuspension(master) {
     updatePrintCount();
 }
 
-// 2. ฟังก์ชันสั่งพิมพ์ข้อมูลที่เลือก
+// ฟังก์ชันสั่งพิมพ์ข้อมูลที่เลือก
 function printSelectedNotices() {
     const selectedHouseNos = Array.from(document.querySelectorAll('input[name="suspend-check"]:checked')).map(cb => cb.value);
     
@@ -5396,15 +5448,13 @@ function printSelectedNotices() {
         return;
     }
 
-    const selectedData = allUsers.filter(u => selectedHouseNos.includes(u.houseNo));
+    const selectedData = window.globalUsersList.filter(u => selectedHouseNos.includes(u.houseNo));
     
-    // ส่งข้อมูลไปสร้างหนังสืองดจ่ายน้ำ (เรียกใช้ฟังก์ชันเดิมที่เราเตรียมไว้)
-    // ในที่นี้คือวนลูปสั่งพิมพ์ทีละใบ หรือสร้างไฟล์ PDF รวม
     if (typeof prepareAndPrintNotice === 'function') {
         prepareAndPrintNotice(selectedData);
     } else {
-        console.log("ฟังก์ชันพิมพ์ยังไม่ได้ติดตั้ง:", selectedData);
-        showToast("เตรียมระบบพิมพ์สี่สี...", "info");
+        showToast("กำลังเตรียมเข้าสู่ระบบสั่งพิมพ์...", "info");
+        console.log("รายชื่อที่เตรียมพิมพ์:", selectedData);
     }
 }
     
