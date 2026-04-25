@@ -5345,14 +5345,14 @@ function openSuspensionModal() {
     window.globalUsersList.forEach(u => {
         let overdueMonthsCount = 0;
         let totalOverdueAmount = 0;
-        let actualOverdueBills = []; // 🌟 ตัวแปรเก็บรายการบิลที่ค้างจริงๆ
+        let actualOverdueBills = []; 
         
         if (u.overdueList && u.overdueList.length > 0) {
             u.overdueList.forEach(bill => {
                 if (bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2) {
                     overdueMonthsCount++;
                     totalOverdueAmount += Number(bill.amount);
-                    actualOverdueBills.push(bill); // 🌟 เก็บข้อมูลบิลเข้า array
+                    actualOverdueBills.push(bill); 
                 }
             });
         }
@@ -5362,10 +5362,13 @@ function openSuspensionModal() {
                 ...u, 
                 computedOverdueCount: overdueMonthsCount,
                 computedTotalDebt: totalOverdueAmount,
-                actualOverdueBills: actualOverdueBills // 🌟 แนบรายการบิลไปด้วย
+                actualOverdueBills: actualOverdueBills 
             });
         }
     });
+
+    // 🌟 [จุดที่แก้] บันทึกข้อมูลที่ "คำนวณแล้ว" ไว้ในตัวแปรกลาง เพื่อให้ตอนพิมพ์ดึงไปใช้ได้ถูกต้อง
+    window.currentSuspensionUsers = targetUsers; 
 
     listBody.innerHTML = '';
     
@@ -5373,11 +5376,9 @@ function openSuspensionModal() {
         listBody.innerHTML = '<div class="text-center py-20 text-slate-400">ไม่พบรายชื่อที่ตรงตามเงื่อนไข</div>';
     } else {
         targetUsers.forEach(u => {
-            // 🌟 1. สร้าง HTML สำหรับรายละเอียดบิลย่อยแต่ละเดือน
             let breakdownHtml = '<div class="mt-2.5 space-y-1.5 border-t border-slate-100 pt-3">';
             
             u.actualOverdueBills.forEach(bill => {
-                // จัดรูปแบบชื่อเดือน (ใช้ฟังก์ชันเดิมในระบบถ้ามี)
                 let displayMonth = typeof formatThaiMonth === 'function' ? formatThaiMonth(bill.month) : bill.month;
                 let prevM = bill.prevMeter !== undefined ? bill.prevMeter : (bill.oldUnit || '-');
                 let currM = bill.currMeter !== undefined ? bill.currMeter : (bill.meter || '-');
@@ -5401,7 +5402,6 @@ function openSuspensionModal() {
             });
             breakdownHtml += '</div>';
 
-            // 🌟 2. นำรายละเอียดบิลย่อยไปยัดใส่ในการ์ดของบ้านแต่ละหลัง
             const rowHtml = `
                 <label class="flex items-start gap-3 sm:gap-4 p-4 bg-slate-50/50 rounded-[1.5rem] border border-slate-200 shadow-sm hover:border-rose-300 hover:bg-rose-50/30 transition-all cursor-pointer group mb-3 relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-1.5 h-full bg-rose-500"></div>
@@ -5427,9 +5427,7 @@ function openSuspensionModal() {
                             <span class="text-xs font-bold text-slate-600">รวมค้างชำระทั้งสิ้น</span>
                             <span class="font-black text-rose-600 text-base">${u.computedTotalDebt.toLocaleString()} <span class="text-[10px] text-rose-400 font-normal">บาท</span></span>
                         </div>
-
                         ${breakdownHtml}
-
                     </div>
                 </label>
             `;
@@ -5477,13 +5475,13 @@ function printSelectedNotices() {
         return;
     }
 
-    const selectedData = window.globalUsersList.filter(u => selectedHouseNos.includes(u.houseNo));
+    // 🌟 [จุดที่แก้] ดึงข้อมูลจาก window.currentSuspensionUsers ที่ถูกคำนวณไว้แล้ว แทนการใช้ข้อมูลดิบ
+    const selectedData = window.currentSuspensionUsers.filter(u => selectedHouseNos.includes(u.houseNo));
     
     if (typeof prepareAndPrintNotice === 'function') {
-        prepareAndPrintNotice(selectedData);
+        prepareAndPrintNotice(selectedData); // โยนข้อมูลที่สมบูรณ์ไปให้ฟังก์ชันพิมพ์
     } else {
-        showToast("กำลังเตรียมเข้าสู่ระบบสั่งพิมพ์...", "info");
-        console.log("รายชื่อที่เตรียมพิมพ์:", selectedData);
+        showToast("ไม่พบระบบสั่งพิมพ์ กรุณาตรวจสอบโค้ด", "error");
     }
 }
 
