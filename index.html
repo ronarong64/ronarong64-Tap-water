@@ -5320,86 +5320,116 @@ function closeCustomAlert() {
     }
 
     // ==========================================
-// 🔴 ฟังก์ชันเปิดหน้าต่างรายชื่อผู้ค้างชำระ (อัปเดตใหม่ให้ตรงกับระบบของคุณ)
+// 🔴 ฟังก์ชันเปิดหน้าต่างรายชื่อผู้ค้างชำระ (พร้อมรายละเอียดบิลย่อย)
 // ==========================================
 function openSuspensionModal() {
     const modal = document.getElementById('suspension-modal');
-    const box = modal.querySelector('.bg-white'); // หากล่องด้านในเพื่อทำแอนิเมชัน
+    const box = modal.querySelector('.bg-white'); 
     const listBody = document.getElementById('suspension-list-body');
     
-    // ดึงเกณฑ์ค้างชำระจากหน้าตั้งค่า (หรือให้เป็น 1 ค่าเริ่มต้น)
     const limitInput = document.getElementById('set-max-overdue');
     const limit = limitInput && limitInput.value ? parseInt(limitInput.value) : 1;
 
-    // 🌟 ดึงข้อมูลจากตัวแปรที่คุณมีอยู่แล้ว (globalUsersList)
     if (!window.globalUsersList) {
         showToast("ข้อมูลยังโหลดไม่เสร็จ กรุณารอสักครู่", "warning");
         return;
     }
 
-    // หาวันที่ปัจจุบันเพื่อกรองบิลของ "เดือนปัจจุบัน" ออกไป
     const now = new Date();
     const currentM = now.getMonth() + 1;
     const currentY = now.getFullYear() + 543;
     const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
     const currentMonthStr2 = `${currentM}/${currentY}`;
 
-    // กรองรายชื่อเฉพาะคนที่ค้างเกินเกณฑ์
     const targetUsers = [];
     window.globalUsersList.forEach(u => {
         let overdueMonthsCount = 0;
         let totalOverdueAmount = 0;
+        let actualOverdueBills = []; // 🌟 ตัวแปรเก็บรายการบิลที่ค้างจริงๆ
         
         if (u.overdueList && u.overdueList.length > 0) {
-            // นับและรวมยอดเงินเฉพาะบิลเก่า
             u.overdueList.forEach(bill => {
                 if (bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2) {
                     overdueMonthsCount++;
                     totalOverdueAmount += Number(bill.amount);
+                    actualOverdueBills.push(bill); // 🌟 เก็บข้อมูลบิลเข้า array
                 }
             });
         }
         
-        // ถ้าค้างเกินเกณฑ์ ให้เพิ่มเข้าในรายการเตรียมงดจ่ายน้ำ
         if (overdueMonthsCount >= limit && overdueMonthsCount > 0) {
             targetUsers.push({ 
                 ...u, 
                 computedOverdueCount: overdueMonthsCount,
-                computedTotalDebt: totalOverdueAmount
+                computedTotalDebt: totalOverdueAmount,
+                actualOverdueBills: actualOverdueBills // 🌟 แนบรายการบิลไปด้วย
             });
         }
     });
 
-    // ล้างข้อมูลเก่าออก
     listBody.innerHTML = '';
     
-    // วาดข้อมูลลงในหน้าต่าง
     if (targetUsers.length === 0) {
         listBody.innerHTML = '<div class="text-center py-20 text-slate-400">ไม่พบรายชื่อที่ตรงตามเงื่อนไข</div>';
     } else {
         targetUsers.forEach(u => {
-            const pricePerUnit = u.price || (document.getElementById('set-price') ? document.getElementById('set-price').value : 0);
+            // 🌟 1. สร้าง HTML สำหรับรายละเอียดบิลย่อยแต่ละเดือน
+            let breakdownHtml = '<div class="mt-2.5 space-y-1.5 border-t border-slate-100 pt-3">';
             
+            u.actualOverdueBills.forEach(bill => {
+                // จัดรูปแบบชื่อเดือน (ใช้ฟังก์ชันเดิมในระบบถ้ามี)
+                let displayMonth = typeof formatThaiMonth === 'function' ? formatThaiMonth(bill.month) : bill.month;
+                let prevM = bill.prevMeter !== undefined ? bill.prevMeter : (bill.oldUnit || '-');
+                let currM = bill.currMeter !== undefined ? bill.currMeter : (bill.meter || '-');
+                
+                breakdownHtml += `
+                    <div class="flex flex-wrap sm:flex-nowrap justify-between items-center text-[11px] bg-white p-2.5 rounded-lg border border-rose-100/50 shadow-sm gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 shrink-0"><i class="far fa-calendar-alt mr-1"></i>${displayMonth}</span>
+                            <span class="text-slate-500 font-mono text-[10px] bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 shrink-0">
+                                มิเตอร์: <span class="font-bold">${prevM}</span> <i class="fas fa-caret-right text-slate-300 mx-0.5"></i> <span class="font-bold">${currM}</span>
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-3 text-right w-full sm:w-auto justify-between sm:justify-end border-t sm:border-none border-slate-50 pt-1.5 sm:pt-0">
+                            <span class="text-slate-500 font-medium">
+                                <span class="text-blue-500 font-bold">${bill.usage}</span> <span class="text-[9px]">หน่วย x</span> ${bill.price} <span class="text-[9px]">บ.</span>
+                            </span>
+                            <span class="font-bold text-slate-700 text-[12px] w-14 text-right">${Number(bill.amount).toLocaleString()} บ.</span>
+                        </div>
+                    </div>
+                `;
+            });
+            breakdownHtml += '</div>';
+
+            // 🌟 2. นำรายละเอียดบิลย่อยไปยัดใส่ในการ์ดของบ้านแต่ละหลัง
             const rowHtml = `
-                <label class="flex items-start gap-4 p-4 bg-white rounded-3xl border border-slate-100 shadow-sm hover:border-rose-300 transition-all cursor-pointer group mb-3">
-                    <div class="mt-1">
+                <label class="flex items-start gap-3 sm:gap-4 p-4 bg-slate-50/50 rounded-[1.5rem] border border-slate-200 shadow-sm hover:border-rose-300 hover:bg-rose-50/30 transition-all cursor-pointer group mb-3 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1.5 h-full bg-rose-500"></div>
+                    <div class="mt-1 pl-2">
                         <input type="checkbox" name="suspend-check" value="${u.houseNo}" checked 
                                onchange="updatePrintCount()"
-                               class="w-6 h-6 rounded-lg border-slate-300 text-rose-600 focus:ring-rose-500">
+                               class="w-6 h-6 rounded-md border-slate-300 text-rose-600 focus:ring-rose-500 transition-all hover:scale-110">
                     </div>
-                    <div class="flex-1">
-                        <div class="flex justify-between items-start mb-1">
-                            <span class="font-bold text-slate-800 text-lg">บ้านเลขที่ ${u.houseNo}</span>
-                            <span class="bg-rose-100 text-rose-600 text-[10px] font-bold px-2 py-1 rounded-full">ค้าง ${u.computedOverdueCount} เดือน</span>
-                        </div>
-                        <p class="text-sm text-slate-600 mb-2 font-medium">${u.name || "ไม่ระบุชื่อ"}</p>
-                        <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 p-2 rounded-xl border border-slate-100">
-                            <div class="text-slate-500">เลขมิเตอร์ล่าสุด: <span class="text-slate-800 font-bold">${u.prevUnit || 0}</span></div>
-                            <div class="text-slate-500 text-right">ราคา/หน่วย: <span class="text-slate-800 font-bold">${pricePerUnit} บ.</span></div>
-                            <div class="col-span-2 text-rose-600 font-bold border-t border-slate-200 pt-1 mt-1 text-right text-sm">
-                                รวมค้างชำระ: ${u.computedTotalDebt.toLocaleString()} บาท
+                    <div class="flex-1 min-w-0 pr-1">
+                        <div class="flex justify-between items-start mb-0.5">
+                            <div class="flex items-center gap-2">
+                                <span class="font-black text-slate-800 text-lg">บ้านเลขที่ ${u.houseNo}</span>
                             </div>
+                            <span class="bg-rose-100 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-md border border-rose-200 shadow-sm whitespace-nowrap">
+                                ค้าง ${u.computedOverdueCount} เดือน
+                            </span>
                         </div>
+                        <p class="text-xs text-slate-500 mb-2 font-medium flex items-center gap-1.5">
+                            <i class="fas fa-user-circle text-slate-400"></i> ${u.name || "ไม่ระบุชื่อ"}
+                        </p>
+                        
+                        <div class="flex justify-between items-end bg-white p-2 rounded-xl border border-slate-100 shadow-sm mt-2 mb-1">
+                            <span class="text-xs font-bold text-slate-600">รวมค้างชำระทั้งสิ้น</span>
+                            <span class="font-black text-rose-600 text-base">${u.computedTotalDebt.toLocaleString()} <span class="text-[10px] text-rose-400 font-normal">บาท</span></span>
+                        </div>
+
+                        ${breakdownHtml}
+
                     </div>
                 </label>
             `;
@@ -5407,7 +5437,6 @@ function openSuspensionModal() {
         });
     }
 
-    // แสดงหน้าต่าง
     modal.classList.remove('hidden');
     setTimeout(() => {
         modal.classList.remove('opacity-0');
