@@ -5486,6 +5486,172 @@ function printSelectedNotices() {
         console.log("รายชื่อที่เตรียมพิมพ์:", selectedData);
     }
 }
+
+// ==========================================
+// 🖨️ ฟังก์ชันสร้างหน้ากระดาษและสั่งพิมพ์ใบแจ้งเตือน
+// ==========================================
+function prepareAndPrintNotice(selectedData) {
+    if (!selectedData || selectedData.length === 0) return;
+
+    // วันที่ออกหนังสือ
+    const today = new Date().toLocaleDateString('th-TH', { 
+        day: 'numeric', month: 'long', year: 'numeric' 
+    });
+
+    // โครงสร้างหลักของหน้าพิมพ์ (ใช้ฟอนต์ สารบรรณ เพื่อความเป็นทางการ)
+    let printHtml = `
+    <!DOCTYPE html>
+    <html lang="th">
+    <head>
+        <meta charset="UTF-8">
+        <title>พิมพ์ใบแจ้งเตือนงดจ่ายน้ำ</title>
+        <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+        <style>
+            body { 
+                font-family: 'Sarabun', sans-serif; 
+                margin: 0; padding: 0; background-color: #525659; 
+            }
+            /* จำลองหน้ากระดาษ A4 */
+            .a4-page { 
+                width: 210mm; min-height: 297mm; 
+                padding: 25mm 20mm; margin: 10mm auto; 
+                background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+                box-sizing: border-box; position: relative;
+                color: #000; line-height: 1.6; font-size: 16pt;
+            }
+            .header-title { text-align: center; font-size: 24pt; font-weight: bold; margin-bottom: 5mm; }
+            .sub-title { text-align: center; font-size: 18pt; margin-bottom: 10mm; }
+            .date-right { text-align: right; margin-bottom: 10mm; padding-right: 10mm; }
+            .content-indent { text-indent: 20mm; margin-bottom: 5mm; text-align: justify; }
+            
+            /* ตารางแจกแจงบิล */
+            table { width: 100%; border-collapse: collapse; margin: 10mm 0; font-size: 14pt; }
+            th, td { border: 1px solid #000; padding: 8px 12px; text-align: center; }
+            th { background-color: #f2f2f2; font-weight: bold; }
+            .text-right { text-align: right; }
+            .text-left { text-align: left; }
+            
+            .signature-box { margin-top: 20mm; width: 80mm; float: right; text-align: center; }
+            
+            /* เมื่อสั่งพิมพ์จริง ให้ซ่อนพื้นหลังและจัดหน้าใหม่ */
+            @media print {
+                body { background: white; margin: 0; }
+                .a4-page { 
+                    margin: 0; border: none; box-shadow: none; 
+                    page-break-after: always; /* 🌟 ตัดหน้ากระดาษอัตโนมัติ */
+                }
+                .a4-page:last-child { page-break-after: auto; }
+            }
+        </style>
+    </head>
+    <body>
+    `;
+
+    // วนลูปสร้างหน้ากระดาษตามจำนวนบ้านที่เลือก
+    selectedData.forEach(user => {
+        
+        // 🌟 สร้างแถวตารางแจกแจงบิลที่ค้าง
+        let tableRows = '';
+        if (user.actualOverdueBills && user.actualOverdueBills.length > 0) {
+            user.actualOverdueBills.forEach((bill, index) => {
+                let displayMonth = typeof formatThaiMonth === 'function' ? formatThaiMonth(bill.month) : bill.month;
+                let prevM = bill.prevMeter !== undefined ? bill.prevMeter : (bill.oldUnit || '-');
+                let currM = bill.currMeter !== undefined ? bill.currMeter : (bill.meter || '-');
+                let usage = bill.usage || 0;
+                let amount = Number(bill.amount || 0).toLocaleString();
+                
+                tableRows += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td class="text-left">${displayMonth}</td>
+                        <td>${prevM}</td>
+                        <td>${currM}</td>
+                        <td>${usage}</td>
+                        <td class="text-right">${amount}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // นำข้อมูลประกอบเข้ากับหน้ากระดาษ A4 1 หน้า
+        printHtml += `
+        <div class="a4-page">
+            <div class="header-title">หนังสืองดจ่ายน้ำประปา</div>
+            <div class="sub-title">คณะกรรมการน้ำประปาหมู่บ้าน บ้านหนองบัว หมู่ที่ 2</div>
+            
+            <div class="date-right">
+                วันที่ ${today}
+            </div>
+            
+            <div><strong>เรื่อง:</strong> ขอแจ้งเตือนและเตรียมระงับการจ่ายน้ำประปาชั่วคราว</div>
+            <div style="margin-bottom: 5mm;"><strong>เรียน:</strong> คุณ ${user.name || "ผู้ใช้น้ำ"} (บ้านเลขที่ ${user.houseNo})</div>
+            
+            <div class="content-indent">
+                ตามที่ท่านได้ใช้บริการน้ำประปาของหมู่บ้าน และพบว่ามีรายการค้างชำระเงินค่าน้ำประปาต่อเนื่องเป็นจำนวน 
+                <strong>${user.computedOverdueCount} เดือน</strong> รวมเป็นยอดเงินค้างชำระทั้งสิ้น <strong>${Number(user.computedTotalDebt).toLocaleString()} บาท</strong> ซึ่งเกินกำหนดระยะเวลาตามระเบียบของคณะกรรมการน้ำประปาหมู่บ้าน โดยมีรายละเอียดดังนี้
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th width="10%">ลำดับ</th>
+                        <th width="30%">ประจำเดือน</th>
+                        <th width="15%">เลขเดิม</th>
+                        <th width="15%">เลขใหม่</th>
+                        <th width="15%">จำนวนหน่วย</th>
+                        <th width="15%">จำนวนเงิน (บาท)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="5" class="text-right">รวมยอดค้างชำระทั้งสิ้น</th>
+                        <th class="text-right">${Number(user.computedTotalDebt).toLocaleString()}</th>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="content-indent">
+                คณะกรรมการฯ จึงขอความร่วมมือให้ท่านดำเนินการติดต่อชำระยอดค้างดังกล่าวให้เสร็จสิ้น <strong>ภายใน 3 วัน</strong> นับจากวันที่ได้รับหนังสือฉบับนี้ หากพ้นกำหนดระยะเวลา คณะกรรมการฯ มีความจำเป็นต้องปฏิบัติตามระเบียบ โดยการ <strong>"งดจ่ายน้ำประปา"</strong> เข้าสู่ที่พักอาศัยของท่านชั่วคราว จนกว่าจะมีการชำระหนี้ทั้งหมด
+            </div>
+            
+            <div class="content-indent" style="margin-top: 5mm;">
+                จึงเรียนมาเพื่อโปรดทราบ และขอขอบคุณที่ให้ความร่วมมือ
+            </div>
+
+            <div class="signature-box">
+                ขอแสดงความนับถือ<br><br><br>
+                (..........................................................)<br>
+                ประธาน/คณะกรรมการน้ำประปาหมู่บ้าน<br>
+                บ้านหนองบัว หมู่ที่ 2
+            </div>
+        </div>
+        `;
+    });
+
+    // ปิดแท็ก HTML
+    printHtml += `
+    </body>
+    </html>
+    `;
+
+    // 🌟 เปิดหน้าต่างใหม่แล้วสั่งพิมพ์
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+        printWindow.document.open();
+        printWindow.document.write(printHtml);
+        printWindow.document.close();
+        
+        // หน่วงเวลาเล็กน้อยเพื่อให้เบราว์เซอร์โหลดฟอนต์ Sarabun ให้เสร็จก่อนสั่งพิมพ์
+        setTimeout(() => {
+            printWindow.print();
+        }, 800);
+    } else {
+        showToast("กรุณาอนุญาตให้ Pop-up ทำงานในเบราว์เซอร์ของคุณ", "error");
+    }
+}
     
   </script>
 
