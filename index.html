@@ -1936,17 +1936,6 @@ function applyRolePermissions() {
     }, 10);
 }
 
-// ==========================================
-// 🖱️ ดักจับการคลิกพื้นที่สีเทาด้านนอกเพื่อปิดฟอร์ม
-// ==========================================
-document.getElementById('user-modal').addEventListener('click', function(event) {
-    // ตรวจสอบว่าจุดที่คลิกคือตัวพื้นหลังสีเทา (user-modal) 
-    // ไม่ใช่การคลิกโดนกล่องสีขาวด้านใน (user-modal-box)
-    if (event.target === this) {
-        closeUserModal(); // เรียกใช้ฟังก์ชันปิดฟอร์ม
-    }
-});
-
 // ฟังก์ชันเปิด-ปิด เมนูย่อยในหน้าตั้งค่า
 function toggleOption(elementId, isChecked) {
     const el = document.getElementById(elementId);
