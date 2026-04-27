@@ -380,7 +380,8 @@
               class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center flex-shrink-0">
               <i class="fas fa-clipboard-list"></i>
             </div>
-            <div class="min-w-0">
+            <div id="card-none" onclick="filterByStatus('none')" class="min-w-0" cursor-pointer transition-all
+              duration-300">
               <p class="text-[11px] text-slate-400 font-medium">ยังไม่จดมิเตอร์</p>
               <div id="dash-count-todo" class="text-lg font-bold text-slate-700 leading-none">0</div>
             </div>
@@ -390,7 +391,8 @@
               class="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center flex-shrink-0">
               <i class="fas fa-clock"></i>
             </div>
-            <div class="min-w-0">
+            <div id="card-waiting" onclick="filterByStatus('waiting')" class="min-w-0" cursor-pointer transition-all
+              duration-300">
               <p class="text-[11px] text-slate-400 font-medium">รอชำระเงิน</p>
               <div id="dash-count-waiting" class="text-lg font-bold text-orange-500 leading-none">0</div>
             </div>
@@ -399,7 +401,8 @@
             <div class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
               <i class="fas fa-check-circle"></i>
             </div>
-            <div class="min-w-0">
+            <div id="card-paid" onclick="filterByStatus('paid')" class="min-w-0" cursor-pointer transition-all
+              duration-300">
               <p class="text-[11px] text-slate-400 font-medium">ชำระเรียบร้อย</p>
               <div id="dash-count-paid" class="text-lg font-bold text-green-600 leading-none">0</div>
             </div>
@@ -408,7 +411,8 @@
             <div class="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0">
               <i class="fas fa-exclamation-circle"></i>
             </div>
-            <div class="min-w-0">
+            <div id="card-overdue" onclick="filterByStatus('overdue')" class="min-w-0" cursor-pointer transition-all
+              duration-300">
               <p class="text-[11px] text-slate-400 font-medium">ค้างชำระ</p>
               <div id="dash-count-overdue" class="text-lg font-bold text-red-500 leading-none">0</div>
             </div>
@@ -1851,25 +1855,84 @@ function applyRolePermissions() {
     }
 }
 
-        // ==========================================
-        // ระบบค้นหา (กรองบ้าน) Real-time
-        // ==========================================
-        function handleSearch(keyword) {
-            const searchText = keyword.trim().toLowerCase();
-            const cards = document.getElementsByClassName('user-card');
-            let visibleCount = 0;
+       // ตัวแปรเก็บสถานะว่าตอนนี้กดกล่องไหนอยู่ (ค่าเริ่มต้นคือ all = แสดงทั้งหมด)
+window.currentStatusFilter = 'all';
 
-            for (let i = 0; i < cards.length; i++) {
-                const card = cards[i];
-                if (card.innerText.toLowerCase().includes(searchText)) {
-                    card.style.display = "flex";
-                    visibleCount++;
-                } else {
-                    card.style.display = "none";
-                }
+// ==========================================
+// 👆 1. ฟังก์ชันเมื่อถูกคลิกจาก 4 กล่องด้านบน
+// ==========================================
+function filterByStatus(status) {
+    // ถัากดซ้ำกล่องเดิม ให้ยกเลิกการกรอง (กลับเป็นแสดงทั้งหมด)
+    if (window.currentStatusFilter === status) {
+        window.currentStatusFilter = 'all';
+    } else {
+        window.currentStatusFilter = status;
+    }
+
+    // จัดการไฮไลท์สีกล่องให้รู้ว่ากำลังกดกล่องไหนอยู่ (ถ้ามี id ตรงกัน)
+    const cardIds = ['none', 'waiting', 'paid', 'overdue'];
+    cardIds.forEach(id => {
+        const card = document.getElementById(`card-${id}`);
+        if (card) {
+            if (window.currentStatusFilter === id) {
+                // เพิ่มกรอบเรืองแสงสีฟ้าและขยายขนาดขึ้นนิดนึง
+                card.classList.add('ring-4', 'ring-blue-400/50', 'scale-[1.02]', 'shadow-lg');
+            } else {
+                card.classList.remove('ring-4', 'ring-blue-400/50', 'scale-[1.02]', 'shadow-lg');
             }
-            document.getElementById('search-count').innerText = visibleCount + " หลัง";
         }
+    });
+
+    // ดึงข้อความในช่องค้นหาเดิมมา เพื่อสั่งกรองพร้อมกัน
+    const searchBox = document.getElementById('search-input');
+    const keyword = searchBox ? searchBox.value : "";
+    handleSearch(keyword); 
+}
+
+// ==========================================
+// 🔍 2. ระบบค้นหาและกรองบ้าน Real-time (อัปเกรด)
+// ==========================================
+function handleSearch(keyword) {
+    const searchText = (keyword || "").trim().toLowerCase();
+    const cards = document.getElementsByClassName('user-card');
+    const statusFilter = window.currentStatusFilter || 'all'; 
+    let visibleCount = 0;
+
+    for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const user = window.globalUsersList[i]; // ดึงข้อมูลสถานะจริงจาก Array
+
+        // เงื่อนไขที่ 1: เช็คว่าข้อความตรงกับที่พิมพ์ค้นหาหรือไม่
+        const isMatchText = card.innerText.toLowerCase().includes(searchText);
+
+        // เงื่อนไขที่ 2: เช็คว่าสถานะตรงกับกล่องที่กดอยู่หรือไม่
+        let isMatchStatus = true;
+        if (user && statusFilter !== 'all') {
+            if (statusFilter === 'none') {
+                isMatchStatus = (user.statusCode === 'none');
+            } else if (statusFilter === 'waiting') {
+                isMatchStatus = (user.statusCode === 'waiting');
+            } else if (statusFilter === 'paid') {
+                isMatchStatus = (user.statusCode === 'paid');
+            } else if (statusFilter === 'overdue') {
+                // ถ้ายอดค้างชำระมากกว่า 0 แปลว่าค้างชำระ
+                isMatchStatus = (parseFloat(user.overdue || 0) > 0); 
+            }
+        }
+
+        // 🌟 แสดงบ้านหลังนี้ ก็ต่อเมื่อ "ตรงกับคำค้นหา" AND "ตรงกับกล่องที่กด"
+        if (isMatchText && isMatchStatus) {
+            card.style.display = "flex"; // (ถ้าหน้าจอผิดเพี้ยน ให้ลองเปลี่ยนเป็น "block")
+            visibleCount++;
+        } else {
+            card.style.display = "none";
+        }
+    }
+    
+    // อัปเดตจำนวนหลังที่ค้นเจอ
+    const countEl = document.getElementById('search-count');
+    if (countEl) countEl.innerText = visibleCount + " หลัง";
+}
 
         // ==========================================
         // ระบบเมนูด้านข้าง (Sidebar Menu)
@@ -5162,38 +5225,39 @@ function closeCustomAlert() {
     </div>
   </div>
 
-  <div id="suspension-modal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300">
-  <div class="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
-    
-    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-rose-50/50">
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-2xl bg-rose-500 flex items-center justify-center shadow-lg shadow-rose-200">
-          <i class="fas fa-file-invoice-dollar text-white text-xl"></i>
+  <div id="suspension-modal"
+    class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300">
+    <div class="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
+
+      <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-rose-50/50">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-rose-500 flex items-center justify-center shadow-lg shadow-rose-200">
+            <i class="fas fa-file-invoice-dollar text-white text-xl"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-800 text-lg">รายชื่อสมาชิกค้างชำระ</h3>
+            <p class="text-xs text-slate-500">เลือกบ้านเลขที่เพื่อสั่งพิมพ์ใบแจ้งเตือน</p>
+          </div>
         </div>
-        <div>
-          <h3 class="font-bold text-slate-800 text-lg">รายชื่อสมาชิกค้างชำระ</h3>
-          <p class="text-xs text-slate-500">เลือกบ้านเลขที่เพื่อสั่งพิมพ์ใบแจ้งเตือน</p>
-        </div>
-      </div>
-      <button onclick="closeSuspensionModal()" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors">
+        <button onclick="closeSuspensionModal()" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors">
         <i class="fas fa-times"></i>
       </button>
-    </div>
-
-    <div id="suspension-list-body" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30">
       </div>
 
-    <div class="p-6 border-t border-slate-100 bg-white flex flex-col sm:flex-row gap-3">
-      <div class="flex-1 flex items-center gap-2 px-2">
-        <input type="checkbox" id="select-all-suspension" onchange="toggleSelectAllSuspension(this)" checked class="w-5 h-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500">
-        <label for="select-all-suspension" class="text-sm font-medium text-slate-600">เลือกทั้งหมด</label>
+      <div id="suspension-list-body" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30">
       </div>
-      <button onclick="printSelectedNotices()" class="flex-[2] py-4 bg-gradient-to-r from-rose-500 to-red-600 text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all">
+
+      <div class="p-6 border-t border-slate-100 bg-white flex flex-col sm:flex-row gap-3">
+        <div class="flex-1 flex items-center gap-2 px-2">
+          <input type="checkbox" id="select-all-suspension" onchange="toggleSelectAllSuspension(this)" checked class="w-5 h-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+          <label for="select-all-suspension" class="text-sm font-medium text-slate-600">เลือกทั้งหมด</label>
+        </div>
+        <button onclick="printSelectedNotices()" class="flex-[2] py-4 bg-gradient-to-r from-rose-500 to-red-600 text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all">
         <i class="fas fa-print"></i> พิมพ์ใบแจ้งเตือน (<span id="selected-print-count">0</span> หลัง)
       </button>
+      </div>
     </div>
   </div>
-</div>
 
   <script>
     // ==========================================
@@ -5650,7 +5714,71 @@ function prepareAndPrintNotice(selectedData) {
         setTimeout(() => { printWindow.print(); }, 800);
     }
 }
+
+// ==========================================
+// 🔍 ระบบกรองข้อมูล (ค้นหา + กดกล่องสถานะ)
+// ==========================================
+window.currentStatusFilter = 'all';
+
+function filterByStatus(status) {
+    // 🌟 ถ้ากดซ้ำกล่องเดิม = ยกเลิกการกรอง (ให้กลับมาแสดงทั้งหมด)
+    if (window.currentStatusFilter === status) {
+        window.currentStatusFilter = 'all';
+    } else {
+        window.currentStatusFilter = status;
+    }
     
+    applyAllFilters();
+}
+
+// ฟังก์ชันหลัก: ทำหน้าที่กรองทั้ง 'สถานะ' และ 'ข้อความค้นหา' ไปพร้อมๆ กัน
+function applyAllFilters() {
+    if (!window.globalUsersList) return;
+
+    let filteredData = window.globalUsersList;
+    const status = window.currentStatusFilter;
+
+    // 1. กรองจากสถานะกล่องที่เลือก
+    if (status === 'none') {
+        filteredData = filteredData.filter(u => u.statusCode === 'none');
+    } else if (status === 'waiting') {
+        filteredData = filteredData.filter(u => u.statusCode === 'waiting');
+    } else if (status === 'paid') {
+        filteredData = filteredData.filter(u => u.statusCode === 'paid');
+    } else if (status === 'overdue') {
+        // กลุ่มค้างชำระ (ดูจากยอด overdue มากกว่า 0)
+        filteredData = filteredData.filter(u => parseFloat(u.overdue || 0) > 0);
+    }
+
+    // 2. กรองจากช่องค้นหา (พิมพ์ชื่อหรือบ้านเลขที่)
+    const searchInput = document.getElementById('search-input');
+    if (searchInput && searchInput.value.trim() !== "") {
+        const query = searchInput.value.trim().toLowerCase();
+        filteredData = filteredData.filter(user => {
+            const name = String(user.name || "").toLowerCase();
+            const houseNo = String(user.houseNo || "").toLowerCase();
+            return name.includes(query) || houseNo.includes(query);
+        });
+    }
+
+    // 3. วาดหน้าจอรายชื่อใหม่เฉพาะคนที่ผ่านเงื่อนไข
+    renderRealData(filteredData);
+
+    // 4. สร้าง Visual Effect (ไฮไลท์กล่องที่ถูกเลือก)
+    const cardIds = ['none', 'waiting', 'paid', 'overdue'];
+    cardIds.forEach(id => {
+        const card = document.getElementById(`card-${id}`);
+        if (card) {
+            if (status === id) {
+                // ขยายกล่องนิดนึงและใส่กรอบสีฟ้าให้รู้ว่ากำลังเลือกอยู่
+                card.classList.add('ring-4', 'ring-blue-400/50', 'scale-[1.02]', 'shadow-lg');
+            } else {
+                card.classList.remove('ring-4', 'ring-blue-400/50', 'scale-[1.02]', 'shadow-lg');
+            }
+        }
+    });
+}
+
   </script>
 
 </body>
