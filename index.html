@@ -4667,46 +4667,55 @@ function renderExpenseListAccordion(id, list) {
 }
 
 // 🔍 2. ฟังก์ชันเปิด Modal ค้างเก่า (รับข้อมูลจากหน้าจอโดยตรง)
-function openReportOverdueCollected() {
-    const modal = document.getElementById('report-overdue-collected-modal');
-    const box = document.getElementById('report-overdue-collected-box');
-    const contentArea = document.getElementById('report-overdue-collected-list');
+// ==========================================
+        function openReportOverdueCollected() {
+            const modal = document.getElementById('report-overdue-collected-modal');
+            const box = document.getElementById('report-overdue-collected-box');
+            const contentArea = document.getElementById('report-overdue-collected-list');
+            
+            // ดึงข้อมูลค้างเก่าจากตัวแปร Global ที่เก็บไว้ตอนโหลดหน้า
+            const dataList = window.currentMonthlyReportData ? window.currentMonthlyReportData.overdue : [];
 
-    const dataList = window.lastOverdueData || [];
+            if (!dataList || dataList.length === 0) {
+                contentArea.innerHTML = '<div class="text-center text-slate-400 py-6 text-xs border border-dashed border-slate-200 rounded-xl bg-white">ไม่มีรายการเก็บยอดค้างเก่า</div>';
+            } else {
+                let html = '<div class="space-y-3">';
+                dataList.forEach(item => {
+                    let icon = item.isTransfer ? "fa-university text-blue-500 bg-blue-50" : "fa-hand-holding-usd text-emerald-500 bg-emerald-50";
+                    
+                    // 🌟 แปลงรูปแบบเดือน "03/2569" เป็น "มี.ค. / 2569"
+                    let displayMonth = typeof formatThaiMonth === 'function' ? formatThaiMonth(item.month) : item.month;
+                    // ป้องกันกรณีไม่มีชื่อคนเก็บ
+                    let collectorName = item.collector || "ไม่ระบุชื่อ";
 
-    if (dataList.length === 0) {
-        contentArea.innerHTML = '<div class="text-center py-10 text-slate-400 border border-dashed border-slate-200 rounded-3xl m-2 bg-white">ไม่มีรายการเก็บยอดค้างเก่า</div>';
-    } else {
-        let html = '<div class="space-y-3">';
-        dataList.forEach(item => {
-            let icon = item.isTransfer ? "fa-university text-blue-500 bg-blue-50" : "fa-hand-holding-usd text-emerald-500 bg-emerald-50";
-
-            html += `
-            <div class="bg-white p-3 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm hover:bg-slate-50 transition">
-                <div class="flex items-start gap-3">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner mt-0.5 ${icon}">
-                        <i class="fas ${item.isTransfer ? 'fa-university' : 'fa-hand-holding-usd'}"></i>
-                    </div>
-                    <div>
-                        <div class="font-bold text-slate-700 text-[13px]">${item.houseNo} - ${item.name}</div>
-                        <div class="text-[11px] text-slate-500 mt-1">
-                            <div>บิล: <span class="text-rose-500 font-bold">${item.month}</span></div>
-                            <div class="mt-0.5">รับเงิน : ${item.collector}</div>
+                    html += `
+                    <div class="bg-white p-3 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm hover:bg-slate-50 transition">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner mt-0.5 ${icon}">
+                                <i class="fas ${item.isTransfer ? 'fa-university' : 'fa-hand-holding-usd'}"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-700 text-[13px]">${item.houseNo} - ${item.name}</div>
+                                <div class="text-[11px] text-slate-500 mt-1">
+                                    <div>บิล: <span class="text-rose-500 font-bold">${displayMonth}</span></div>
+                                    <div class="mt-0.5">รับเงิน : ${collectorName}</div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div class="font-black text-slate-700 text-sm bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 shrink-0">${item.amount.toLocaleString()} บ.</div>
-            </div>`;
-        });
-        contentArea.innerHTML = html + '</div>';
-    }
+                        <div class="font-black text-slate-700 text-sm bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 shrink-0">
+                            ${Number(item.amount).toLocaleString()} บ.
+                        </div>
+                    </div>`;
+                });
+                contentArea.innerHTML = html + '</div>';
+            }
 
-    modal.classList.remove('hidden');
-    setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        if(box) box.classList.remove('scale-95');
-    }, 10);
-}
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                if(box) box.classList.remove('scale-95');
+            }, 10);
+        }
 
 // ❌ 2. ฟังก์ชันปิด Modal (ป้องกันหน้าจอค้าง)
 function closeReportOverdueCollected() {
