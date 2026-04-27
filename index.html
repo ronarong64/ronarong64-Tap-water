@@ -2548,104 +2548,126 @@ function toggleOption(elementId, isChecked) {
         }
 
         // ==========================================
-// บันทึกข้อมูลบิล (ปรับปรุง: บังคับคอลัมน์ O เป็น 0 หากสถานะคือ รอชำระ)
-// ==========================================
-async function saveBillingData(status) {
-    const currUnitInput = document.getElementById('bill-curr-unit').value;
-    if (!currUnitInput) { showToast("กรุณากรอกเลขมิเตอร์ด้วย", "warning"); return; }
-    const currUnit = parseInt(currUnitInput);
+        // บันทึกข้อมูลบิล (ปรับปรุง: บังคับคอลัมน์ O เป็น 0 หากสถานะคือ รอชำระ)
+        // ==========================================
+        async function saveBillingData(status) {
+            const currUnit = document.getElementById('bill-curr-unit').value;
+            if (!currUnit) { showToast("กรุณากรอกเลขมิเตอร์ด้วย", "warning"); return; }
 
-    let loggedInName = localStorage.getItem("username") || "ไม่ระบุชื่อ";
+            let loggedInName = localStorage.getItem("username") || "ไม่ระบุชื่อ";
 
-    // 1. เตรียมข้อมูลรายการเดือนที่ชำระ (เฉพาะเมื่อกด "ชำระเงิน" เท่านั้น)
-    let paidMonthsText = "";
-    let selectedIds = [];
-    let overdueToSave = 0;
+            // 🌟 1. จัดการข้อมูลยอดค้างชำระตามสถานะที่กด
+            let paidMonthsText = "";
+            let overdueToSave = 0;
+            let selectedIds = [];
 
-    if (status === 'Paid') {
-        // ถ้ากด "ชำระเงิน" ให้ดึงค่าที่เลือกจาก UI มาบันทึก
-        if (currentBillState.selectedOverdueIds && currentBillState.selectedOverdueIds.length > 0) {
-            const selectedBills = currentBillState.overdueDetails.filter(b => 
-                currentBillState.selectedOverdueIds.includes(b.billingId)
-            );
-            paidMonthsText = selectedBills.map(b => `${formatThaiMonth(b.month)}|${b.amount}`).join(',');
-            selectedIds = currentBillState.selectedOverdueIds;
-            overdueToSave = currentBillState.selectedOverdueAmount;
-        }
-    } else {
-        // 🎯 [จุดสำคัญ] ถ้ากด "รอชำระ" บังคับให้เป็น 0 ทั้งหมดเพื่อไม่ให้หักหนี้เก่าใน Sheet
-        paidMonthsText = "";
-        selectedIds = [];
-        overdueToSave = 0;
-    }
-
-    const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(currentBillState.houseNo).trim());
-    
-    // คำนวณยอดค้างคงเหลือสำหรับส่ง LINE (ถ้า 'Paid' ยอดจะลดลงตามที่จ่ายจริง)
-    const remainingOverdueAmount = user ? (status === 'Paid' ? (user.overdue - overdueToSave) : user.overdue) : 0;
-
-    const payload = {
-        action: "saveBilling",
-        billingId: currentBillState.billingId || "", 
-        houseNo: currentBillState.houseNo,
-        prevUnit: currentBillState.prevUnit,
-        currUnit: currUnit,                
-        usage: currUnit - currentBillState.prevUnit + (currentBillState.cmUsage || 0),
-        cmUsage: currentBillState.cmUsage || 0, 
-        pricePerUnit: parseFloat(document.getElementById('calc-price').innerText) || 0,
-        currentAmount: parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, '')) || 0,
-        
-        // 🌟 ส่งค่า 0 ไปยังคอลัมน์ O เมื่อสถานะคือ Waiting
-        overdueAmount: overdueToSave, 
-        
-        payOverdueIds: selectedIds,
-        paidMonthsText: paidMonthsText, 
-        remainingOverdue: remainingOverdueAmount,
-        remainingOverdueText: "", 
-        grandTotal: parseFloat(document.getElementById('calc-total').innerText.replace(/,/g, '')) || 0,
-        status: status,
-        collector: loggedInName, 
-        paymentMethod: status === 'Paid' ? 'เงินสด' : ''
-    };
-
-    const btn = status === 'Waiting' ? document.getElementById('btn-save-waiting') : document.getElementById('btn-save-paid');
-    const oldText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...`;
-
-    try {
-        const response = await fetch(API_URL, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload) 
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-            showToast(status === 'Paid' ? "รับชำระเงินสำเร็จ!" : "บันทึกบิลสำเร็จ!", "success");
-            
-            // 🔄 อัปเดตข้อมูลหน้าจอหลักทันที
-            if (typeof loadDashboardData === "function") {
-                loadDashboardData(); 
-            }
-
-            closeBillingModal();
-
-            // ถ้าชำระเงินแล้ว ให้โชว์หน้าใบเสร็จ
             if (status === 'Paid') {
-                payload.paidDate = result.paidDate;
-                setTimeout(() => { showReceiptModal(payload); }, 400);
+                // ถ้ากด "ชำระเงิน" ให้ดึงยอดค้างที่เลือกมาบันทึกจริง
+                selectedIds = currentBillState.selectedOverdueIds || [];
+                if (selectedIds.length > 0) {
+                    const selectedBills = currentBillState.overdueDetails.filter(b => 
+                        selectedIds.includes(b.billingId)
+                    );
+                    paidMonthsText = selectedBills.map(b => `${formatThaiMonth(b.month)}|${b.amount}`).join(',');
+                }
+                overdueToSave = currentBillState.selectedOverdueAmount;
+            } else {
+                // 🎯 [จุดสำคัญ] ถ้ากด "รอชำระ" บังคับให้ OverdueAmount เป็น 0 เพื่อบันทึกลงคอลัมน์ O
+                overdueToSave = 0;
+                paidMonthsText = "";
+                selectedIds = [];
             }
-        } else {
-            showToast(result.message, "error");
+
+            const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(currentBillState.houseNo).trim());
+            const remainingOverdueAmount = user ? (status === 'Paid' ? (user.overdue - overdueToSave) : user.overdue) : 0;
+
+            const payload = {
+                action: "saveBilling",
+                billingId: currentBillState.billingId || "", 
+                houseNo: currentBillState.houseNo,
+                prevUnit: currentBillState.prevUnit,
+                currUnit: currUnit,                
+                usage: parseInt(currUnit) - currentBillState.prevUnit + (currentBillState.cmUsage || 0),
+                cmUsage: currentBillState.cmUsage || 0, 
+                pricePerUnit: parseFloat(document.getElementById('calc-price').innerText) || 0,
+                currentAmount: parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, '')) || 0,
+                
+                // 🌟 บันทึก 0 หรือยอดจริงลงคอลัมน์ O ตามเงื่อนไขด้านบน
+                overdueAmount: overdueToSave, 
+                
+                payOverdueIds: selectedIds,
+                paidMonthsText: paidMonthsText, 
+                remainingOverdue: remainingOverdueAmount,
+                remainingOverdueText: "", 
+                grandTotal: parseFloat(document.getElementById('calc-total').innerText.replace(/,/g, '')) || 0,
+                status: status,
+                collector: loggedInName, 
+                paymentMethod: status === 'Paid' ? 'เงินสด' : ''
+            };
+
+            const btn = status === 'Waiting' ? document.getElementById('btn-save-waiting') : document.getElementById('btn-save-paid');
+            const oldText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...`;
+
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(status === 'Paid' ? "รับชำระเงินสำเร็จ!" : "บันทึกบิลสำเร็จ!", "success");
+                    
+                    const userIndex = window.globalUsersList.findIndex(u => String(u.houseNo).trim() === String(currentBillState.houseNo).trim());
+                    if (userIndex !== -1) {
+                        let u = window.globalUsersList[userIndex];
+                        
+                        u.statusCode = status.toLowerCase();
+                        u.oldUnit = u.prevUnit;
+                        u.prevUnit = parseInt(currUnit);
+                        u.usage = parseInt(currUnit) - currentBillState.prevUnit + (currentBillState.cmUsage || 0);
+                        u.cmUsage = status.toLowerCase() === 'paid' ? 0 : (currentBillState.cmUsage || 0);
+                        
+                        u.amount = parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, ''));
+                        if (result.paidDate) u.paidDate = result.paidDate;
+                        if (result.billingId) {
+                            u.billingId = result.billingId;
+                        }
+                        u.collector = loggedInName;
+                        u.paidMonthsText = paidMonthsText;
+                        u.overdueAmount = overdueToSave; // 🌟 อัปเดตยอดที่บันทึก
+                        
+                        // 🎯 จัดการยอดหนี้ค้างในหน่วยความจำ (หักลบเฉพาะเมื่อมีการจ่ายจริง)
+                        if (status.toLowerCase() === 'paid' && selectedIds.length > 0) {
+                            u.overdueList = (u.overdueList || []).filter(bill => !selectedIds.includes(bill.billingId));
+                            u.overdue = u.overdueList.reduce((sum, bill) => sum + Number(bill.amount), 0);
+                        }
+
+                        // 🌟 วาดหน้าจอใหม่ทันทีโดยไม่ต้องโหลด API ทั้งหมด 
+                        window.globalUsersList[userIndex] = u;
+                        renderRealData(window.globalUsersList); 
+                        
+                        // คืนค่าการค้นหาเดิมถ้ามี
+                        const searchBox = document.getElementById('search-input');
+                        if (searchBox && searchBox.value.trim() !== "") {
+                            handleSearch(searchBox.value);
+                        }
+                    }
+
+                    closeBillingModal();
+                    if (status === 'Paid' || status.toLowerCase() === 'paid') {
+                      payload.paidDate = result.paidDate;
+                      setTimeout(() => { showReceiptModal(payload); }, 400);
+                    }
+                } else {
+                    showToast(result.message, "error");
+                }
+            } catch (e) {
+                showToast("ข้อผิดพลาดในการเชื่อมต่อ", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = oldText;
+            }
         }
-    } catch (e) {
-        showToast("ข้อผิดพลาดในการเชื่อมต่อ", "error");
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = oldText;
-    }
-}
 
         function closeBillingModal() {
             const modal = document.getElementById('billing-modal');
