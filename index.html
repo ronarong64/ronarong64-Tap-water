@@ -4672,17 +4672,17 @@ function renderExpenseListAccordion(id, list) {
             const modal = document.getElementById('report-overdue-collected-modal');
             const box = document.getElementById('report-overdue-collected-box');
             const contentArea = document.getElementById('report-overdue-collected-list');
-            
-            // ดึงข้อมูลค้างเก่าจากตัวแปร Global ที่เก็บไว้ตอนโหลดหน้า
-            const dataList = window.currentMonthlyReportData ? window.currentMonthlyReportData.overdue : [];
 
-            if (!dataList || dataList.length === 0) {
-                contentArea.innerHTML = '<div class="text-center text-slate-400 py-6 text-xs border border-dashed border-slate-200 rounded-xl bg-white">ไม่มีรายการเก็บยอดค้างเก่า</div>';
+            // 🌟 แก้ไขให้เรียกใช้ตัวแปร window.lastOverdueData ให้ถูกต้องตรงกับตอนโหลดข้อมูล
+            const dataList = window.lastOverdueData || [];
+
+            if (dataList.length === 0) {
+                contentArea.innerHTML = '<div class="text-center py-10 text-slate-400 border border-dashed border-slate-200 rounded-3xl m-2 bg-white">ไม่มีรายการเก็บยอดค้างเก่า</div>';
             } else {
                 let html = '<div class="space-y-3">';
                 dataList.forEach(item => {
                     let icon = item.isTransfer ? "fa-university text-blue-500 bg-blue-50" : "fa-hand-holding-usd text-emerald-500 bg-emerald-50";
-                    
+
                     // 🌟 แปลงรูปแบบเดือน "03/2569" เป็น "มี.ค. / 2569"
                     let displayMonth = typeof formatThaiMonth === 'function' ? formatThaiMonth(item.month) : item.month;
                     // ป้องกันกรณีไม่มีชื่อคนเก็บ
