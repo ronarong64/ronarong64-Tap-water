@@ -1860,27 +1860,29 @@ function applyRolePermissions() {
     }
 }
 
-       // ตัวแปรเก็บสถานะว่าตอนนี้กดกล่องไหนอยู่ (ค่าเริ่มต้นคือ all = แสดงทั้งหมด)
+       // ==========================================
+// 1. ตัวแปรเก็บสถานะว่ากำลังกดกล่องไหนอยู่
+// ==========================================
 window.currentStatusFilter = 'all';
 
 // ==========================================
-// 👆 1. ฟังก์ชันเมื่อถูกคลิกจาก 4 กล่องด้านบน
+// 2. ฟังก์ชันเมื่อถูกคลิกจาก 4 กล่องด้านบน
 // ==========================================
 function filterByStatus(status) {
-    // ถัากดซ้ำกล่องเดิม ให้ยกเลิกการกรอง (กลับเป็นแสดงทั้งหมด)
+    // ถัากดซ้ำกล่องเดิม ให้ยกเลิกการกรอง (กลับเป็นโชว์ทั้งหมด)
     if (window.currentStatusFilter === status) {
         window.currentStatusFilter = 'all';
     } else {
         window.currentStatusFilter = status;
     }
 
-    // จัดการไฮไลท์สีกล่องให้รู้ว่ากำลังกดกล่องไหนอยู่ (ถ้ามี id ตรงกัน)
+    // จัดการไฮไลท์สีกล่องให้รู้ว่ากำลังเปิดโหมดไหน
     const cardIds = ['none', 'waiting', 'paid', 'overdue'];
     cardIds.forEach(id => {
         const card = document.getElementById(`card-${id}`);
         if (card) {
             if (window.currentStatusFilter === id) {
-                // เพิ่มกรอบเรืองแสงสีฟ้าและขยายขนาดขึ้นนิดนึง
+                // เพิ่มกรอบเรืองแสงให้กล่องที่ถูกเลือก
                 card.classList.add('ring-4', 'ring-blue-400/50', 'scale-[1.02]', 'shadow-lg');
             } else {
                 card.classList.remove('ring-4', 'ring-blue-400/50', 'scale-[1.02]', 'shadow-lg');
@@ -1888,14 +1890,14 @@ function filterByStatus(status) {
         }
     });
 
-    // ดึงข้อความในช่องค้นหาเดิมมา เพื่อสั่งกรองพร้อมกัน
+    // ดึงข้อความในช่องค้นหามาช่วยกรอง
     const searchBox = document.getElementById('search-input');
     const keyword = searchBox ? searchBox.value : "";
     handleSearch(keyword); 
 }
 
 // ==========================================
-// 🔍 2. ระบบค้นหาและกรองบ้าน Real-time (อัปเกรด)
+// 3. ระบบซ่อน/โชว์ การ์ดบ้าน (ทำงานร่วมกันทั้งช่องค้นหาและกล่อง)
 // ==========================================
 function handleSearch(keyword) {
     const searchText = (keyword || "").trim().toLowerCase();
@@ -1903,41 +1905,52 @@ function handleSearch(keyword) {
     const statusFilter = window.currentStatusFilter || 'all'; 
     let visibleCount = 0;
 
+    // เช็คการ์ดทีละใบ
     for (let i = 0; i < cards.length; i++) {
         const card = cards[i];
-        const user = window.globalUsersList[i]; // ดึงข้อมูลสถานะจริงจาก Array
+        
+        // เราจะเช็คสถานะจาก "ข้อความ" ที่ปรากฏในการ์ดแต่ละใบโดยตรง (แม่นยำ 100%)
+        const cardText = card.innerText.toLowerCase();
+        const cardHtml = card.innerHTML.toLowerCase();
+        
+        // เงื่อนไข 1: ตรงกับช่องค้นหาไหม?
+        const isMatchText = cardText.includes(searchText);
 
-        // เงื่อนไขที่ 1: เช็คว่าข้อความตรงกับที่พิมพ์ค้นหาหรือไม่
-        const isMatchText = card.innerText.toLowerCase().includes(searchText);
-
-        // เงื่อนไขที่ 2: เช็คว่าสถานะตรงกับกล่องที่กดอยู่หรือไม่
+        // เงื่อนไข 2: ตรงกับสถานะกล่องที่กดไหม?
         let isMatchStatus = true;
-        if (user && statusFilter !== 'all') {
+        if (statusFilter !== 'all') {
             if (statusFilter === 'none') {
-                isMatchStatus = (user.statusCode === 'none');
+                isMatchStatus = cardHtml.includes('ยังไม่จด') || cardText.includes('ยังไม่จด');
             } else if (statusFilter === 'waiting') {
-                isMatchStatus = (user.statusCode === 'waiting');
+                isMatchStatus = cardHtml.includes('รอชำระ') || cardText.includes('รอชำระ');
             } else if (statusFilter === 'paid') {
-                isMatchStatus = (user.statusCode === 'paid');
+                isMatchStatus = cardHtml.includes('ชำระแล้ว') || cardText.includes('ชำระเรียบร้อย');
             } else if (statusFilter === 'overdue') {
-                // ถ้ายอดค้างชำระมากกว่า 0 แปลว่าค้างชำระ
-                isMatchStatus = (parseFloat(user.overdue || 0) > 0); 
+                // คนค้างชำระ จะมีกรอบสีแดงหรือคำว่าค้างชำระในการ์ด
+                isMatchStatus = cardHtml.includes('ค้างชำระ') || cardText.includes('ค้างชำระ');
             }
         }
 
-        // 🌟 แสดงบ้านหลังนี้ ก็ต่อเมื่อ "ตรงกับคำค้นหา" AND "ตรงกับกล่องที่กด"
+        // 🌟 แสดงบ้านหลังนี้ ก็ต่อเมื่อตรงทั้ง "คำค้นหา" และ "สถานะกล่อง"
         if (isMatchText && isMatchStatus) {
-            card.style.display = "flex"; // (ถ้าหน้าจอผิดเพี้ยน ให้ลองเปลี่ยนเป็น "block")
+            // ป้องกันรูปแบบ flex/block ตีกัน
+            if (card.classList.contains('flex')) {
+                card.style.display = "flex";
+            } else {
+                card.style.display = "block";
+            }
             visibleCount++;
         } else {
             card.style.display = "none";
         }
     }
     
-    // อัปเดตจำนวนหลังที่ค้นเจอ
+    // อัปเดตจำนวนหลังที่ค้นเจอ (ถ้ามี element นี้)
     const countEl = document.getElementById('search-count');
     if (countEl) countEl.innerText = visibleCount + " หลัง";
 }
+
+
 
         // ==========================================
         // ระบบเมนูด้านข้าง (Sidebar Menu)
@@ -5718,70 +5731,6 @@ function prepareAndPrintNotice(selectedData) {
         printWindow.document.close();
         setTimeout(() => { printWindow.print(); }, 800);
     }
-}
-
-// ==========================================
-// 🔍 ระบบกรองข้อมูล (ค้นหา + กดกล่องสถานะ)
-// ==========================================
-window.currentStatusFilter = 'all';
-
-function filterByStatus(status) {
-    // 🌟 ถ้ากดซ้ำกล่องเดิม = ยกเลิกการกรอง (ให้กลับมาแสดงทั้งหมด)
-    if (window.currentStatusFilter === status) {
-        window.currentStatusFilter = 'all';
-    } else {
-        window.currentStatusFilter = status;
-    }
-    
-    applyAllFilters();
-}
-
-// ฟังก์ชันหลัก: ทำหน้าที่กรองทั้ง 'สถานะ' และ 'ข้อความค้นหา' ไปพร้อมๆ กัน
-function applyAllFilters() {
-    if (!window.globalUsersList) return;
-
-    let filteredData = window.globalUsersList;
-    const status = window.currentStatusFilter;
-
-    // 1. กรองจากสถานะกล่องที่เลือก
-    if (status === 'none') {
-        filteredData = filteredData.filter(u => u.statusCode === 'none');
-    } else if (status === 'waiting') {
-        filteredData = filteredData.filter(u => u.statusCode === 'waiting');
-    } else if (status === 'paid') {
-        filteredData = filteredData.filter(u => u.statusCode === 'paid');
-    } else if (status === 'overdue') {
-        // กลุ่มค้างชำระ (ดูจากยอด overdue มากกว่า 0)
-        filteredData = filteredData.filter(u => parseFloat(u.overdue || 0) > 0);
-    }
-
-    // 2. กรองจากช่องค้นหา (พิมพ์ชื่อหรือบ้านเลขที่)
-    const searchInput = document.getElementById('search-input');
-    if (searchInput && searchInput.value.trim() !== "") {
-        const query = searchInput.value.trim().toLowerCase();
-        filteredData = filteredData.filter(user => {
-            const name = String(user.name || "").toLowerCase();
-            const houseNo = String(user.houseNo || "").toLowerCase();
-            return name.includes(query) || houseNo.includes(query);
-        });
-    }
-
-    // 3. วาดหน้าจอรายชื่อใหม่เฉพาะคนที่ผ่านเงื่อนไข
-    renderRealData(filteredData);
-
-    // 4. สร้าง Visual Effect (ไฮไลท์กล่องที่ถูกเลือก)
-    const cardIds = ['none', 'waiting', 'paid', 'overdue'];
-    cardIds.forEach(id => {
-        const card = document.getElementById(`card-${id}`);
-        if (card) {
-            if (status === id) {
-                // ขยายกล่องนิดนึงและใส่กรอบสีฟ้าให้รู้ว่ากำลังเลือกอยู่
-                card.classList.add('ring-4', 'ring-blue-400/50', 'scale-[1.02]', 'shadow-lg');
-            } else {
-                card.classList.remove('ring-4', 'ring-blue-400/50', 'scale-[1.02]', 'shadow-lg');
-            }
-        }
-    });
 }
 
   </script>
