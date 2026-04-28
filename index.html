@@ -2972,65 +2972,39 @@ async function loadFinance(monthStr = null) {
     const container = document.getElementById('finance-history-body');
     if(container) container.innerHTML = `<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-3xl text-teal-500"></i><p class="text-xs text-slate-500 mt-3">กำลังดึงข้อมูล...</p></div>`;
 
-    // 🌟 1. ระบบจัดระเบียบวันที่ (แปลงทุกอย่างให้เป็น "04/2569")
-    let finalMonthStr = "";
+    // 🌟 1. ตรวจสอบและจัดรูปแบบเดือน (ป้องกันปัญหา 4-04 หรือ เม.ย. / 25)
     if (!monthStr) {
         const now = new Date();
         const m = String(now.getMonth() + 1).padStart(2, '0');
         const y = now.getFullYear() + 543;
-        finalMonthStr = `${m}/${y}`;
-    } else {
-        // ถ้ารับมาเป็น "4-04" หรือ "2026-04" ให้แกะตัวเลขออกมาใหม่
-        let str = String(monthStr).replace(/-/g, '/').trim();
-        let parts = str.split('/');
-        
-        if (parts.length >= 2) {
-            let m = parseInt(parts[0], 10);
-            let y = parseInt(parts[1], 10);
-            
-            // สลับตำแหน่งถ้าปีมาก่อน (เช่น 2026/04)
-            if (m > 12) { let temp = m; m = y; y = temp; }
-            // ตรวจสอบปี ถ้าเป็น ค.ศ. ให้แปลงเป็น พ.ศ. (+543)
-            if (y > 1000 && y < 2500) y += 543;
-            // 🛡️ ถ้า Modal ส่งปีพังๆ มา (เช่น 04) ให้ใช้ปีปัจจุบันแทน
-            if (y < 1000) y = new Date().getFullYear() + 543;
-            
-            finalMonthStr = `${String(m).padStart(2, '0')}/${y}`;
-        } else {
-            finalMonthStr = str;
-        }
+        monthStr = `${m}/${y}`; // ค่าเริ่มต้นเป็นเดือนปัจจุบัน เช่น "04/2569"
     }
 
-    // 🌟 2. บังคับอัปเดตหน้าจอให้เป็นภาษาไทยเสมอ
+    // 🌟 2. อัปเดตข้อความบนปุ่มให้เป็น "เม.ย. / 2569" (เรียกใช้ฟังก์ชัน formatThaiMonth)
     const displayEl = document.getElementById('fin-picker-display');
     if (displayEl) {
-        // ใช้ setTimeout หน่วงเวลาเล็กน้อย เพื่อไปทับโค้ด Modal ที่อาจจะเปลี่ยนจอเป็น 4-04
-        setTimeout(() => {
-            const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-            let mNum = parseInt(finalMonthStr.split('/')[0], 10);
-            let yNum = finalMonthStr.split('/')[1];
-            
-            if (mNum >= 1 && mNum <= 12) {
-                displayEl.innerText = `${thaiMonths[mNum - 1]} / ${yNum}`;
-            } else {
-                displayEl.innerText = finalMonthStr;
-            }
-        }, 50);
+        displayEl.innerText = formatThaiMonth(monthStr); 
     }
-
+    
+    // อัปเดตค่าใน Hidden Input เพื่อให้ระบบจำว่าตอนนี้ดูเดือนไหนอยู่
     const inputEl = document.getElementById('fin-month-input');
-    if (inputEl) inputEl.value = finalMonthStr;
+    if (inputEl) {
+        inputEl.value = monthStr;
+    }
 
     // 🌟 3. ดึงข้อมูลจากเซิร์ฟเวอร์
     try {
-        const response = await fetch(API_URL + "?action=getFinanceDashboard&monthStr=" + encodeURIComponent(finalMonthStr));
+        const response = await fetch(API_URL + "?action=getFinanceDashboard&monthStr=" + encodeURIComponent(monthStr));
         const result = await response.json();
 
         if (result.success) {
-            currentFinanceData = result.data;
-            document.getElementById('fin-bank-balance').innerText = Number(result.data.bankBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
-            document.getElementById('fin-cash-balance').innerText = Number(result.data.cashBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+            // อัปเดตยอดเงินคงเหลือบนหน้าจอ
+            if(document.getElementById('fin-bank-balance')) 
+                document.getElementById('fin-bank-balance').innerText = Number(result.data.bankBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+            if(document.getElementById('fin-cash-balance'))
+                document.getElementById('fin-cash-balance').innerText = Number(result.data.cashBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
             
+            // วาดรายการประวัติใหม่
             renderFinanceHistory(result.data.history || []);
         } else {
             showToast(result.message, 'error');
