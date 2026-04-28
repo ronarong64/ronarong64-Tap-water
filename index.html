@@ -991,11 +991,10 @@
               <i class="fas fa-history text-slate-400"></i> ประวัติล่าสุด
             </h3>
 
-            <div
-              class="relative bg-slate-50 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden">
+            <div onclick="openMonthPicker('fin')"
+              class="relative bg-slate-50 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden">
 
-              <input type="month" id="fin-month-input" onchange="changeFinanceMonth(this.value)"
-              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+              <input type="hidden" id="fin-month-input">
 
               <div
                 class="w-7 h-7 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center shadow-sm relative z-0 pointer-events-none">
@@ -2966,33 +2965,33 @@ function toggleOption(elementId, isChecked) {
             if (pageId === 'yearly') { initYearlyPicker(); loadYearlyReport(); }
         }
 
-        // 💰 ระบบการเงิน-ธนาคาร (อัปเดตการแปลงเดือน พ.ศ. / ค.ศ.)
+        // 💰 ระบบการเงิน-ธนาคาร (รองรับ openMonthPicker)
 let currentFinanceData = null;
 
 async function loadFinance(monthStr = null) {
     const container = document.getElementById('finance-history-body');
-    if(container) container.innerHTML = `<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500"></i><p class="text-xs text-slate-500 mt-3">กำลังดึงข้อมูล...</p></div>`;
+    if(container) container.innerHTML = `<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-3xl text-teal-500"></i><p class="text-xs text-slate-500 mt-3">กำลังดึงข้อมูล...</p></div>`;
 
-    // 🌟 ถ้าไม่มีการส่งเดือนมา ให้ดึงเดือนปัจจุบัน
+    // 🌟 ถ้าไม่ได้ส่งเดือนมา ให้ใช้เดือนปัจจุบัน (พ.ศ.)
     if (!monthStr) {
         const now = new Date();
         const m = String(now.getMonth() + 1).padStart(2, '0');
         const y = now.getFullYear() + 543;
-        monthStr = `${m}/${y}`; // จะได้เป็น "04/2569"
-
-        // ตั้งค่าให้ปฏิทินที่ซ่อนอยู่เป็นเดือนปัจจุบัน
-        const inputEl = document.getElementById('fin-month-input');
-        if (inputEl) inputEl.value = `${now.getFullYear()}-${m}`;
+        monthStr = `${m}/${y}`; // จะได้ "04/2569"
     }
 
-    // 🌟 แสดงข้อความเดือนเป็นภาษาไทย เช่น "เม.ย. / 2569"
+    // 🌟 อัปเดตข้อความในปุ่ม และค่าใน Hidden Input
     const displayEl = document.getElementById('fin-picker-display');
     if (displayEl) {
-        displayEl.innerText = formatThaiMonth(monthStr);
+        displayEl.innerText = formatThaiMonth(monthStr); // เช่น "เม.ย. / 2569"
+    }
+    const inputEl = document.getElementById('fin-month-input');
+    if (inputEl) {
+        inputEl.value = monthStr;
     }
 
     try {
-        // ส่งเดือนรูปแบบ "04/2569" ไปยัง GS.gs
+        // ส่งค่าไปดึงข้อมูลจาก GS.gs
         const response = await fetch(API_URL + "?action=getFinanceDashboard&monthStr=" + encodeURIComponent(monthStr));
         const result = await response.json();
 
@@ -3000,6 +2999,8 @@ async function loadFinance(monthStr = null) {
             currentFinanceData = result.data;
             document.getElementById('fin-bank-balance').innerText = Number(result.data.bankBalance || 0).toLocaleString();
             document.getElementById('fin-cash-balance').innerText = Number(result.data.cashBalance || 0).toLocaleString();
+            
+            // วาดประวัติ
             renderFinanceHistory(result.data.history || []);
         } else {
             showToast(result.message, 'error');
