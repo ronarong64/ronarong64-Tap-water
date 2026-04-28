@@ -991,10 +991,11 @@
               <i class="fas fa-history text-slate-400"></i> ประวัติล่าสุด
             </h3>
 
-            <div onclick="openMonthPicker('fin')"
-              class="relative bg-slate-50 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden">
+            <div
+              class="relative bg-slate-50 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 hover:bg-slate-100 active:scale-95 transition shadow-inner overflow-hidden">
 
-              <input type="hidden" id="fin-month-input">
+              <input type="month" id="fin-month-input" onchange="changeFinanceMonth(this.value)"
+              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
 
               <div
                 class="w-7 h-7 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center shadow-sm relative z-0 pointer-events-none">
@@ -2965,137 +2966,140 @@ function toggleOption(elementId, isChecked) {
             if (pageId === 'yearly') { initYearlyPicker(); loadYearlyReport(); }
         }
 
-        // ==========================================
-        // 💰 ระบบการเงิน-ธนาคาร (Finance System)
-        // ==========================================
-        let currentFinanceData = null;
+        // 💰 ระบบการเงิน-ธนาคาร (อัปเดตการแปลงเดือน พ.ศ. / ค.ศ.)
+let currentFinanceData = null;
 
-        async function loadFinance(monthStr = null) {
-            const container = document.getElementById('finance-history-body');
-            if(container) container.innerHTML = `<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500"></i><p class="text-xs text-slate-500 mt-3">กำลังประมวลผลข้อมูล...</p></div>`;
+async function loadFinance(monthStr = null) {
+    const container = document.getElementById('finance-history-body');
+    if(container) container.innerHTML = `<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500"></i><p class="text-xs text-slate-500 mt-3">กำลังดึงข้อมูล...</p></div>`;
 
-            // ถ้าไม่มีเดือนส่งมา ให้ใช้เดือนปัจจุบัน
-            if (!monthStr) {
-                const now = new Date();
-                const m = String(now.getMonth() + 1).padStart(2, '0');
-                const y = now.getFullYear() + 543;
-                monthStr = `${m}/${y}`;
-                
-                // ตั้งค่าหน้าตาปุ่ม
-                document.getElementById('fin-month-input').value = `${now.getFullYear()}-${m}`;
-            }
+    // 🌟 ถ้าไม่มีการส่งเดือนมา ให้ดึงเดือนปัจจุบัน
+    if (!monthStr) {
+        const now = new Date();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const y = now.getFullYear() + 543;
+        monthStr = `${m}/${y}`; // จะได้เป็น "04/2569"
+
+        // ตั้งค่าให้ปฏิทินที่ซ่อนอยู่เป็นเดือนปัจจุบัน
+        const inputEl = document.getElementById('fin-month-input');
+        if (inputEl) inputEl.value = `${now.getFullYear()}-${m}`;
+    }
+
+    // 🌟 แสดงข้อความเดือนเป็นภาษาไทย เช่น "เม.ย. / 2569"
+    const displayEl = document.getElementById('fin-picker-display');
+    if (displayEl) {
+        displayEl.innerText = formatThaiMonth(monthStr);
+    }
+
+    try {
+        // ส่งเดือนรูปแบบ "04/2569" ไปยัง GS.gs
+        const response = await fetch(API_URL + "?action=getFinanceDashboard&monthStr=" + encodeURIComponent(monthStr));
+        const result = await response.json();
+
+        if (result.success) {
+            currentFinanceData = result.data;
+            document.getElementById('fin-bank-balance').innerText = Number(result.data.bankBalance || 0).toLocaleString();
+            document.getElementById('fin-cash-balance').innerText = Number(result.data.cashBalance || 0).toLocaleString();
+            renderFinanceHistory(result.data.history || []);
+        } else {
+            showToast(result.message, 'error');
+        }
+    } catch (e) {
+        showToast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
+    }
+}
+
+// 📅 ฟังก์ชันทำงานเมื่อกดเปลี่ยนเดือนจากปฏิทิน
+function changeFinanceMonth(val) {
+    if (!val) return;
+    // 🌟 แปลงค่าจากระบบ "2026-04" -> ให้กลายเป็น "04/2569"
+    const parts = val.split('-');
+    const m = parts[1];
+    const y = parseInt(parts[0]) + 543; 
+    
+    const monthStr = `${m}/${y}`; // ได้รูปแบบที่ระบบหลังบ้านเข้าใจ
+    loadFinance(monthStr);
+}
+
+        // 🎨 ฟังก์ชันวาดประวัติการเงิน (แสดงเดือนย่อภาษาไทย)
+function renderFinanceHistory(history) {
+    const b = document.getElementById('finance-history-body');
+    if (!history || history.length === 0) {
+        b.innerHTML = '<div class="text-center py-8 text-slate-400"><div class="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-folder-open text-2xl text-slate-300"></i></div><p class="text-sm font-bold text-slate-500">ไม่มีรายการประวัติในเดือนนี้</p></div>';
+        return;
+    }
+
+    let fullHtml = '';
+    const MAX_ITEMS = 30;
+    const historyToShow = history.slice(0, MAX_ITEMS);
+
+    if (history.length > MAX_ITEMS) {
+        fullHtml += `<div class="text-center text-[10px] text-slate-400 mb-3 font-medium bg-slate-50 py-1.5 rounded-lg border border-slate-100">แสดง <span class="text-indigo-500 font-bold">${MAX_ITEMS}</span> รายการล่าสุด</div>`;
+    }
+
+    historyToShow.forEach(h => {
+        let rawDate = h.date || '-';
+        let pDateStr = rawDate;
+        
+        // ✨ ระบบแปลงวันที่ เช่น "20/04/2569 08:30" เป็น "20 เม.ย. 2569 08:30"
+        if (rawDate !== '-' && rawDate.includes('/')) {
+            const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+            const parts = rawDate.split(' ');
+            const dateParts = parts[0].split('/');
             
-            // แสดงเดือนที่เลือกบนปุ่ม (ใช้ formatThaiMonth ของคุณรณรงค์)
-            document.getElementById('fin-picker-display').innerText = formatThaiMonth(monthStr).replace(" / ", "/");
-
-            try {
-                // ยิง API พร้อมส่งเดือนที่ต้องการดูประวัติไปด้วย
-                const response = await fetch(API_URL + "?action=getFinanceDashboard&monthStr=" + encodeURIComponent(monthStr));
-                const result = await response.json();
-                
-                if (result.success) {
-                    currentFinanceData = result.data;
-                    // ยอดคงเหลือยังคงเป็นยอดปัจจุบันเสมอ (เพื่อความถูกต้องของเงินในกระเป๋า)
-                    document.getElementById('fin-bank-balance').innerText = Number(result.data.bankBalance || 0).toLocaleString();
-                    document.getElementById('fin-cash-balance').innerText = Number(result.data.cashBalance || 0).toLocaleString();
-                    
-                    renderFinanceHistory(result.data.history || []);
-                } else {
-                    showToast(result.message, 'error');
-                }
-            } catch (e) {
-                showToast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
+            if (dateParts.length >= 3) {
+                const d = parseInt(dateParts[0], 10);
+                const m = thMonths[parseInt(dateParts[1], 10) - 1]; 
+                const y = dateParts[2];
+                const time = parts[1] ? ` ${parts[1]}` : '';
+                pDateStr = `${d} ${m} ${y}${time}`;
             }
         }
 
-        // 📅 ฟังก์ชันเมื่อมีการเปลี่ยนเดือนจากปฏิทิน
-        function changeFinanceMonth(val) {
-            if (!val) return;
-            const parts = val.split('-'); // YYYY-MM
-            const monthStr = parts[1] + "/" + (parseInt(parts[0]) + 543);
-            loadFinance(monthStr);
+        let isExpense = (h.category === 'รายจ่าย' || parseFloat(h.amount) < 0);
+        let amountColor = isExpense ? 'text-rose-500' : 'text-emerald-500';
+        let displayAmount = Math.abs(Number(h.amount)).toLocaleString(undefined, {minimumFractionDigits: 2});
+        
+        let ic = 'fa-exchange-alt', col = 'text-slate-500', bgCol = 'bg-slate-100';
+        let txType = h.type || 'รายการทั่วไป';
+
+        if (txType.includes('ฝากเงินธนาคาร')) {
+            ic = 'fa-university'; col = 'text-indigo-500'; bgCol = 'bg-indigo-50';
+        } else if (txType.includes('ถอนเงินธนาคาร')) {
+            ic = 'fa-money-check-alt'; col = 'text-rose-500'; bgCol = 'bg-rose-50';
+        } else if (txType.includes('รับเงินสด') || txType.includes('เพิ่ม')) {
+            ic = 'fa-hand-holding-usd'; col = 'text-teal-500'; bgCol = 'bg-teal-50';
+        } else if (txType.includes('ใช้เงินสดสำรอง')) {
+            ic = 'fa-file-invoice-dollar'; col = 'text-orange-500'; bgCol = 'bg-orange-50';
         }
+        
+        let detailText = h.detail ? h.detail.replace(' (', '<br>(') : '-';
 
-        // 🎨 ฟังก์ชันวาดประวัติการเงิน (อัปเดต: เปลี่ยนวันที่เป็นเดือนย่อภาษาไทย)
-        function renderFinanceHistory(history) {
-            const b = document.getElementById('finance-history-body');
-            if (!history || history.length === 0) {
-                b.innerHTML = '<div class="text-center py-8 text-slate-400"><div class="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-folder-open text-2xl text-slate-300"></i></div><p class="text-sm font-bold text-slate-500">ไม่มีรายการประวัติ</p></div>';
-                return;
-            }
-
-            let fullHtml = '';
-            const MAX_ITEMS = 30;
-            const historyToShow = history.slice(0, MAX_ITEMS);
-
-            if (history.length > MAX_ITEMS) {
-                fullHtml += `<div class="text-center text-[10px] text-slate-400 mb-3 font-medium bg-slate-50 py-1.5 rounded-lg border border-slate-100">แสดง <span class="text-indigo-500 font-bold">${MAX_ITEMS}</span> รายการล่าสุด</div>`;
-            }
-
-            historyToShow.forEach(h => {
-                // ✨ ส่วนการแปลงวันที่เป็นเดือนย่อ
-                let rawDate = h.date || '-';
-                let pDateStr = rawDate;
-                
-                if (rawDate !== '-' && rawDate.includes('/')) {
-                    const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-                    // แยก "20/04/2569 08:30" ออกเป็นส่วนๆ
-                    const parts = rawDate.split(' '); // [0] = วันที่, [1] = เวลา
-                    const dateParts = parts[0].split('/'); // [0]=ว, [1]=ด, [2]=ป
-                    
-                    const d = dateParts[0];
-                    const m = thMonths[parseInt(dateParts[1]) - 1]; // แปลงเลขเดือนเป็นชื่อย่อ
-                    const y = dateParts[2];
-                    const time = parts[1] ? parts[1] : '';
-                    
-                    pDateStr = `${d} ${m} ${y} ${time}`;
-                }
-
-                let isExpense = (h.category === 'รายจ่าย');
-                let amountColor = isExpense ? 'text-rose-500' : 'text-emerald-500';
-                let sign = isExpense ? '-' : '+';
-                
-                let ic = 'fa-exchange-alt';
-                let col = 'text-slate-500';
-                let bgCol = 'bg-slate-100';
-                
-                if (h.type === 'ฝากเงินธนาคาร') {
-                    ic = 'fa-university'; col = 'text-indigo-500'; bgCol = 'bg-indigo-50';
-                } else if (h.type === 'ถอนเงินธนาคาร') {
-                    ic = 'fa-money-check-alt'; col = 'text-rose-500'; bgCol = 'bg-rose-50';
-                } else if (h.type === 'รับเงินสด (เพิ่ม)') {
-                    ic = 'fa-hand-holding-usd'; col = 'text-teal-500'; bgCol = 'bg-teal-50';
-                } else if (h.type === 'ใช้เงินสดสำรอง') {
-                    ic = 'fa-file-invoice-dollar'; col = 'text-orange-500'; bgCol = 'bg-orange-50';
-                }
-                
-                let detailText = h.detail ? h.detail.replace(' (', '<br>(') : '-';
-
-                fullHtml += `
-                    <div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex gap-3 items-center transition hover:bg-slate-50">
-                        <div class="w-11 h-11 rounded-xl ${bgCol} ${col} flex items-center justify-center text-lg shrink-0 shadow-inner">
-                            <i class="fas ${ic}"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex justify-between items-start mb-0.5">
-                                <div class="font-bold text-slate-800 text-[13px] truncate pr-2">${h.type}</div>
-                                <div class="text-[9px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 whitespace-nowrap shrink-0 mt-0.5">${pDateStr}</div>
-                            </div>
-                            <div class="flex justify-between items-end gap-2">
-                                <div class="min-w-0 flex-1">
-                                    <div class="text-[11px] text-slate-500 leading-snug">📝 ${detailText}</div>
-                                    <div class="text-[10px] text-indigo-500 font-bold mt-1 flex items-center gap-1">
-                                        <i class="fas fa-user-edit text-[8px]"></i> โดย: ${h.recorder || 'Admin'}
-                                    </div>
-                                </div>
-                                <div class="font-black ${amountColor} text-[14px] leading-none shrink-0 mb-1">${sign}${Number(h.amount).toLocaleString()} บ.</div>
+        fullHtml += `
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex gap-3 items-center transition hover:bg-slate-50 mb-2">
+                <div class="w-11 h-11 rounded-xl ${bgCol} ${col} flex items-center justify-center text-lg shrink-0 shadow-inner">
+                    <i class="fas ${ic}"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-start mb-0.5">
+                        <div class="font-bold text-slate-800 text-[13px] truncate pr-2">${txType}</div>
+                        <div class="text-[9px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 whitespace-nowrap shrink-0 mt-0.5">${pDateStr}</div>
+                    </div>
+                    <div class="flex justify-between items-end gap-2">
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[11px] text-slate-500 leading-snug">📝 ${detailText}</div>
+                            <div class="text-[10px] text-indigo-500 font-bold mt-1 flex items-center gap-1">
+                                <i class="fas fa-user-edit text-[8px]"></i> โดย: ${h.recorder || 'Admin'}
                             </div>
                         </div>
-                    </div>`;
-            });
+                        <div class="font-black ${amountColor} text-[14px] leading-none shrink-0 mb-1">${isExpense ? '-' : '+'}${displayAmount} บ.</div>
+                    </div>
+                </div>
+            </div>`;
+    });
 
-            b.innerHTML = fullHtml;
-        }
+    b.innerHTML = fullHtml;
+}
 
         function openFinanceModal(action) {
             const modal = document.getElementById('finance-modal');
