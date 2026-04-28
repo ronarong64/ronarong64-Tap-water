@@ -3008,7 +3008,7 @@ async function loadFinance(monthStr = null) {
         }
     }
 
-    // 🌟 2. อัปเดตข้อความบนปุ่มให้เป็น "เม.ย. / 2569" เสมอ (ใช้ฟังก์ชันเดิมของคุณรณรงค์)
+    // 🌟 2. อัปเดตข้อความบนปุ่มให้เป็น "เม.ย. / 2569"
     const displayEl = document.getElementById('fin-picker-display');
     if (displayEl) {
         displayEl.innerText = formatThaiMonth(apiMonthStr); 
@@ -3026,11 +3026,12 @@ async function loadFinance(monthStr = null) {
         const result = await response.json();
 
         if (result.success) {
-            // อัปเดตยอดเงินคงเหลือบนหน้าจอ
+            // 🌟 อัปเดตยอดเงินคงเหลือ (ปัดเศษเป็นจำนวนเต็มและใส่ลูกน้ำ)
             if(document.getElementById('fin-bank-balance')) 
-                document.getElementById('fin-bank-balance').innerText = Number(result.data.bankBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('fin-bank-balance').innerText = Math.round(Number(result.data.bankBalance || 0)).toLocaleString();
+            
             if(document.getElementById('fin-cash-balance'))
-                document.getElementById('fin-cash-balance').innerText = Number(result.data.cashBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('fin-cash-balance').innerText = Math.round(Number(result.data.cashBalance || 0)).toLocaleString();
             
             // วาดรายการประวัติใหม่
             renderFinanceHistory(result.data.history || []);
