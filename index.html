@@ -2965,36 +2965,64 @@ function toggleOption(elementId, isChecked) {
             if (pageId === 'yearly') { initYearlyPicker(); loadYearlyReport(); }
         }
 
-        // 💰 ระบบการเงิน-ธนาคาร (พร้อมระบบ Auto-Format วันที่ขั้นสูง)
+        // 💰 ระบบการเงิน-ธนาคาร
 let currentFinanceData = null;
 
 async function loadFinance(monthStr = null) {
     const container = document.getElementById('finance-history-body');
     if(container) container.innerHTML = `<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-3xl text-teal-500"></i><p class="text-xs text-slate-500 mt-3">กำลังดึงข้อมูล...</p></div>`;
 
-    // 🌟 1. ตรวจสอบและจัดรูปแบบเดือน (ป้องกันปัญหา 4-04 หรือ เม.ย. / 25)
+    // 🌟 1. แปลงค่าที่รับมาให้อยู่ในรูปแบบที่ถูกต้อง
+    let apiMonthStr = "";   // เอาไว้ส่งหลังบ้าน (เช่น "04/2569")
+    let hiddenInputStr = ""; // เอาไว้ให้ Modal เลือกเดือนอ่าน (เช่น "2026-04")
+
     if (!monthStr) {
         const now = new Date();
         const m = String(now.getMonth() + 1).padStart(2, '0');
-        const y = now.getFullYear() + 543;
-        monthStr = `${m}/${y}`; // ค่าเริ่มต้นเป็นเดือนปัจจุบัน เช่น "04/2569"
+        const y = now.getFullYear();
+        apiMonthStr = `${m}/${y + 543}`;
+        hiddenInputStr = `${y}-${m}`;
+    } else {
+        // ถ้า Modal ส่งมาแบบ "2026-04" หรือติดบั๊กเป็น "4-03"
+        if (monthStr.includes('-')) {
+            let parts = monthStr.split('-');
+            let y = parseInt(parts[0]);
+            let m = String(parts[1]).padStart(2, '0');
+            
+            // 🛡️ ซ่อมบั๊ก: ถ้าปีเพี้ยนกลายเป็นเลข 4 หรือน้อยกว่า ให้ดึงปีปัจจุบันมาแทน
+            if (y < 2000) {
+                y = new Date().getFullYear();
+            }
+            
+            apiMonthStr = `${m}/${y + 543}`;
+            hiddenInputStr = `${y}-${m}`;
+        } 
+        // ถ้าส่งมาแบบ "04/2569"
+        else if (monthStr.includes('/')) {
+            let parts = monthStr.split('/');
+            let m = String(parts[0]).padStart(2, '0');
+            let y = parseInt(parts[1]) - 543;
+            
+            apiMonthStr = monthStr;
+            hiddenInputStr = `${y}-${m}`;
+        }
     }
 
-    // 🌟 2. อัปเดตข้อความบนปุ่มให้เป็น "เม.ย. / 2569" (เรียกใช้ฟังก์ชัน formatThaiMonth)
+    // 🌟 2. อัปเดตข้อความบนปุ่มให้เป็น "เม.ย. / 2569" เสมอ (ใช้ฟังก์ชันเดิมของคุณรณรงค์)
     const displayEl = document.getElementById('fin-picker-display');
     if (displayEl) {
-        displayEl.innerText = formatThaiMonth(monthStr); 
+        displayEl.innerText = formatThaiMonth(apiMonthStr); 
     }
     
-    // อัปเดตค่าใน Hidden Input เพื่อให้ระบบจำว่าตอนนี้ดูเดือนไหนอยู่
+    // 🌟 3. อัปเดตค่าใน Hidden Input ให้เป็น "YYYY-MM" เท่านั้น Modal ถึงจะทำงานไม่เพี้ยน
     const inputEl = document.getElementById('fin-month-input');
     if (inputEl) {
-        inputEl.value = monthStr;
+        inputEl.value = hiddenInputStr;
     }
 
-    // 🌟 3. ดึงข้อมูลจากเซิร์ฟเวอร์
+    // 🌟 4. ดึงข้อมูลจากเซิร์ฟเวอร์ด้วยรูปแบบ "04/2569"
     try {
-        const response = await fetch(API_URL + "?action=getFinanceDashboard&monthStr=" + encodeURIComponent(monthStr));
+        const response = await fetch(API_URL + "?action=getFinanceDashboard&monthStr=" + encodeURIComponent(apiMonthStr));
         const result = await response.json();
 
         if (result.success) {
