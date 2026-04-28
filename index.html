@@ -2972,7 +2972,7 @@ async function loadFinance(monthStr = null) {
     const container = document.getElementById('finance-history-body');
     if(container) container.innerHTML = `<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-3xl text-teal-500"></i><p class="text-xs text-slate-500 mt-3">กำลังดึงข้อมูล...</p></div>`;
 
-    // 🌟 ถ้าไม่ได้ส่งเดือนมา ให้ใช้เดือนปัจจุบัน (พ.ศ.)
+    // 1. ถ้าไม่ได้ส่งเดือนมา ให้ใช้เดือนปัจจุบัน (พ.ศ.)
     if (!monthStr) {
         const now = new Date();
         const m = String(now.getMonth() + 1).padStart(2, '0');
@@ -2980,33 +2980,34 @@ async function loadFinance(monthStr = null) {
         monthStr = `${m}/${y}`; // จะได้ "04/2569"
     }
 
-    // 🌟 อัปเดตข้อความในปุ่ม และค่าใน Hidden Input
+    // 2. อัปเดตข้อความบนปุ่มให้เป็น "เม.ย. / 2569"
     const displayEl = document.getElementById('fin-picker-display');
     if (displayEl) {
-        displayEl.innerText = formatThaiMonth(monthStr); // เช่น "เม.ย. / 2569"
+        displayEl.innerText = formatThaiMonth(monthStr); 
     }
+    
+    // อัปเดตค่าใน Hidden Input เพื่อส่งค่าไปเซิร์ฟเวอร์
     const inputEl = document.getElementById('fin-month-input');
     if (inputEl) {
         inputEl.value = monthStr;
     }
 
     try {
-        // ส่งค่าไปดึงข้อมูลจาก GS.gs
         const response = await fetch(API_URL + "?action=getFinanceDashboard&monthStr=" + encodeURIComponent(monthStr));
         const result = await response.json();
 
         if (result.success) {
-            currentFinanceData = result.data;
-            document.getElementById('fin-bank-balance').innerText = Number(result.data.bankBalance || 0).toLocaleString();
-            document.getElementById('fin-cash-balance').innerText = Number(result.data.cashBalance || 0).toLocaleString();
+            // อัปเดตยอดเงินคงเหลือ
+            document.getElementById('fin-bank-balance').innerText = Number(result.data.bankBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+            document.getElementById('fin-cash-balance').innerText = Number(result.data.cashBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
             
-            // วาดประวัติ
+            // วาดรายการประวัติ
             renderFinanceHistory(result.data.history || []);
         } else {
             showToast(result.message, 'error');
         }
     } catch (e) {
-        showToast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
+        showToast('ไม่สามารถเชื่อมต่อข้อมูลได้', 'error');
     }
 }
 
