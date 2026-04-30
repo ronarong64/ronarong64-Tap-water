@@ -1349,170 +1349,149 @@ function applyRolePermissions() {
     let stats = { todo: 0, waiting: 0, paid: 0, overdue: 0 };
     let htmlContent = "";
 
-    // ✨ 1. ดึงค่า MAX_OVERDUE (ตัดค้าง ด.) มาเตรียมไว้ก่อนเลย 
-    const maxOverdueInput = document.getElementById('set-max-overdue').value;
-    let maxLimit = parseInt(maxOverdueInput);
-    if (isNaN(maxLimit)) maxLimit = 1; 
-
-    // ✨ 2. สร้างตัวแปรใหม่เพื่อนับ "จำนวนบ้านที่ค้างเกินกำหนด" (เตรียมงดจ่ายน้ำ)
+    // ⚙️ 1. เตรียมค่ากำหนดและวันที่
+    const maxLimit = parseInt(document.getElementById('set-max-overdue').value) || 1;
     let criticalOverdueCount = 0;
-
-    // เตรียมข้อมูลเดือนปัจจุบันเพื่อใช้กรอง (ไม่นับเป็นยอดค้าง)
-    const now = new Date();
-    const currentM = now.getMonth() + 1;
-    const currentY = now.getFullYear() + 543;
-    const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
-    const currentMonthStr2 = `${currentM}/${currentY}`; 
-
-    // ✨ เช็คสิทธิ์ว่าเป็น Admin หรือไม่ (ทำครั้งเดียวก่อนวนลูป เพื่อความรวดเร็ว)
     const isAdmin = (window.currentUserRole === 'admin');
 
+    // เตรียมเดือนปัจจุบัน (พุทธศักราช) เพื่อใช้กรองหนี้ค้าง
+    const now = new Date();
+    const currM = now.getMonth() + 1;
+    const currY = now.getFullYear() + 543;
+    const currMonthFull = `${String(currM).padStart(2, '0')}/${currY}`; // 04/2569
+    const currMonthShort = `${currM}/${currY}`; // 4/2569
+
+    // 🔄 2. เริ่มวนลูปประมวลผลข้อมูลบ้าน
     users.forEach(user => {
         const houseNo = escapeHTML(user.houseNo || "-");
         const safeName = escapeHTML(user.name || "ไม่มีชื่อเจ้าบ้าน");
         const statusCode = user.statusCode || "none";
         const amount = Number(user.amount || 0);
-        
-        // 🎯 นับจำนวนบิลค้างชำระ (กรองเดือนปัจจุบันออกตามที่ต้องการ)
-        let overdueMonthsCount = 0;
+        const payMethod = String(user.payMethod || "").trim();
+
+        // 🎯 กรองหนี้ค้าง (ไม่นับเดือนปัจจุบัน)
+        let overdueMonths = [];
         if (user.overdueList && user.overdueList.length > 0) {
-            overdueMonthsCount = user.overdueList.filter(bill => 
-                bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2
-            ).length;
+            overdueMonths = user.overdueList.filter(bill => 
+                bill.month !== currMonthFull && bill.month !== currMonthShort
+            );
         }
+        const overdueCount = overdueMonths.length;
 
-        // เพิ่มสถิติบ้านที่ค้างชำระเข้ากล่องสถิติรวมด้านบน
-        if (overdueMonthsCount > 0) {
-            stats.overdue++;
-        }
+        // 📊 เก็บสถิติ
+        if (overdueCount > 0) stats.overdue++;
+        if (overdueCount >= maxLimit) criticalOverdueCount++;
 
-        // ✨ 3. ตรวจสอบว่า "เดือนที่ค้าง" >= "เกณฑ์ที่ตั้งไว้" หรือไม่ 
-        if (overdueMonthsCount >= maxLimit && overdueMonthsCount > 0) {
-            criticalOverdueCount++; // นับเข้ากลุ่มเตรียมงดจ่ายน้ำ
-        }
-
-        // 🎯 สั่งล้างค่าป้ายแจ้งเตือนเป็นค่าว่างทุกครั้ง เพื่อไม่ให้ไปจำค่าของบ้านหลังก่อนหน้า
-        let overdueBadge = "";
-
-        // ถ้าบ้านนี้มีหนี้ค้างจริง ถึงจะสร้างป้ายแจ้งเตือน
-        if (overdueMonthsCount > 0) {
-            overdueBadge = `
-                <div onclick="event.stopPropagation(); openOverdueOnly('${houseNo}')" class="cursor-pointer hover:scale-105 active:scale-95 transition-transform bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm whitespace-nowrap ml-1">
-                    <i class="fas fa-exclamation-triangle text-[8px]"></i> ค้าง ${overdueMonthsCount} เดือน
-                </div>`;
-        }
-
-        // จัดการรูปโปรไฟล์
-        let rawProfilePic = user.profilePic ? String(user.profilePic).trim() : "";
-        let fileId = "";
-        if (rawProfilePic.includes("id=")) fileId = rawProfilePic.split('id=')[1].split('&')[0];
-        else if (rawProfilePic.includes("/d/")) fileId = rawProfilePic.split('/d/')[1].split('/')[0];
-
-        const lineId = escapeHTML(user.lineId || "");
-        const phone = escapeHTML(user.phone || "");
-
-        // นับสถิติ 3 กล่องแรก
         if (statusCode === 'none') stats.todo++;
         else if (statusCode === 'waiting') stats.waiting++;
         else if (statusCode === 'paid' || statusCode === 'free') stats.paid++;
 
-        // กำหนดสีและไอคอนตามสถานะ
-        let sClass = "text-slate-500", sBg = "bg-slate-100", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
-        let borderColor = "border-slate-200"; 
+        // 🎨 กำหนดรูปแบบสถานะ (Badge)
+        let sClass = "text-slate-500", sBg = "bg-slate-50", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
+        let borderColor = "border-slate-200";
 
         if (statusCode === 'paid' || statusCode === 'free') {
-            sClass = "text-emerald-600";
-            sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; 
+            sClass = "text-emerald-600"; sBg = "bg-emerald-50"; sIcon = "fa-check-circle";
+            borderColor = "border-emerald-300 shadow-sm";
             
-            // 🌟 ตรวจสอบว่าเป็น ใช้น้ำฟรี, โอนเงิน หรือ เงินสด
             if (statusCode === 'free') {
                 sText = "ใช้น้ำฟรี";
-            } else if (String(user.payMethod).includes('โอน')) {
-                sText = `โอนเงิน ${amount.toLocaleString()} บ.`;
             } else {
-                sText = `ชำระแล้ว ${amount.toLocaleString()} บ.`;
+                // แสดงผลแยก "โอนเงิน" หรือ "ชำระแล้ว" (เงินสด)
+                const isTransfer = payMethod.includes('โอน');
+                sText = `${isTransfer ? 'โอนเงิน' : 'ชำระแล้ว'} ${amount.toLocaleString()} บ.`;
             }
-            
-            borderColor = "border-emerald-400 shadow-emerald-500/10";
         } else if (statusCode === 'waiting') {
-            sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()} บ.`;
-            borderColor = "border-amber-400 shadow-amber-500/10";
+            sClass = "text-blue-600 font-bold"; sBg = "bg-blue-50"; sIcon = "fa-clock";
+            sText = `รอชำระ ${amount.toLocaleString()} บ.`;
+            borderColor = "border-blue-300 shadow-sm";
         }
 
-        let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`; 
-        if (fileId) {
-            const mainImage = "https://lh3.googleusercontent.com/d/" + fileId;
-            const backupImage = "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w200";
-            avatarHtml = `<img src="${mainImage}" alt="profile" class="w-full h-full object-cover rounded-xl" onerror="this.onerror=null; this.src='${backupImage}';">`;
-        } else if (rawProfilePic && (rawProfilePic.startsWith("http") || rawProfilePic.startsWith("data:"))) {
-            avatarHtml = `<img src="${rawProfilePic}" alt="profile" class="w-full h-full object-cover rounded-xl">`;
+        // 🔴 ป้ายแจ้งเตือนหนี้ค้าง (Badge ด้านบน)
+        let overdueBadge = "";
+        if (overdueCount > 0) {
+            overdueBadge = `
+                <div onclick="event.stopPropagation(); openOverdueOnly('${houseNo}')" 
+                     class="cursor-pointer hover:scale-105 active:scale-95 transition-transform bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                    <i class="fas fa-exclamation-triangle text-[8px]"></i> ค้าง ${overdueCount} ด.
+                </div>`;
         }
 
-        let phoneDisplayHtml = phone
-            ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[11px] font-medium text-slate-500 flex items-center gap-1"><div class="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-phone-alt text-[7px]"></i></div><span class="phone-text">${phone}</span></a>`
-            : `<span class="text-[11px] text-slate-400 italic">ไม่มีเบอร์โทร</span>`;
-        let lineIconHtml = lineId ? `<i class="fab fa-line text-green-500 text-base drop-shadow-sm"></i>` : ``;
-
-        // ✨ จัดการแสดงผลปุ่ม "แก้ไข" ตามสิทธิ์
-        let actionButtonsHtml = "";
-        if (isAdmin) {
-            actionButtonsHtml = `
-            <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-400 hover:text-blue-500 active:scale-90 px-2 py-1">
-                <i class="fas fa-edit text-[15px]"></i>
-            </button>`;
+        // 🖼️ จัดการรูปภาพโปรไฟล์
+        let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`;
+        let pic = String(user.profilePic || "");
+        if (pic) {
+            let fId = "";
+            if (pic.includes("id=")) fId = pic.split('id=')[1].split('&')[0];
+            else if (pic.includes("/d/")) fId = pic.split('/d/')[1].split('/')[0];
             
-            // ถ้าอนาคตมีปุ่มลบ ก็สามารถต่อท้ายตรงนี้ได้เลย เช่น:
-            // actionButtonsHtml += `<button onclick="..." class="text-red-400 hover:text-red-500 ..."><i class="fas fa-trash"></i></button>`;
+            const imgSrc = fId ? `https://drive.google.com/thumbnail?id=${fId}&sz=w200` : pic;
+            avatarHtml = `<img src="${imgSrc}" class="w-full h-full object-cover rounded-xl" onerror="this.innerHTML='<i class=\"fas fa-user\"></i>'">`;
         }
 
+        // 📱 เบอร์โทรและ LINE
+        const phone = escapeHTML(user.phone || "");
+        const phoneHtml = phone 
+            ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fas fa-phone-alt text-[9px]"></i> ${phone}</a>`
+            : `<span class="text-[11px] text-slate-300 italic">ไม่มีเบอร์โทร</span>`;
+        const lineIcon = user.lineId ? `<i class="fab fa-line text-green-500 text-base"></i>` : "";
+
+        // 🛠️ ปุ่มแก้ไขสำหรับ Admin
+        const editBtn = isAdmin ? `
+            <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-300 hover:text-blue-500 transition-colors p-1">
+                <i class="fas fa-edit"></i>
+            </button>` : "";
+
+        // 🏗️ ประกอบร่าง HTML Card
         htmlContent += `
-            <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 shadow-sm border ${borderColor} active:scale-[0.98] cursor-pointer transition-all hover:bg-slate-50 w-full mb-3" onclick="openBillingModal('${houseNo}')">
-                <div class="flex items-start gap-3 min-w-0 w-full">
-                    <div class="avatar-box w-12 h-12 rounded-xl ${sBg} text-slate-400 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden border border-white mt-0.5">
+            <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 mb-3 border-2 ${borderColor} transition-all active:scale-[0.98]" onclick="openBillingModal('${houseNo}')">
+                <div class="flex items-start gap-3">
+                    <div class="w-12 h-12 rounded-xl ${sBg} flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-100">
                         ${avatarHtml}
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center justify-between mb-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h4 class="house-no-text text-[15px] font-bold text-slate-800 leading-none">${houseNo}</h4>
-                                ${lineIconHtml}
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[15px] font-black text-slate-800">${houseNo}</span>
+                                ${lineIcon}
                                 ${overdueBadge}
                             </div>
-                            ${actionButtonsHtml} </div>
-                        <p class="name-text text-[14px] font-medium text-slate-500 truncate leading-none mt-1 mb-2">${safeName}</p>
-                        <div class="flex items-center justify-between pt-1 border-t border-slate-100">
-                            <div class="phone-box">${phoneDisplayHtml}</div>
-                            <div class="status-badge text-[12px] font-bold ${sClass} ${sBg} px-2 py-1 rounded-md border border-white shadow-sm shrink-0 leading-none">${sText}</div>
+                            ${editBtn}
+                        </div>
+                        <p class="text-[13px] text-slate-500 truncate mb-2">${safeName}</p>
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-50">
+                            ${phoneHtml}
+                            <span class="text-[11px] font-extrabold ${sClass} ${sBg} px-2 py-0.5 rounded-lg border border-white shadow-sm">${sText}</span>
                         </div>
                     </div>
                 </div>
             </div>`;
     });
 
+    // 🏁 3. อัปเดต UI ทั้งหมด
     listContainer.innerHTML = htmlContent;
 
-    const formatStat = (count) => `<span class="text-base font-bold">${count}</span><span class="text-[10px] font-normal opacity-60 ml-1">หลัง</span>`;
+    const updateStat = (id, count) => {
+        document.getElementById(id).innerHTML = `<span class="text-base font-bold">${count}</span><span class="text-[10px] opacity-60 ml-1">หลัง</span>`;
+    };
 
-    document.getElementById('dash-count-todo').innerHTML = formatStat(stats.todo);
-    document.getElementById('dash-count-waiting').innerHTML = formatStat(stats.waiting);
-    document.getElementById('dash-count-paid').innerHTML = formatStat(stats.paid);
-    document.getElementById('dash-count-overdue').innerHTML = formatStat(stats.overdue);
+    updateStat('dash-count-todo', stats.todo);
+    updateStat('dash-count-waiting', stats.waiting);
+    updateStat('dash-count-paid', stats.paid);
+    updateStat('dash-count-overdue', stats.overdue);
 
-    // 🎁 4. จัดการ Banner แจ้งเตือนค้างชำระ
-    const warningBanner = document.getElementById('overdue-warning-banner');
-    
+    // แจ้งเตือน Banner
+    const banner = document.getElementById('overdue-warning-banner');
     if (criticalOverdueCount > 0) {
-        warningBanner.classList.remove('hidden');
+        banner.classList.remove('hidden');
         document.getElementById('overdue-warning-count').innerText = criticalOverdueCount;
     } else {
-        warningBanner.classList.add('hidden');
+        banner.classList.add('hidden');
     }
 
-    // ✨ 5. อัปเดตตัวเลขจำนวนหลังในช่องค้นหาทันทีที่โหลดข้อมูลเสร็จ
-    const searchCountSpan = document.getElementById('search-count');
-    if (searchCountSpan) {
-        searchCountSpan.innerText = users.length + " หลัง";
-    }
+    // จำนวนรวมในช่องค้นหา
+    const searchCount = document.getElementById('search-count');
+    if (searchCount) searchCount.innerText = `${users.length} หลัง`;
 }
 
         // ฟังก์ชันเปิด Modal จาก Badge ป้ายแจ้งเตือนในบ้าน
@@ -1879,31 +1858,46 @@ window.currentStatusFilter = 'all';
 // 2. ฟังก์ชันเมื่อถูกคลิกจาก 4 กล่องด้านบน
 // ==========================================
 function filterByStatus(status) {
-    // ถัากดซ้ำกล่องเดิม ให้ยกเลิกการกรอง (กลับเป็นโชว์ทั้งหมด)
-    if (window.currentStatusFilter === status) {
-        window.currentStatusFilter = 'all';
-    } else {
-        window.currentStatusFilter = status;
-    }
+    // 1. ดึงข้อมูลบ้านทั้งหมดจากตัวแปร global ที่เราเก็บไว้ตอนโหลดหน้าเว็บ
+    const allData = window.globalUsersList || [];
+    
+    // 2. กรองข้อมูลตามกล่องที่กด
+    const filteredUsers = allData.filter(user => {
+        const statusCode = user.statusCode || "none";
+        const rawStatus = String(user.status || "").toLowerCase();
 
-    // จัดการไฮไลท์สีกล่องให้รู้ว่ากำลังเปิดโหมดไหน
-    const cardIds = ['none', 'waiting', 'paid', 'overdue'];
-    cardIds.forEach(id => {
-        const card = document.getElementById(`card-${id}`);
-        if (card) {
-            if (window.currentStatusFilter === id) {
-                // เพิ่มกรอบเรืองแสงให้กล่องที่ถูกเลือก
-                card.classList.add('ring-4', 'ring-blue-400/50', 'scale-[1.02]', 'shadow-lg');
-            } else {
-                card.classList.remove('ring-4', 'ring-blue-400/50', 'scale-[1.02]', 'shadow-lg');
-            }
+        // 📦 กล่อง 1: ยังไม่จดมิเตอร์
+        if (status === 'todo' || status === 'null' || status === 'none') {
+            return statusCode === 'none' || rawStatus === "" || rawStatus === "null";
         }
+        
+        // 📦 กล่อง 2: รอชำระ / ค้างชำระ
+        if (status === 'waiting') {
+            return statusCode === 'waiting' || rawStatus === 'waiting' || rawStatus === 'unpaid' || rawStatus.includes('ค้าง') || rawStatus.includes('รอ');
+        }
+        
+        // 📦 กล่อง 3: ชำระเรียบร้อย (🌟 รวมทั้งที่จ่ายเงินสด โอนเงิน และใช้น้ำฟรี)
+        if (status === 'paid') {
+            return statusCode === 'paid' || statusCode === 'free' || rawStatus === 'paid' || rawStatus === 'free';
+        }
+        
+        // ถ้าเป็นค่าอื่นๆ (เช่น กดปุ่ม "ดูทั้งหมด") ให้แสดงทุกคน
+        return true; 
     });
 
-    // ดึงข้อความในช่องค้นหามาช่วยกรอง
-    const searchBox = document.getElementById('search-input');
-    const keyword = searchBox ? searchBox.value : "";
-    handleSearch(keyword); 
+    // 3. นำรายชื่อที่กรองแล้วไปแสดงผล
+    // 💡 (หากระบบของคุณใช้ฟังก์ชันชื่ออื่นในการวาด Card เช่น renderHouseCards ให้เปลี่ยนชื่อตรงนี้นะครับ)
+    if (typeof renderHouseCards === "function") {
+        renderHouseCards(filteredUsers); 
+    } else {
+        // ถ้าไม่มี renderHouseCards ให้ใช้วิธีซ่อน/แสดง ผ่าน CSS แทน เพื่อไม่ให้กระทบตัวเลข 4 กล่องบน
+        const listContainer = document.getElementById('user-list');
+        listContainer.innerHTML = ""; // ล้างของเดิม
+        
+        // เรียกฟังก์ชันวาด Card (คุณต้องแน่ใจว่าฟังก์ชัน renderRealData ไม่ไปรีเซ็ตสถิติ 4 กล่องให้กลายเป็น 0)
+        // **ข้อควรระวัง: ถ้าเรียก renderRealData(filteredUsers) ตรงๆ ตัวเลข 4 กล่องด้านบนจะเปลี่ยนตามยอดที่กรอง
+        renderRealData(filteredUsers); 
+    }
 }
 
 // ==========================================
