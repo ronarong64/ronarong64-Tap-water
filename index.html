@@ -1421,8 +1421,18 @@ function applyRolePermissions() {
         let borderColor = "border-slate-200"; 
 
         if (statusCode === 'paid' || statusCode === 'free') {
-            sClass = "text-emerald-600"; sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; 
-            sText = statusCode === 'free' ? "ใช้น้ำฟรี" : `ชำระแล้ว ${amount.toLocaleString()} บ.`;
+            sClass = "text-emerald-600";
+            sBg = "bg-emerald-100"; sIcon = "fa-check-circle"; 
+            
+            // 🌟 ตรวจสอบว่าเป็น ใช้น้ำฟรี, โอนเงิน หรือ เงินสด
+            if (statusCode === 'free') {
+                sText = "ใช้น้ำฟรี";
+            } else if (String(user.payMethod).includes('โอน')) {
+                sText = `โอนเงิน ${amount.toLocaleString()} บ.`;
+            } else {
+                sText = `ชำระแล้ว ${amount.toLocaleString()} บ.`;
+            }
+            
             borderColor = "border-emerald-400 shadow-emerald-500/10";
         } else if (statusCode === 'waiting') {
             sClass = "text-amber-600 font-bold"; sBg = "bg-amber-100"; sIcon = "fa-clock"; sText = `รอชำระ ${amount.toLocaleString()} บ.`;
@@ -2715,7 +2725,8 @@ function toggleOption(elementId, isChecked) {
                         }
                         u.collector = loggedInName;
                         u.paidMonthsText = paidMonthsText;
-                        u.overdueAmount = overdueToSave; // 🌟 อัปเดตยอดที่บันทึก
+                        u.overdueAmount = overdueToSave;
+                        u.payMethod = status.toLowerCase() === 'paid' ? 'เงินสด' : ''; // 🌟 อัปเดตว่าเป็นเงินสดทันทีที่กดรับชำระ
                         
                         // 🎯 จัดการยอดหนี้ค้างในหน่วยความจำ (หักลบเฉพาะเมื่อมีการจ่ายจริง)
                         if (status.toLowerCase() === 'paid' && selectedIds.length > 0) {
