@@ -2395,28 +2395,28 @@ function toggleOption(elementId, isChecked) {
     const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
     if (!user) return;
 
-    // ✨ เพิ่มเงื่อนไขที่นี่: ล็อคสิทธิ์ User ห้ามเปิด "รอชำระ" และ "ยังไม่จดมิเตอร์"
     if (window.currentUserRole === 'user') {
         const status = user.statusCode || 'none';
         if (status === 'waiting' || status === 'none') {
-            // เรียกใช้ Custom Alert แทน alert() ของเบราว์เซอร์
             showCustomAlert('สิทธิ์ User ไม่สามารถเปิดดูข้อมูลบ้านที่สถานะ "รอชำระ" หรือ "ยังไม่จดมิเตอร์" ได้ครับ');
-            return; // สั่งหยุดการทำงานทันที ไม่เปิดหน้าฟอร์ม
+            return; 
         }
     }
 
-    // 🎯 ถ้ายอดของเดือนปัจจุบันถูกจ่ายแล้ว ให้เปิดหน้าใบเสร็จทันที
+    // 🎯 ถ้ายอดของเดือนปัจจุบันถูกจ่ายแล้ว ให้เปิดหน้าใบเสร็จ
     if (user.statusCode === 'paid' || user.statusCode === 'free') {
+        
+        // 🌟 1. ตรวจสอบว่าเป็นการ "โอนเงิน" และมี "ลิงก์สลิป" หรือไม่
+        if (String(user.payMethod).includes("โอน") && user.slipUrl && user.slipUrl !== "") {
+            // เรียกฟังก์ชันให้เปิด Modal โชว์รูปสลิป (สร้างใหม่ด้านล่าง)
+            showSlipImageModal(user);
+            return;
+        }
+
+        // 2. ถ้าเป็นเงินสด (หรือโอนแต่ไม่มีสลิป) ให้เปิดใบเสร็จกระดาษขาวปกติ
         const receiptPayload = { 
             houseNo: user.houseNo, 
-            paidDate: user.paidDate, 
-            prevUnit: user.oldUnit, 
-            currUnit: user.prevUnit, 
-            usage: user.usage, 
-            pricePerUnit: user.price, 
-            currentAmount: user.amount, 
-            overdueAmount: user.overdueAmount || 0,
-            paidMonthsText: user.paidMonthsText || "",
+            // ... (โค้ดเดิม) ...
             grandTotal: user.grandTotal, 
             collector: user.collector 
         };
@@ -5311,6 +5311,40 @@ function closeCustomAlert() {
     </div>
   </div>
 
+  <!-- Modal แสดงรูปสลิปโอนเงิน -->
+  <div id="slip-image-modal" onclick="if(event.target === this) document.getElementById('slip-image-modal').classList.add('hidden')"
+    class="fixed inset-0 z-[120] hidden flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md transition-opacity duration-300">
+    
+    <div class="w-full max-w-sm overflow-hidden bg-white rounded-[2rem] shadow-2xl relative flex flex-col max-h-[85vh]">
+      
+      <!-- ส่วนหัว -->
+      <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex justify-between items-center shrink-0">
+        <div>
+          <h3 class="font-bold text-lg">สลิปโอนเงิน</h3>
+          <p class="text-xs text-blue-100" id="slip-modal-house">บ้านเลขที่ ...</p>
+        </div>
+        <button onclick="document.getElementById('slip-image-modal').classList.add('hidden')" class="w-8 h-8 flex items-center justify-center bg-white/20 rounded-full hover:bg-white/30 transition">
+          <i class="fas fa-times text-sm"></i>
+        </button>
+      </div>
+
+      <!-- ส่วนรูปภาพ (Scroll ได้ถ้ารูปยาว) -->
+      <div class="flex-1 overflow-y-auto p-4 bg-slate-100 flex justify-center custom-scroll">
+        <img id="slip-modal-img" src="" class="max-w-full rounded-xl shadow-md border border-slate-200 object-contain" alt="Slip Image"
+             onerror="this.src='https://via.placeholder.com/400x600?text=Image+Not+Found';">
+      </div>
+
+      <!-- ส่วนท้าย -->
+      <div class="p-4 bg-white border-t border-slate-100 flex items-center justify-between shrink-0">
+        <div class="text-sm font-bold text-slate-700">
+          ยอดเงิน: <span class="text-indigo-600" id="slip-modal-amount">0</span> บาท
+        </div>
+        <div class="text-xs text-slate-400" id="slip-modal-date">วันที่...</div>
+      </div>
+
+    </div>
+  </div>
+
   <script>
     // ==========================================
     // ฟังก์ชันจัดการ Accounts (Super Admin)
@@ -5766,6 +5800,22 @@ function prepareAndPrintNotice(selectedData) {
         setTimeout(() => { printWindow.print(); }, 800);
     }
 }
+
+// 🌟 ฟังก์ชันแสดงรูปสลิป
+  function showSlipImageModal(user) {
+      // ใส่ข้อมูลลงใน Modal
+      document.getElementById('slip-modal-house').innerText = `บ้านเลขที่ ${user.houseNo} (${user.name})`;
+      document.getElementById('slip-modal-amount').innerText = Number(user.amount || 0).toLocaleString();
+      document.getElementById('slip-modal-date').innerText = user.paidDate || "-";
+      
+      // ใส่ลิงก์รูปสลิป
+      const imgEl = document.getElementById('slip-modal-img');
+      imgEl.src = user.slipUrl;
+      
+      // แสดง Modal
+      const modal = document.getElementById('slip-image-modal');
+      modal.classList.remove('hidden');
+  }
 
   </script>
 
