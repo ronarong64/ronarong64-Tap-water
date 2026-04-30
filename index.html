@@ -2385,21 +2385,19 @@ function toggleOption(elementId, isChecked) {
                 btn.innerHTML = `<i class="fas fa-save"></i> บันทึกข้อมูล`;
             }
         }      
-        
-        // ==========================================
-        // 🌟 โค้ดชุดใหม่สำหรับระบบจดมิเตอร์และจัดการยอดค้างชำระ
-        // ==========================================
-
+           
         // 🎯 1. ฟังก์ชันสำหรับตรวจสอบและเปิดหน้าต่างๆ       
-        function openBillingModal(houseNo) {
+  function openBillingModal(houseNo) {
     const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
     if (!user) return;
 
+    // ✨ เพิ่มเงื่อนไขที่นี่: ล็อคสิทธิ์ User ห้ามเปิด "รอชำระ" และ "ยังไม่จดมิเตอร์"
     if (window.currentUserRole === 'user') {
         const status = user.statusCode || 'none';
         if (status === 'waiting' || status === 'none') {
+            // เรียกใช้ Custom Alert แทน alert() ของเบราว์เซอร์
             showCustomAlert('สิทธิ์ User ไม่สามารถเปิดดูข้อมูลบ้านที่สถานะ "รอชำระ" หรือ "ยังไม่จดมิเตอร์" ได้ครับ');
-            return; 
+            return; // สั่งหยุดการทำงานทันที ไม่เปิดหน้าฟอร์ม
         }
     }
 
@@ -2407,8 +2405,12 @@ function toggleOption(elementId, isChecked) {
     if (user.statusCode === 'paid' || user.statusCode === 'free') {
         
         // 🌟 1. ตรวจสอบว่าเป็นการ "โอนเงิน" และมี "ลิงก์สลิป" หรือไม่
-        if (String(user.payMethod).includes("โอน") && user.slipUrl && user.slipUrl !== "") {
-            // เรียกฟังก์ชันให้เปิด Modal โชว์รูปสลิป (สร้างใหม่ด้านล่าง)
+        // แก้ไขดักคำว่า "โอน" อย่างเดียว และเช็คความยาวลิงก์แทน เพื่อความชัวร์ 100%
+        let isTransfer = String(user.payMethod || "").includes("โอน");
+        let hasSlipUrl = user.slipUrl && user.slipUrl.length > 10; 
+
+        if (isTransfer && hasSlipUrl) {
+            // เรียกฟังก์ชันให้เปิด Modal โชว์รูปสลิป
             showSlipImageModal(user);
             return;
         }
@@ -2416,7 +2418,14 @@ function toggleOption(elementId, isChecked) {
         // 2. ถ้าเป็นเงินสด (หรือโอนแต่ไม่มีสลิป) ให้เปิดใบเสร็จกระดาษขาวปกติ
         const receiptPayload = { 
             houseNo: user.houseNo, 
-            // ... (โค้ดเดิม) ...
+            paidDate: user.paidDate, 
+            prevUnit: user.oldUnit, 
+            currUnit: user.prevUnit, 
+            usage: user.usage, 
+            pricePerUnit: user.price, 
+            currentAmount: user.amount, 
+            overdueAmount: user.overdueAmount || 0,
+            paidMonthsText: user.paidMonthsText || "",
             grandTotal: user.grandTotal, 
             collector: user.collector 
         };
