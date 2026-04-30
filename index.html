@@ -1417,16 +1417,23 @@ function applyRolePermissions() {
                 </div>`;
         }
 
-        // 🖼️ จัดการรูปภาพโปรไฟล์
+       // 🖼️ จัดการรูปภาพโปรไฟล์
         let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`;
-        let pic = String(user.profilePic || "");
+        let pic = String(user.profilePic || "").trim();
+        
         if (pic) {
             let fId = "";
             if (pic.includes("id=")) fId = pic.split('id=')[1].split('&')[0];
             else if (pic.includes("/d/")) fId = pic.split('/d/')[1].split('/')[0];
             
-            const imgSrc = fId ? `https://drive.google.com/thumbnail?id=${fId}&sz=w200` : pic;
-            avatarHtml = `<img src="${imgSrc}" class="w-full h-full object-cover rounded-xl" onerror="this.innerHTML='<i class=\"fas fa-user\"></i>'">`;
+            if (fId) {
+                // 🌟 กลับมาใช้วิธีดึงรูปหลัก และมีรูปสำรองกันโหลดไม่ขึ้นแบบเดิม (เสถียรที่สุด)
+                const mainImage = `https://lh3.googleusercontent.com/d/${fId}`;
+                const backupImage = `https://drive.google.com/thumbnail?id=${fId}&sz=w200`;
+                avatarHtml = `<img src="${mainImage}" alt="profile" class="w-full h-full object-cover rounded-xl" onerror="this.onerror=null; this.src='${backupImage}';">`;
+            } else if (pic.startsWith("http") || pic.startsWith("data:")) {
+                avatarHtml = `<img src="${pic}" alt="profile" class="w-full h-full object-cover rounded-xl" onerror="this.style.display='none';">`;
+            }
         }
 
         // 📱 เบอร์โทรและ LINE
