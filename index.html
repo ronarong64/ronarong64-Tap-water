@@ -1858,46 +1858,31 @@ window.currentStatusFilter = 'all';
 // 2. ฟังก์ชันเมื่อถูกคลิกจาก 4 กล่องด้านบน
 // ==========================================
 function filterByStatus(status) {
-    // 1. ดึงข้อมูลบ้านทั้งหมดจากตัวแปร global ที่เราเก็บไว้ตอนโหลดหน้าเว็บ
-    const allData = window.globalUsersList || [];
-    
-    // 2. กรองข้อมูลตามกล่องที่กด
-    const filteredUsers = allData.filter(user => {
-        const statusCode = user.statusCode || "none";
-        const rawStatus = String(user.status || "").toLowerCase();
+    // ถัากดซ้ำกล่องเดิม ให้ยกเลิกการกรอง (กลับเป็นโชว์ทั้งหมด)
+    if (window.currentStatusFilter === status) {
+        window.currentStatusFilter = 'all';
+    } else {
+        window.currentStatusFilter = status;
+    }
 
-        // 📦 กล่อง 1: ยังไม่จดมิเตอร์
-        if (status === 'todo' || status === 'null' || status === 'none') {
-            return statusCode === 'none' || rawStatus === "" || rawStatus === "null";
+    // จัดการไฮไลท์สีกล่องให้รู้ว่ากำลังเปิดโหมดไหน
+    const cardIds = ['none', 'waiting', 'paid', 'overdue'];
+    cardIds.forEach(id => {
+        const card = document.getElementById(`card-${id}`);
+        if (card) {
+            if (window.currentStatusFilter === id) {
+                // เพิ่มกรอบเรืองแสงให้กล่องที่ถูกเลือก
+                card.classList.add('ring-4', 'ring-blue-400/50', 'scale-[1.02]', 'shadow-lg');
+            } else {
+                card.classList.remove('ring-4', 'ring-blue-400/50', 'scale-[1.02]', 'shadow-lg');
+            }
         }
-        
-        // 📦 กล่อง 2: รอชำระ / ค้างชำระ
-        if (status === 'waiting') {
-            return statusCode === 'waiting' || rawStatus === 'waiting' || rawStatus === 'unpaid' || rawStatus.includes('ค้าง') || rawStatus.includes('รอ');
-        }
-        
-        // 📦 กล่อง 3: ชำระเรียบร้อย (🌟 รวมทั้งที่จ่ายเงินสด โอนเงิน และใช้น้ำฟรี)
-        if (status === 'paid') {
-            return statusCode === 'paid' || statusCode === 'free' || rawStatus === 'paid' || rawStatus === 'free';
-        }
-        
-        // ถ้าเป็นค่าอื่นๆ (เช่น กดปุ่ม "ดูทั้งหมด") ให้แสดงทุกคน
-        return true; 
     });
 
-    // 3. นำรายชื่อที่กรองแล้วไปแสดงผล
-    // 💡 (หากระบบของคุณใช้ฟังก์ชันชื่ออื่นในการวาด Card เช่น renderHouseCards ให้เปลี่ยนชื่อตรงนี้นะครับ)
-    if (typeof renderHouseCards === "function") {
-        renderHouseCards(filteredUsers); 
-    } else {
-        // ถ้าไม่มี renderHouseCards ให้ใช้วิธีซ่อน/แสดง ผ่าน CSS แทน เพื่อไม่ให้กระทบตัวเลข 4 กล่องบน
-        const listContainer = document.getElementById('user-list');
-        listContainer.innerHTML = ""; // ล้างของเดิม
-        
-        // เรียกฟังก์ชันวาด Card (คุณต้องแน่ใจว่าฟังก์ชัน renderRealData ไม่ไปรีเซ็ตสถิติ 4 กล่องให้กลายเป็น 0)
-        // **ข้อควรระวัง: ถ้าเรียก renderRealData(filteredUsers) ตรงๆ ตัวเลข 4 กล่องด้านบนจะเปลี่ยนตามยอดที่กรอง
-        renderRealData(filteredUsers); 
-    }
+    // ดึงข้อความในช่องค้นหามาช่วยกรอง และทำการซ่อน/โชว์การ์ด (โดยไม่กระทบสถิติ)
+    const searchBox = document.getElementById('search-input');
+    const keyword = searchBox ? searchBox.value : "";
+    handleSearch(keyword); 
 }
 
 // ==========================================
@@ -1924,14 +1909,15 @@ function handleSearch(keyword) {
         let isMatchStatus = true;
         if (statusFilter !== 'all') {
             if (statusFilter === 'none') {
-                isMatchStatus = cardHtml.includes('ยังไม่จด') || cardText.includes('ยังไม่จด');
+                isMatchStatus = cardText.includes('ยังไม่จด');
             } else if (statusFilter === 'waiting') {
-                isMatchStatus = cardHtml.includes('รอชำระ') || cardText.includes('รอชำระ');
+                isMatchStatus = cardText.includes('รอชำระ');
             } else if (statusFilter === 'paid') {
-                isMatchStatus = cardHtml.includes('ชำระแล้ว') || cardText.includes('ชำระเรียบร้อย');
+                // 🌟 ดึงบ้านที่มีคำว่า ชำระแล้ว, โอนเงิน หรือ ใช้น้ำฟรี มาแสดงทั้งหมด
+                isMatchStatus = cardText.includes('ชำระแล้ว') || cardText.includes('โอนเงิน') || cardText.includes('ใช้น้ำฟรี');
             } else if (statusFilter === 'overdue') {
-                // คนค้างชำระ จะมีกรอบสีแดงหรือคำว่าค้างชำระในการ์ด
-                isMatchStatus = cardHtml.includes('ค้างชำระ') || cardText.includes('ค้างชำระ');
+                // คนค้างชำระ จะมีป้ายสีแดง (ค้าง...เดือน)
+                isMatchStatus = cardHtml.includes('ค้าง') || cardText.includes('ค้าง');
             }
         }
 
@@ -1949,12 +1935,10 @@ function handleSearch(keyword) {
         }
     }
     
-    // อัปเดตจำนวนหลังที่ค้นเจอ (ถ้ามี element นี้)
+    // อัปเดตจำนวนหลังที่ค้นเจอ เฉพาะในช่องค้นหา (ไม่เกี่ยวกับ 4 กล่องด้านบนแล้ว)
     const countEl = document.getElementById('search-count');
     if (countEl) countEl.innerText = visibleCount + " หลัง";
 }
-
-
 
         // ==========================================
         // ระบบเมนูด้านข้าง (Sidebar Menu)
