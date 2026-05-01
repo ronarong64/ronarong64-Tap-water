@@ -2386,36 +2386,42 @@ function toggleOption(elementId, isChecked) {
             }
         }      
            
-        // 🎯 1. ฟังก์ชันสำหรับตรวจสอบและเปิดหน้าต่างๆ       
-  function openBillingModal(houseNo) {
+       // 🎯 1. ฟังก์ชันสำหรับตรวจสอบและเปิดหน้าต่างๆ       
+function openBillingModal(houseNo) {
     const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
     if (!user) return;
 
-    // ✨ เพิ่มเงื่อนไขที่นี่: ล็อคสิทธิ์ User ห้ามเปิด "รอชำระ" และ "ยังไม่จดมิเตอร์"
     if (window.currentUserRole === 'user') {
         const status = user.statusCode || 'none';
         if (status === 'waiting' || status === 'none') {
-            // เรียกใช้ Custom Alert แทน alert() ของเบราว์เซอร์
             showCustomAlert('สิทธิ์ User ไม่สามารถเปิดดูข้อมูลบ้านที่สถานะ "รอชำระ" หรือ "ยังไม่จดมิเตอร์" ได้ครับ');
-            return; // สั่งหยุดการทำงานทันที ไม่เปิดหน้าฟอร์ม
+            return; 
         }
     }
 
-    // 🎯 ถ้ายอดของเดือนปัจจุบันถูกจ่ายแล้ว ให้เปิดหน้าใบเสร็จ
+    // 🌟 ดึงค่าตั้งค่าวันเริ่ม-สิ้นสุด
+    const startDay = parseInt(document.getElementById('set-start-day').value) || 1;
+    const endDay = parseInt(document.getElementById('set-end-day').value) || 31;
+    const currentDay = new Date().getDate();
+    
+    // คำนวณช่วงเวลา
+    let isWithinPeriod = false;
+    if (startDay <= endDay) {
+        isWithinPeriod = (currentDay >= startDay && currentDay <= endDay);
+    } else {
+        isWithinPeriod = (currentDay >= startDay || currentDay <= endDay);
+    }
+
+    // 🌟 ถ้ายอดของเดือนปัจจุบันถูกจ่ายแล้ว ให้เปิดหน้าใบเสร็จ
     if (user.statusCode === 'paid' || user.statusCode === 'free') {
-        
-        // 🌟 1. ตรวจสอบว่าเป็นการ "โอนเงิน" และมี "ลิงก์สลิป" หรือไม่
-        // แก้ไขดักคำว่า "โอน" อย่างเดียว และเช็คความยาวลิงก์แทน เพื่อความชัวร์ 100%
         let isTransfer = String(user.payMethod || "").includes("โอน");
         let hasSlipUrl = user.slipUrl && user.slipUrl.length > 10; 
 
         if (isTransfer && hasSlipUrl) {
-            // เรียกฟังก์ชันให้เปิด Modal โชว์รูปสลิป
             showSlipImageModal(user);
             return;
         }
 
-        // 2. ถ้าเป็นเงินสด (หรือโอนแต่ไม่มีสลิป) ให้เปิดใบเสร็จกระดาษขาวปกติ
         const receiptPayload = { 
             houseNo: user.houseNo, 
             paidDate: user.paidDate, 
@@ -2435,47 +2441,62 @@ function toggleOption(elementId, isChecked) {
 
     const currUnitInput = document.getElementById('bill-curr-unit');
     const btnWaiting = document.getElementById('btn-save-waiting');
-    // ✨ ดึงปุ่มชำระเงินมาไว้จัดการสิทธิ์
     const btnPaid = document.getElementById('btn-save-paid'); 
-    
     const priceInput = document.getElementById('set-price');
     let priceVal = parseFloat(priceInput && priceInput.value !== "" ? priceInput.value : 0) || 0;
 
-    // หาวันที่ปัจจุบันเพื่อนำมากรอง "บิลเดือนนี้" ออก
     const now = new Date();
     const currentM = now.getMonth() + 1;
     const currentY = now.getFullYear() + 543;
     const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`;
     const currentMonthStr2 = `${currentM}/${currentY}`; 
 
-    // คัดกรองเอาเฉพาะ "บิลค้างชำระเก่า" 
     const actualOverdueList = (user.overdueList || []).filter(bill => 
         bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2
     );
     const actualOverdueAmount = actualOverdueList.reduce((sum, bill) => sum + Number(bill.amount), 0);
 
-    // สร้าง State ของบิล 
+    // ✨ 1. เช็คเพื่อแสดง Pop-up แจ้งเตือนนอกเวลา ทันทีก่อนวาดฟอร์ม
+    if (!isWithinPeriod) {
+        if (actualOverdueAmount > 0) {
+            // กรณี 1: นอกเวลา แต่มีหนี้ค้าง -> แจ้งเตือนแล้วให้เปิดฟอร์มไว้
+            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์\n(กำหนดจดวันที่ ${startDay} ถึง ${endDay} ของเดือน)\n\nแต่บ้านนี้มียอดค้างชำระ ท่านสามารถกดที่ "ดูยอดค้างชำระ" เพื่อรับชำระเงินได้ตามปกติครับ`);
+        } else {
+            // กรณี 2: นอกเวลา และไม่มีหนี้ค้าง -> แจ้งเตือนแล้วสั่งจบการทำงานทันที (ไม่เปิดฟอร์มจดมิเตอร์เลย)
+            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์/จัดเก็บค่าน้ำ\n(ระบบเปิดให้ทำรายการวันที่ ${startDay} ถึง ${endDay} ของเดือน)\n\nระบบปิดรับการบันทึกข้อมูลชั่วคราวครับ`);
+            return; // ⛔ ตัดจบการทำงานตรงนี้เลย ไม่เปิดฟอร์ม
+        }
+    }
+
     currentBillState = {
         billingId: user.statusCode === 'waiting' ? (user.billingId || "") : "",
         houseNo: user.houseNo,
         prevUnit: user.statusCode === 'waiting' ? (parseInt(user.oldUnit) || 0) : (parseInt(user.prevUnit) || 0),
         overdueDetails: actualOverdueList,
         selectedOverdueIds: actualOverdueList.map(b => b.billingId),
-        selectedOverdueAmount: actualOverdueAmount
+        selectedOverdueAmount: actualOverdueAmount,
+        isWithinPeriod: isWithinPeriod
     };
+
+    // 🌟 จัดการกล่องแจ้งเตือนนอกเวลาสีแดงที่อยู่บนหัวฟอร์มจดมิเตอร์
+    const periodWarningBox = document.getElementById('period-warning-box');
+    if (periodWarningBox) {
+        if (!isWithinPeriod) {
+            periodWarningBox.classList.remove('hidden');
+            document.getElementById('period-warning-text').innerText = `${startDay} ถึง ${endDay}`;
+        } else {
+            periodWarningBox.classList.add('hidden');
+        }
+    }
 
     document.getElementById('calc-price').innerText = user.price || priceVal;
     
-    // ✨ เช็คโหมดเปลี่ยนมิเตอร์ใหม่ (ถอนของเก่าออก)
     const cmWarningBox = document.getElementById('cm-warning-box');
     if (user.cmUsage && parseInt(user.cmUsage) > 0) {
         currentBillState.cmUsage = parseInt(user.cmUsage);
         document.getElementById('cm-warning-unit').innerText = currentBillState.cmUsage;
-        
-        // 🌟 บังคับให้เลขเดิมเป็น 0 เพราะเปลี่ยนมิเตอร์ใหม่แล้ว
         currentBillState.prevUnit = 0; 
         document.getElementById('bill-prev-unit').innerText = "0";
-
         if (cmWarningBox) cmWarningBox.classList.remove('hidden');
     } else {
         currentBillState.cmUsage = 0;
@@ -2492,8 +2513,12 @@ function toggleOption(elementId, isChecked) {
         if (btnWaiting) btnWaiting.classList.add('hidden');
     } else {
         currUnitInput.value = '';
-        currUnitInput.disabled = false;
-        currUnitInput.classList.remove('bg-slate-100', 'text-slate-500', 'cursor-not-allowed');
+        currUnitInput.disabled = !isWithinPeriod;
+        if (!isWithinPeriod) {
+            currUnitInput.classList.add('bg-slate-100', 'text-slate-500', 'cursor-not-allowed');
+        } else {
+            currUnitInput.classList.remove('bg-slate-100', 'text-slate-500', 'cursor-not-allowed');
+        }
         document.getElementById('calc-usage').innerText = '0';
         document.getElementById('calc-current-amount').innerText = '0';
         if (btnWaiting) btnWaiting.classList.remove('hidden');
@@ -2515,37 +2540,19 @@ function toggleOption(elementId, isChecked) {
         }
     }
 
-    // ✨ อัปเดตข้อมูลบนหัวฟอร์ม (บ้านเลขที่ และ ชื่อเจ้าบ้าน)
     document.getElementById('bill-house-display').innerText = `บ้านเลขที่ ${user.houseNo}`;
-    
-    // ดึงชื่อเจ้าบ้านมาแสดงตรงกรอบด้านล่างที่เราเพิ่งเพิ่มไป (ถ้าไม่มีชื่อให้แสดงเป็นขีด)
     const houseNameDisplay = document.getElementById('bill-house-name-display');
     if (houseNameDisplay) {
-        let displayName = user.name || "ไม่ระบุชื่อ";
-        houseNameDisplay.querySelector('span').innerText = displayName;
+        houseNameDisplay.querySelector('span').innerText = user.name || "ไม่ระบุชื่อ";
     }
 
-    // เปิดหน้าต่าง Modal
     const modal = document.getElementById('billing-modal');
     const box = document.getElementById('billing-modal-box');
     modal.classList.remove('hidden');
     setTimeout(() => {
         modal.classList.remove('opacity-0');
-        if(box) box.classList.remove('scale-95'); // เผื่อใส่ animation ให้ตัวกล่อง
+        if(box) box.classList.remove('scale-95'); 
     }, 10);
-
-    // 🌟 [เพิ่มใหม่] เช็คเพื่อแสดง Pop-up แจ้งเตือนนอกเวลา
-    if (!isWithinPeriod) {
-        if (actualOverdueAmount > 0) {
-            // กรณี 1: นอกเวลา แต่มีหนี้ค้าง -> แจ้งเตือนแล้วให้เปิดฟอร์มไว้
-            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์\n(กำหนดจดวันที่ ${startDay} ถึง ${endDay} ของเดือน)\n\nแต่บ้านนี้มียอดค้างชำระ ท่านสามารถกดที่ "ดูยอดค้างชำระ" เพื่อรับชำระเงินได้ตามปกติครับ`);
-        } else {
-            // กรณี 2: นอกเวลา และไม่มีหนี้ค้าง -> แจ้งเตือนแล้วสั่งปิดฟอร์มทันทีเมื่อกด "รับทราบ"
-            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์/จัดเก็บค่าน้ำ\n(ระบบเปิดให้ทำรายการวันที่ ${startDay} ถึง ${endDay} ของเดือน)\n\nระบบปิดรับการบันทึกข้อมูลชั่วคราวครับ`, function() {
-                closeBillingModal();
-            });
-        }
-    }
 }
 
         function renderOverdueDetailsInModal() {
