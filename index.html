@@ -5701,7 +5701,7 @@ function printSelectedNotices() {
     }
 }
 
-// ==========================================
+        // ==========================================
         // 🖨️ ฟังก์ชันพิมพ์รายงานสรุปรายเดือน
         // ==========================================
         function printMonthlyReport() {
@@ -5745,6 +5745,10 @@ function printSelectedNotices() {
                     @media print {
                         @page { size: A4 portrait; margin: 15mm; }
                         body > *:not(#print-section) { display: none !important; }
+                        
+                        /* 🌟 ปลดล็อกการซ่อนข้อมูลจาก CSS ของหน้าใบเสร็จ */
+                        #print-section, #print-section * { visibility: visible !important; }
+                        
                         #print-section { display: block !important; position: absolute; top: 0; left: 0; width: 100%; background: #fff; padding: 20px; font-family: 'Kanit', sans-serif; color: #000; }
                     }
                 </style>
