@@ -2533,6 +2533,19 @@ function toggleOption(elementId, isChecked) {
         modal.classList.remove('opacity-0');
         if(box) box.classList.remove('scale-95'); // เผื่อใส่ animation ให้ตัวกล่อง
     }, 10);
+
+    // 🌟 [เพิ่มใหม่] เช็คเพื่อแสดง Pop-up แจ้งเตือนนอกเวลา
+    if (!isWithinPeriod) {
+        if (actualOverdueAmount > 0) {
+            // กรณี 1: นอกเวลา แต่มีหนี้ค้าง -> แจ้งเตือนแล้วให้เปิดฟอร์มไว้
+            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์\n(กำหนดจดวันที่ ${startDay} ถึง ${endDay} ของเดือน)\n\nแต่บ้านนี้มียอดค้างชำระ ท่านสามารถกดที่ "ดูยอดค้างชำระ" เพื่อรับชำระเงินได้ตามปกติครับ`);
+        } else {
+            // กรณี 2: นอกเวลา และไม่มีหนี้ค้าง -> แจ้งเตือนแล้วสั่งปิดฟอร์มทันทีเมื่อกด "รับทราบ"
+            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์/จัดเก็บค่าน้ำ\n(ระบบเปิดให้ทำรายการวันที่ ${startDay} ถึง ${endDay} ของเดือน)\n\nระบบปิดรับการบันทึกข้อมูลชั่วคราวครับ`, function() {
+                closeBillingModal();
+            });
+        }
+    }
 }
 
         function renderOverdueDetailsInModal() {
@@ -5149,8 +5162,12 @@ function toggleYearlyHouse() {
     }
 }
 
+// 🌟 ตัวแปรเก็บฟังก์ชันที่จะให้ทำหลังจากปิด Pop-up
+let customAlertCallback = null;
+
 // ✨ ฟังก์ชันเปิดกล่องแจ้งเตือนแบบ Custom
-function showCustomAlert(message) {
+function showCustomAlert(message, callback = null) {
+    customAlertCallback = callback; // เก็บคำสั่งพิเศษไว้
     document.getElementById('custom-alert-message').innerText = message;
     const modal = document.getElementById('custom-alert-modal');
     const box = document.getElementById('custom-alert-box');
@@ -5173,6 +5190,11 @@ function closeCustomAlert() {
     
     setTimeout(() => {
         modal.classList.add('hidden');
+        // 🌟 ถ้ามีคำสั่งที่ฝากไว้ ให้รันหลังจากปิดหน้าต่างเสร็จ
+        if (typeof customAlertCallback === 'function') {
+            customAlertCallback();
+            customAlertCallback = null; // เคลียร์ค่าทิ้งเพื่อไม่ให้ค้าง
+        }
     }, 300);
 }
 
