@@ -5223,7 +5223,9 @@ function printYearlyReport() {
     p.innerHTML = `
         <style>
             @media print {
-                @page { size: A4 portrait; margin: 15mm; }
+                /* 🌟 ปรับขอบกระดาษเป็น 0 เพื่อตัด Header/Footer เบราว์เซอร์ทิ้ง */
+                @page { size: A4 portrait; margin: 0mm; }
+                
                 body * { visibility: hidden; }
                 #print-section, #print-section * { visibility: visible; }
                 #print-section { 
@@ -5233,7 +5235,8 @@ function printYearlyReport() {
             }
         </style>
 
-        <div style="font-family: 'Kanit', sans-serif; padding: 10px; width: 100%; color: #000; box-sizing: border-box;">
+        <!-- 🌟 ใช้ padding ดันขอบเนื้อหาด้านในแทน -->
+        <div style="font-family: 'Kanit', sans-serif; padding: 15mm; width: 100%; color: #000; box-sizing: border-box;">
             <div style="text-align: center; margin-bottom: 25px;">
                 <h2 style="margin: 0 0 5px 0; font-size: 20pt; font-weight: bold;">รายงานสรุปผลการดำเนินงาน (รายปี)</h2>
                 <h3 style="margin: 0 0 5px 0; font-size: 14pt; font-weight: normal;">คณะกรรมการน้ำประปาหมู่บ้าน บ้านหนองบัว หมู่ที่ 2</h3>
