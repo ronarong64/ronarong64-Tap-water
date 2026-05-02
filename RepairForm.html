@@ -1,1 +1,175 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แจ้งซ่อมประปา</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; } </style>
+</head>
+<body class="p-4 flex flex-col items-center justify-center min-h-screen">
 
+    <div class="bg-white w-full max-w-md rounded-[2rem] shadow-xl overflow-hidden border border-slate-100">
+        <div class="bg-gradient-to-r from-red-500 to-rose-600 p-6 text-white text-center shadow-md relative">
+            <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-3xl mx-auto mb-2 backdrop-blur-sm border border-white/30"><i class="fas fa-tools"></i></div>
+            <h2 class="text-xl font-bold">แจ้งท่อแตก / น้ำรั่ว</h2>
+            <p class="text-xs text-rose-100 mt-1">หมู่ที่ 2 บ้านหนองบัว</p>
+        </div>
+
+        <div class="p-6 space-y-5">
+            <!-- ซ่อน UID ที่ส่งมาจาก LINE -->
+            <input type="hidden" id="uid" value="">
+
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">บ้านเลขที่ของผู้แจ้ง</label>
+                <input type="text" id="houseNo" placeholder="เช่น 123/4" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 font-bold focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">รายละเอียดจุดที่ชำรุด</label>
+                <textarea id="detail" rows="3" placeholder="ระบุรายละเอียด เช่น ท่อเมนแตกหน้าบ้านซอย 1..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none"></textarea>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">ถ่ายภาพจุดที่ชำรุด (บังคับ)</label>
+                <div class="relative group cursor-pointer border-2 border-dashed border-red-200 rounded-2xl bg-red-50 hover:bg-red-100 transition h-32 flex flex-col items-center justify-center" onclick="document.getElementById('imageFile').click()">
+                    <img id="preview" class="absolute inset-0 w-full h-full object-cover rounded-2xl hidden z-10">
+                    <div id="placeholder" class="text-red-400 text-center relative z-0">
+                        <i class="fas fa-camera text-3xl mb-1"></i>
+                        <p class="text-xs font-bold">แตะเพื่อถ่ายรูป</p>
+                    </div>
+                </div>
+                <!-- capture="environment" คือสั่งให้บังคับเปิดกล้องหลังมือถือ -->
+                <input type="file" id="imageFile" accept="image/*" capture="environment" class="hidden" onchange="previewImage(this)">
+            </div>
+
+            <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 flex items-center justify-between">
+                <div>
+                    <div class="text-xs font-bold text-blue-800">พิกัด GPS</div>
+                    <div id="gps-status" class="text-[10px] text-blue-500">รอการดึงพิกัด...</div>
+                </div>
+                <button type="button" onclick="getLocation()" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold active:scale-95 shadow-sm"><i class="fas fa-map-marker-alt"></i> ดึงพิกัดใหม่</button>
+            </div>
+            <input type="hidden" id="lat"><input type="hidden" id="lng">
+
+            <button id="btn-submit" onclick="submitRepair()" class="w-full py-4 mt-2 bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold rounded-xl shadow-lg shadow-red-500/30 active:scale-95 transition-all text-sm flex justify-center items-center gap-2">
+                <i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ช่าง
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 🔴 นำ URL ของ Web App (ที่ลงท้ายด้วย /exec) มาวางตรงนี้
+        const API_URL = "https://script.google.com/macros/s/AKfycbz_rkhS9bIVqcWGTNa2PhGfdw0Ik3cWy6rHzSU_pYtR9nQY7PupMSUdfqLaUgUGBLtj/exec"; 
+
+        window.onload = () => {
+            // ดึง UID จาก URL (ถ้ามี)
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.get('uid')) document.getElementById('uid').value = urlParams.get('uid');
+            
+            // ดึงพิกัดอัตโนมัติเมื่อเปิดหน้าเว็บ
+            getLocation();
+        };
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('preview');
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    document.getElementById('placeholder').classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function getLocation() {
+            const status = document.getElementById('gps-status');
+            status.innerText = "กำลังค้นหาพิกัด...";
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById('lat').value = position.coords.latitude;
+                        document.getElementById('lng').value = position.coords.longitude;
+                        status.innerText = "✅ ได้รับพิกัดเรียบร้อย";
+                        status.classList.replace('text-blue-500', 'text-green-600');
+                    },
+                    (error) => {
+                        status.innerText = "❌ กรุณาอนุญาตให้เข้าถึงตำแหน่ง";
+                        status.classList.replace('text-blue-500', 'text-red-500');
+                    }
+                );
+            } else {
+                status.innerText = "อุปกรณ์ไม่รองรับ GPS";
+            }
+        }
+
+        function submitRepair() {
+            const houseNo = document.getElementById('houseNo').value.trim();
+            const detail = document.getElementById('detail').value.trim();
+            const lat = document.getElementById('lat').value;
+            const lng = document.getElementById('lng').value;
+            const fileInput = document.getElementById('imageFile');
+            const btn = document.getElementById('btn-submit');
+
+            if (!houseNo) return alert('กรุณาระบุบ้านเลขที่');
+            if (!detail) return alert('กรุณาระบุรายละเอียดชำรุด');
+            if (!fileInput.files[0]) return alert('กรุณาถ่ายภาพจุดที่ชำรุด');
+            if (!lat || !lng) return alert('กรุณารอระบบดึงพิกัด GPS หรือกดปุ่มดึงพิกัดใหม่');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังส่งข้อมูล...';
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width; let height = img.height;
+                    const MAX = 800; // บีบอัดรูปไม่ให้เกิน 800px จะได้ส่งไวๆ
+                    if (width > MAX) { height *= MAX / width; width = MAX; }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const base64 = canvas.toDataURL('image/jpeg', 0.6); // คุณภาพ 60%
+
+                    // ส่งไปหา Apps Script
+                    fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // 🌟 สำคัญมาก! ขาดบรรทัดนี้จะส่งข้อมูลข้าม GitHub ไป Google ไม่ได้
+                        body: JSON.stringify({
+                            action: 'submitRepair',
+                            houseNo: houseNo,
+                            detail: detail,
+                            lat: lat,
+                            lng: lng,
+                            imageBlob: base64
+                        })
+                    }).then(res => res.json()).then(data => {
+                        if(data.success) {
+                            alert('✅ ' + data.message);
+                            // ปิดหน้าต่าง LIFF อัตโนมัติ (ถ้าเปิดผ่าน LINE)
+                            if (typeof liff !== 'undefined') liff.closeWindow();
+                            else window.close(); 
+                        } else {
+                            alert('❌ ขัดข้อง: ' + data.message);
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ช่าง';
+                        }
+                    }).catch(err => {
+                        alert('❌ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ช่าง';
+                    });
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        }
+    </script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</body>
+</html>
