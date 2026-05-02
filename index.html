@@ -870,6 +870,9 @@
             </div>
           </div>
         </div>
+        <button onclick="printYearlyReport()" class="w-full mt-4 py-3.5 bg-indigo-700 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition shadow-lg">
+          <i class="fas fa-print"></i> พิมพ์รายงานสรุปปีนี้
+        </button>
       </div>
 
       <div id="page-expenses" class="hidden space-y-6 animate-fade-in pb-20">
@@ -4965,6 +4968,7 @@ function selectPickerMonth(m) {
 // 📊 ระบบรายงานสรุปรายปี (Yearly Report)
 // ==========================================
 let yearlyChartInstance = null;
+let currentYearlyData = null; // 🌟 เพิ่มตัวแปรนี้ไว้เก็บข้อมูลเตรียมพิมพ์
 
 function initYearlyPicker() {
     const picker = document.getElementById('yearly-picker');
@@ -4997,6 +5001,7 @@ async function loadYearlyReport() {
         
         if (result.success) {
             const data = result.data;
+            currentYearlyData = data; // 🌟 แอบจำข้อมูลไว้ใช้ตอนสั่งพิมพ์
             
             // 1. อัปเดตตัวเลข
             document.getElementById('yearly-income').innerText = (data.income || 0).toLocaleString();
@@ -5168,6 +5173,151 @@ function toggleYearlyHouse() {
         content.style.maxHeight = '0px';
         icon.classList.remove('rotate-180');
     }
+}
+
+// ==========================================
+// 🖨️ ฟังก์ชันพิมพ์รายงานสรุปรายปี
+// ==========================================
+function printYearlyReport() {
+    if (!currentYearlyData) {
+        showToast("ไม่พบข้อมูลสำหรับพิมพ์รายงาน", "warning");
+        return;
+    }
+
+    const yearText = document.getElementById('yearly-picker').options[document.getElementById('yearly-picker').selectedIndex].text;
+    const d = currentYearlyData;
+
+    let p = document.getElementById('print-section');
+    if (!p) {
+        p = document.createElement('div');
+        p.id = 'print-section';
+        document.body.appendChild(p);
+    }
+
+    const now = new Date();
+    const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    const printedDate = `${now.getDate()} ${thMonths[now.getMonth()]} ${now.getFullYear()+543} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+    // เตรียมแถวตารางรายเดือน
+    let monthlyRows = '';
+    const fullMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+    
+    if (d.monthlyStats) {
+        d.monthlyStats.forEach((m, i) => {
+            let mInc = m.income || 0;
+            let mExp = m.expense || 0;
+            let mNet = mInc - mExp;
+            let netColor = mNet < 0 ? '#ef4444' : (mNet === 0 ? '#9ca3af' : '#1f2937');
+
+            monthlyRows += `
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+                <td style="padding: 6px 8px; text-align: left;">${fullMonths[i]}</td>
+                <td style="padding: 6px 8px; text-align: right; color: #10b981;">${mInc === 0 ? '-' : mInc.toLocaleString()}</td>
+                <td style="padding: 6px 8px; text-align: right; color: #f43f5e;">${mExp === 0 ? '-' : mExp.toLocaleString()}</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: bold; color: ${netColor};">${mNet === 0 ? '-' : mNet.toLocaleString()}</td>
+            </tr>`;
+        });
+    }
+
+    // วาดรูปแบบกระดาษ A4
+    p.innerHTML = `
+        <style>
+            @media print {
+                @page { size: A4 portrait; margin: 15mm; }
+                body * { visibility: hidden; }
+                #print-section, #print-section * { visibility: visible; }
+                #print-section { 
+                    position: absolute; left: 0; top: 0; width: 100%; background: #fff; 
+                }
+                .flex-row-print { display: flex !important; flex-direction: row !important; }
+            }
+        </style>
+
+        <div style="font-family: 'Kanit', sans-serif; padding: 10px; width: 100%; color: #000; box-sizing: border-box;">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <h2 style="margin: 0 0 5px 0; font-size: 20pt; font-weight: bold;">รายงานสรุปผลการดำเนินงาน (รายปี)</h2>
+                <h3 style="margin: 0 0 5px 0; font-size: 14pt; font-weight: normal;">คณะกรรมการน้ำประปาหมู่บ้าน บ้านหนองบัว หมู่ที่ 2</h3>
+                <h4 style="margin: 0; font-size: 14pt; color: #4b5563;">ประจำ${yearText}</h4>
+            </div>
+            
+            <div class="flex-row-print" style="gap: 15px; margin-bottom: 20px;">
+                <div style="flex: 1; border: 2px solid #4f46e5; border-radius: 12px; padding: 15px; background: #eef2ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; text-align: center;">
+                    <div style="font-size: 12pt; color: #3730a3; font-weight: bold; margin-bottom: 5px;">คงเหลือสุทธิ (ตลอดปี)</div>
+                    <div style="font-size: 28pt; font-weight: bold; color: #4338ca; margin-bottom: 10px;">${(d.net || 0).toLocaleString()} <span style="font-size:14pt;font-weight:normal;">บาท</span></div>
+                    
+                    <div class="flex-row-print" style="justify-content: space-around; border-top: 1px dashed #a5b4fc; padding-top: 10px;">
+                        <div>
+                            <div style="font-size: 10pt; color: #4b5563;">รายรับรวม</div>
+                            <div style="font-size: 14pt; font-weight: bold; color: #10b981;">${(d.income || 0).toLocaleString()}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 10pt; color: #4b5563;">รายจ่ายรวม</div>
+                            <div style="font-size: 14pt; font-weight: bold; color: #f43f5e;">${(d.expense || 0).toLocaleString()}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="flex: 1; border: 2px solid #e5e7eb; border-radius: 12px; padding: 15px; background: #f9fafb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                    <div style="font-size: 12pt; color: #374151; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px;">สรุปค่าใช้จ่ายแยกประเภท</div>
+                    
+                    <div class="flex-row-print" style="justify-content: space-between; font-size: 11pt; padding: 4px 0;">
+                        <span><i class="fas fa-tools" style="color:#f59e0b; width:20px;"></i> ซ่อมแซม</span><span style="font-weight: bold;">${(d.breakdown.repair || 0).toLocaleString()} บ.</span>
+                    </div>
+                    <div class="flex-row-print" style="justify-content: space-between; font-size: 11pt; padding: 4px 0;">
+                        <span><i class="fas fa-bolt" style="color:#eab308; width:20px;"></i> ค่าไฟฟ้า</span><span style="font-weight: bold;">${(d.breakdown.elec || 0).toLocaleString()} บ.</span>
+                    </div>
+                    <div class="flex-row-print" style="justify-content: space-between; font-size: 11pt; padding: 4px 0;">
+                        <span><i class="fas fa-user-tie" style="color:#3b82f6; width:20px;"></i> ค่าจัดเก็บ</span><span style="font-weight: bold;">${(d.breakdown.fee || 0).toLocaleString()} บ.</span>
+                    </div>
+                    <div class="flex-row-print" style="justify-content: space-between; font-size: 11pt; padding: 4px 0;">
+                        <span><i class="fas fa-ellipsis-h" style="color:#ec4899; width:20px;"></i> อื่นๆ</span><span style="font-weight: bold;">${(d.breakdown.other || 0).toLocaleString()} บ.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ตารางรายเดือน -->
+            <div style="border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+                <div style="background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 8px 12px; font-weight: bold; font-size: 12pt; border-bottom: 1px solid #d1d5db;">ภาพรวมรายรับ - รายจ่าย แต่ละเดือน</div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11pt;">
+                    <thead>
+                        <tr style="background-color: #374151 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                            <th style="padding: 6px 8px; text-align: left;">เดือน</th>
+                            <th style="padding: 6px 8px; text-align: right;">รายรับ (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: right;">รายจ่าย (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: right;">คงเหลือ (บาท)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${monthlyRows}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- จุดเซ็นชื่อ -->
+            <div class="flex-row-print" style="justify-content: space-between; margin-top: 50px; font-size: 12pt;">
+                <div style="text-align: center; width: 45%;">
+                    <p>.......................................................</p>
+                    <p>(.......................................................)</p>
+                    <p style="margin-top: 5px;">ผู้จัดทำรายงาน</p>
+                </div>
+                <div style="text-align: center; width: 45%;">
+                    <p>.......................................................</p>
+                    <p>(.......................................................)</p>
+                    <p style="margin-top: 5px;">ประธานคณะกรรมการฯ</p>
+                </div>
+            </div>
+            
+            <div style="text-align: right; margin-top: 20px; font-size: 10pt; color: #9ca3af;">
+                พิมพ์เอกสารเมื่อ: ${printedDate}
+            </div>
+        </div>
+    `;
+
+    setTimeout(() => { window.print(); }, 250);
+
+    window.onafterprint = function() {
+        if (p) p.innerHTML = ''; 
+    };
 }
 
 // 🌟 ตัวแปรเก็บฟังก์ชันที่จะให้ทำหลังจากปิด Pop-up
