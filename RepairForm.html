@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>แจ้งซ่อมประปาบ้านหนองบัว</title>
+    
+    <!-- 🚀 1. Preconnect: เชื่อมต่อเซิร์ฟเวอร์ล่วงหน้า ทำให้โหลดเว็บและส่งข้อมูลไวขึ้น -->
+    <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -24,7 +31,6 @@
         </div>
 
         <div class="p-6 space-y-4">
-            <!-- 🌟 ตัวแปรซ่อนสำหรับเก็บ LINE ID และ ชื่อ -->
             <input type="hidden" id="uid" value="">
             <input type="hidden" id="lineName" value="">
 
@@ -68,43 +74,34 @@
         </div>
     </div>
 
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <!-- โหลด LIFF SDK แบบ Defer เพื่อไม่ให้บล็อกการแสดงผลหน้าเว็บ -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
+    
     <script>
-        // 🔴 1. ตรวจสอบให้แน่ใจว่าเป็น Web App URL ตัวล่าสุด
         const API_URL = "https://script.google.com/macros/s/AKfycbz_rkhS9bIVqcWGTNa2PhGfdw0Ik3cWy6rHzSU_pYtR9nQY7PupMSUdfqLaUgUGBLtj/exec"; 
 
         window.onload = () => {
-            // 🌟 สำคัญ: เอา getLocation() ออกจากตรงนี้ก่อน เพื่อไม่ให้มันแย่งกันทำงาน
-            
             liff.init({ liffId: "2009962202-57vwaEPq" }).then(() => {
                 if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
-                        // 1. ดึงโปรไฟล์สำเร็จ
                         document.getElementById('uid').value = profile.userId;
                         document.getElementById('lineName').value = profile.displayName; 
-                        
                         document.getElementById('profile-name').innerText = profile.displayName;
                         if(profile.pictureUrl) {
                             document.getElementById('profile-img').src = profile.pictureUrl;
                         }
-                        
-                        // 🌟 2. ดึงโปรไฟล์เสร็จแล้ว ค่อยขอพิกัด GPS
                         getLocation();
-
                     }).catch(err => {
                         document.getElementById('profile-name').innerText = "ดึงข้อมูลโปรไฟล์ไม่สำเร็จ";
                         document.getElementById('profile-name').classList.add("text-red-500");
-                        // ดึงโปรไฟล์พัง ก็ยังต้องขอพิกัดต่อไป
                         getLocation();
                     });
                 } else { 
                     liff.login(); 
                 }
             }).catch(err => {
-                console.error("LIFF Init Error: ", err);
                 document.getElementById('profile-name').innerText = "ไม่ได้ตั้งค่า LIFF ID หรือเปิดนอก LINE";
                 document.getElementById('profile-name').classList.add("text-red-500");
-                // โหลด LINE พัง ก็ยังต้องขอพิกัดต่อไป
                 getLocation();
             });
         };
@@ -122,9 +119,13 @@
             }
         }
 
+        // 🚀 2. อัปเกรดความเร็ว GPS: ใส่ Timeout กันเว็บค้าง และยอมให้ใช้ Wi-Fi/Cellular ช่วยหาพิกัด
         function getLocation() {
             const status = document.getElementById('gps-status');
             status.innerText = "กำลังค้นหาพิกัด...";
+            status.classList.replace('text-red-500', 'text-blue-500');
+            status.classList.replace('text-green-600', 'text-blue-500');
+
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
@@ -134,8 +135,14 @@
                         status.classList.replace('text-blue-500', 'text-green-600');
                     },
                     (error) => {
+                        console.warn("GPS Error:", error.message);
                         status.innerText = "❌ กรุณาเปิด GPS และอนุญาตตำแหน่ง";
                         status.classList.replace('text-blue-500', 'text-red-500');
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000, // รอนานสุดแค่ 10 วิ ถ้าไม่ได้ให้เด้ง Error เลย (กันเว็บค้าง)
+                        maximumAge: 60000 // อนุญาตให้ดึงพิกัดเก่าที่มีในเครื่องภายใน 1 นาทีมาใช้ได้ (เร็วขึ้นมาก)
                     }
                 );
             } else {
@@ -145,7 +152,7 @@
 
         function submitRepair() {
             const lineId = document.getElementById('uid').value; 
-            const lineName = document.getElementById('lineName').value; // 🌟 ดึงชื่อ LINE มาเตรียมส่ง
+            const lineName = document.getElementById('lineName').value; 
             const detail = document.getElementById('detail').value.trim();
             const lat = document.getElementById('lat').value;
             const lng = document.getElementById('lng').value;
@@ -157,6 +164,7 @@
             if (!fileInput.files[0]) return alert('กรุณาถ่ายภาพจุดที่ชำรุด');
             if (!lat || !lng) return alert('กรุณารอระบบดึงพิกัด GPS หรือกดปุ่มดึงใหม่');
 
+            // ป้องกันการกดย้ำสองครั้ง
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังส่งข้อมูล...';
 
@@ -169,8 +177,13 @@
                     const MAX = 800; 
                     if (width > MAX) { height *= MAX / width; width = MAX; }
                     canvas.width = width; canvas.height = height;
+                    
                     const ctx = canvas.getContext('2d');
+                    // 🚀 3. เร่งความเร็วการเรนเดอร์ภาพ: ลดคุณภาพการวาดบน Canvas เล็กน้อย ไม่กระทบสายตาแต่ประมวลผลไวขึ้น
+                    ctx.imageSmoothingQuality = 'low'; 
                     ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // บีบอัดเป็น Base64
                     const base64 = canvas.toDataURL('image/jpeg', 0.6); 
 
                     fetch(API_URL, {
@@ -179,7 +192,7 @@
                         body: JSON.stringify({
                             action: 'submitRepair',
                             lineId: lineId, 
-                            lineName: lineName, // 🌟 ส่งชื่อ LINE พ่วงไปด้วย
+                            lineName: lineName, 
                             detail: detail,
                             lat: lat,
                             lng: lng,
@@ -187,7 +200,7 @@
                         })
                     }).then(res => res.json()).then(data => {
                         btn.disabled = false;
-                        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ช่าง';
+                        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ทีมช่าง';
 
                         if(data.success) {
                             alert('✅ ' + data.message);
@@ -206,7 +219,7 @@
                         }
                     }).catch(err => {
                         btn.disabled = false;
-                        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ช่าง';
+                        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ทีมช่าง';
                         alert('❌ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
                     });
                 };
