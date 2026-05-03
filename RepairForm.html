@@ -169,6 +169,24 @@
             };
             reader.readAsDataURL(fileInput.files[0]);
         }
+
+        window.onload = () => {
+            // ดึงพิกัดอัตโนมัติเมื่อเปิดหน้าเว็บ
+            getLocation();
+            
+            // 🌟 เริ่มต้นใช้งาน LIFF (ต้องเอา LIFF ID มาใส่ตรงนี้)
+            liff.init({ liffId: "YOUR_LIFF_ID_HERE" }).then(() => {
+                if (liff.isLoggedIn()) {
+                    liff.getProfile().then(profile => {
+                        // เมื่อดึง Profile ได้ ก็ให้ไปยัดใส่ hidden input หรือส่งไปกับ Payload
+                        document.getElementById('uid').value = profile.userId;
+                    });
+                } else {
+                    liff.login();
+                }
+            }).catch(err => console.error(err));
+        };
+        
     </script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </body>
