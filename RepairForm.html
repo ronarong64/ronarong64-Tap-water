@@ -13,25 +13,21 @@
 
     <div class="bg-white w-full max-w-md rounded-[2rem] shadow-xl overflow-hidden border border-slate-100">
         
-        <!-- 🌟 แก้ไข: ลดขนาดหัวฟอร์ม จัดเรียงแนวนอนให้กระทัดรัดขึ้น -->
         <div class="bg-gradient-to-r from-red-500 to-rose-600 py-4 px-6 text-white shadow-md relative flex items-center gap-4">
             <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl shrink-0 backdrop-blur-sm border border-white/30">
                 <i class="fas fa-tools"></i>
             </div>
             <div>
-                <h2 class="text-lg font-bold leading-tight">ระบบแจ้งซ่อมประปา</h2>
+                <h2 class="text-lg font-bold leading-tight">แจ้งท่อแตก / น้ำรั่ว</h2>
                 <p class="text-[11px] text-rose-100 mt-0.5">หมู่ที่ 2 บ้านหนองบัว</p>
             </div>
         </div>
 
         <div class="p-6 space-y-4">
-            <!-- ซ่อน UID ที่ส่งมาจาก LINE -->
+            <!-- 🌟 ตัวแปรซ่อนสำหรับเก็บ LINE ID อัตโนมัติ -->
             <input type="hidden" id="uid" value="">
 
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">บ้านเลขที่ของผู้แจ้ง</label>
-                <input type="text" id="houseNo" placeholder="เช่น 123/4" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 font-bold focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none">
-            </div>
+            <!-- ลบช่องกรอกบ้านเลขที่ออกไปแล้ว! -->
 
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">รายละเอียดจุดที่ชำรุด</label>
@@ -65,25 +61,24 @@
         </div>
     </div>
 
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
-        // 🔴 นำ URL ของ Web App (ที่ลงท้ายด้วย /exec) มาวางตรงนี้เหมือนเดิมครับ
+        // 🔴 นำ URL ของ Web App (ที่ลงท้ายด้วย /exec) มาวางตรงนี้
         const API_URL = "https://script.google.com/macros/s/AKfycbyI_T-aK5-S8V3-q1H3jYdM1xO21H0B7q25H0-B9k_H2N01G0J39p0L3C0V3Q/exec"; 
 
         window.onload = () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            if(urlParams.get('uid')) document.getElementById('uid').value = urlParams.get('uid');
             getLocation();
             
-            // ถ้าคุณรณรงค์เปิดใช้ LIFF ก็เปิดคอมเมนต์โค้ดบรรทัดล่างนี้ได้ครับ
-            /*
-            liff.init({ liffId: "YOUR_LIFF_ID_HERE" }).then(() => {
+            // 🌟 สำคัญ: นำ LIFF ID จาก LINE Developers มาใส่ตรงนี้ครับ
+            liff.init({ liffId: "2009962202-57vwaEPq" }).then(() => {
                 if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
                         document.getElementById('uid').value = profile.userId;
                     });
-                } else { liff.login(); }
-            }).catch(err => console.error(err));
-            */
+                } else { 
+                    liff.login(); 
+                }
+            }).catch(err => console.error("LIFF Init Error: ", err));
         };
 
         function previewImage(input) {
@@ -121,14 +116,13 @@
         }
 
         function submitRepair() {
-            const houseNo = document.getElementById('houseNo').value.trim();
+            const lineId = document.getElementById('uid').value; // 🌟 ส่ง LINE ID ไปแทน
             const detail = document.getElementById('detail').value.trim();
             const lat = document.getElementById('lat').value;
             const lng = document.getElementById('lng').value;
             const fileInput = document.getElementById('imageFile');
             const btn = document.getElementById('btn-submit');
 
-            if (!houseNo) return alert('กรุณาระบุบ้านเลขที่');
             if (!detail) return alert('กรุณาระบุรายละเอียดชำรุด');
             if (!fileInput.files[0]) return alert('กรุณาถ่ายภาพจุดที่ชำรุด');
             if (!lat || !lng) return alert('กรุณารอระบบดึงพิกัด GPS หรือกดปุ่มดึงพิกัดใหม่');
@@ -154,28 +148,23 @@
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({
                             action: 'submitRepair',
-                            houseNo: houseNo,
+                            lineId: lineId, // 🌟 ส่ง LINE ID ไปให้หลังบ้านค้นหาข้อมูลต่อ
                             detail: detail,
                             lat: lat,
                             lng: lng,
                             imageBlob: base64
                         })
                     }).then(res => res.json()).then(data => {
-                        
-                        // 🌟 แก้ไข: คืนค่าปุ่มกลับมาให้กดได้เหมือนเดิม เสมอ!
                         btn.disabled = false;
-                        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ทีมช่าง';
+                        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ช่าง';
 
                         if(data.success) {
                             alert('✅ ' + data.message);
-                            
-                            // เคลียร์ฟอร์มให้ว่าง เผื่อต้องการส่งใหม่
                             document.getElementById('detail').value = '';
                             document.getElementById('imageFile').value = '';
                             document.getElementById('preview').classList.add('hidden');
                             document.getElementById('placeholder').classList.remove('hidden');
 
-                            // พยายามปิดหน้าต่าง
                             if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
                                 liff.closeWindow();
                             } else {
@@ -185,7 +174,6 @@
                             alert('❌ ขัดข้อง: ' + data.message);
                         }
                     }).catch(err => {
-                        // 🌟 แก้ไข: คืนค่าปุ่มกลับมาเมื่อ Error
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ช่าง';
                         alert('❌ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
@@ -196,6 +184,5 @@
             reader.readAsDataURL(fileInput.files[0]);
         }
     </script>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </body>
 </html>
