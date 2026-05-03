@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>แจ้งซ่อมประปาบ้านหนองบัว</title>
+    <title>แจ้งซ่อมประปา</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -24,10 +24,17 @@
         </div>
 
         <div class="p-6 space-y-4">
-            <!-- 🌟 ตัวแปรซ่อนสำหรับเก็บ LINE ID อัตโนมัติ -->
+            <!-- 🌟 ตัวแปรซ่อนสำหรับเก็บ LINE ID -->
             <input type="hidden" id="uid" value="">
 
-            <!-- ลบช่องกรอกบ้านเลขที่ออกไปแล้ว! -->
+            <!-- 🌟 เพิ่มส่วนแสดงโปรไฟล์ LINE เพื่อเช็คว่าระบบเชื่อมต่อสำเร็จ -->
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center gap-3 shadow-inner">
+                <img id="profile-img" src="https://via.placeholder.com/150?text=LINE" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm">
+                <div>
+                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">บัญชีผู้แจ้ง</div>
+                    <div id="profile-name" class="text-sm font-bold text-slate-700 mt-0.5">กำลังเชื่อมต่อข้อมูล LINE...</div>
+                </div>
+            </div>
 
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">รายละเอียดจุดที่ชำรุด</label>
@@ -51,7 +58,7 @@
                     <div class="text-xs font-bold text-blue-800">พิกัด GPS</div>
                     <div id="gps-status" class="text-[10px] text-blue-500">รอการดึงพิกัด...</div>
                 </div>
-                <button type="button" onclick="getLocation()" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold active:scale-95 shadow-sm"><i class="fas fa-map-marker-alt"></i> ดึงพิกัดใหม่</button>
+                <button type="button" onclick="getLocation()" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold active:scale-95 shadow-sm"><i class="fas fa-map-marker-alt"></i> ดึงใหม่</button>
             </div>
             <input type="hidden" id="lat"><input type="hidden" id="lng">
 
@@ -63,22 +70,34 @@
 
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
-        // 🔴 นำ URL ของ Web App (ที่ลงท้ายด้วย /exec) มาวางตรงนี้
+        // 🔴 1. นำ URL ของ Web App (ที่ลงท้ายด้วย /exec) มาวางตรงนี้
         const API_URL = "https://script.google.com/macros/s/AKfycbz_rkhS9bIVqcWGTNa2PhGfdw0Ik3cWy6rHzSU_pYtR9nQY7PupMSUdfqLaUgUGBLtj/exec"; 
 
         window.onload = () => {
             getLocation();
             
-            // 🌟 สำคัญ: นำ LIFF ID จาก LINE Developers มาใส่ตรงนี้ครับ
+            // 🔴 2. สำคัญมาก: นำ LIFF ID จาก LINE Developers มาใส่ในเครื่องหมายคำพูดด้านล่างนี้ครับ
             liff.init({ liffId: "2009962202-57vwaEPq" }).then(() => {
                 if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
+                        // ดึงข้อมูลสำเร็จ! ยัดใส่หน้าเว็บ
                         document.getElementById('uid').value = profile.userId;
+                        document.getElementById('profile-name').innerText = profile.displayName;
+                        if(profile.pictureUrl) {
+                            document.getElementById('profile-img').src = profile.pictureUrl;
+                        }
+                    }).catch(err => {
+                        document.getElementById('profile-name').innerText = "ดึงข้อมูลโปรไฟล์ไม่สำเร็จ";
+                        document.getElementById('profile-name').classList.add("text-red-500");
                     });
                 } else { 
                     liff.login(); 
                 }
-            }).catch(err => console.error("LIFF Init Error: ", err));
+            }).catch(err => {
+                console.error("LIFF Init Error: ", err);
+                document.getElementById('profile-name').innerText = "ไม่ได้ตั้งค่า LIFF ID หรือเปิดนอก LINE";
+                document.getElementById('profile-name').classList.add("text-red-500");
+            });
         };
 
         function previewImage(input) {
@@ -106,7 +125,7 @@
                         status.classList.replace('text-blue-500', 'text-green-600');
                     },
                     (error) => {
-                        status.innerText = "❌ กรุณาอนุญาตให้เข้าถึงตำแหน่ง";
+                        status.innerText = "❌ กรุณาเปิด GPS และอนุญาตตำแหน่ง";
                         status.classList.replace('text-blue-500', 'text-red-500');
                     }
                 );
@@ -116,16 +135,19 @@
         }
 
         function submitRepair() {
-            const lineId = document.getElementById('uid').value; // 🌟 ส่ง LINE ID ไปแทน
+            const lineId = document.getElementById('uid').value; 
             const detail = document.getElementById('detail').value.trim();
             const lat = document.getElementById('lat').value;
             const lng = document.getElementById('lng').value;
             const fileInput = document.getElementById('imageFile');
             const btn = document.getElementById('btn-submit');
 
+            // 🌟 เช็คว่าระบบดึง Line ID มาได้หรือยัง
+            if (!lineId) return alert('รอระบบเชื่อมต่อข้อมูล LINE สักครู่ หรือ ตรวจสอบการตั้งค่า LIFF ID ครับ');
+
             if (!detail) return alert('กรุณาระบุรายละเอียดชำรุด');
             if (!fileInput.files[0]) return alert('กรุณาถ่ายภาพจุดที่ชำรุด');
-            if (!lat || !lng) return alert('กรุณารอระบบดึงพิกัด GPS หรือกดปุ่มดึงพิกัดใหม่');
+            if (!lat || !lng) return alert('กรุณารอระบบดึงพิกัด GPS หรือกดปุ่มดึงใหม่');
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังส่งข้อมูล...';
@@ -148,7 +170,7 @@
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({
                             action: 'submitRepair',
-                            lineId: lineId, // 🌟 ส่ง LINE ID ไปให้หลังบ้านค้นหาข้อมูลต่อ
+                            lineId: lineId, // 🌟 ส่ง LINE ID ที่ดึงได้ไปให้หลังบ้านค้นหา
                             detail: detail,
                             lat: lat,
                             lng: lng,
