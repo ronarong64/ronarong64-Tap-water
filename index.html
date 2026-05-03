@@ -1760,7 +1760,7 @@ function applyRolePermissions() {
         // ==========================================
 // ฟังก์ชันบันทึกข้อมูล (รองรับทั้ง "เพิ่มใหม่" และ "แก้ไข")
 // ==========================================
-       async function saveUserData() {
+async function saveUserData() {
     const btn = document.getElementById('btn-save-user');
     const oldHouseNo = document.getElementById('user-house-old').value;
     const newHouseNo = document.getElementById('user-house').value;
@@ -1776,7 +1776,8 @@ function applyRolePermissions() {
     btn.disabled = true;
     btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
 
-    const finishProcess = async (blobData) => {
+    // ย้ายลอจิกการส่ง API แยกออกมาเป็น async function เดี่ยวๆ เพื่อให้ await ทำงานได้สมบูรณ์
+    const sendDataToServer = async (blobData) => {
         const actionType = oldHouseNo ? "updateMember" : "addMember";
         const payload = { action: actionType, oldHouseNo, newHouseNo, newName, newPhone, imageBlob: blobData };
 
@@ -1789,34 +1790,68 @@ function applyRolePermissions() {
                 showToast(result.message, "success"); 
                 
                 if (actionType === "updateMember") {
-                    // 🌟 อัปเดตเฉพาะจุด: หาการ์ดใบเดิมแล้วเปลี่ยนข้อมูลข้างในทันที
+                    // 🌟 อัปเดตข้อมูลในการ์ดหน้าจอทันที
                     const card = document.getElementById(`card-${oldHouseNo}`);
                     if (card) {
-                        if (newName) card.querySelector('.name-text').innerText = newName;
-                        if (newHouseNo) card.querySelector('.house-no-text').innerText = newHouseNo;
+                        // เปลี่ยนข้อมูลใน HTML
+                        if (newName) {
+                            const nameEl = card.querySelector('p.text-slate-500.truncate');
+                            if(nameEl) nameEl.innerText = newName;
+                        }
+                        if (newHouseNo) {
+                            const houseNoEl = card.querySelector('.font-black.text-slate-800');
+                            if(houseNoEl) houseNoEl.innerText = newHouseNo;
+                        }
                         if (newPhone) {
-                            const phoneEl = card.querySelector('.phone-text');
-                            if (phoneEl) phoneEl.innerText = newPhone;
+                            const phoneContainer = card.querySelector('.flex.items-center.justify-between.pt-2');
+                            if(phoneContainer) {
+                                // ดึงป้ายสถานะเดิมเก็บไว้ก่อน
+                                const statusBadge = phoneContainer.querySelector('span.rounded-lg');
+                                let statusHtml = statusBadge ? statusBadge.outerHTML : '';
+                                
+                                // วาดเบอร์โทรใหม่คู่กับป้ายสถานะเดิม
+                                phoneContainer.innerHTML = `
+                                    <a href="tel:${newPhone}" onclick="event.stopPropagation()" class="text-[11px] text-slate-500 flex items-center gap-1">
+                                        <i class="fas fa-phone-alt text-[9px]"></i> ${newPhone}
+                                    </a>
+                                    ${statusHtml}
+                                `;
+                            }
                         }
                         if (blobData) {
-                            card.querySelector('.avatar-box').innerHTML = `<img src="${blobData}" class="w-full h-full object-cover rounded-full">`;
+                            const avatarBox = card.querySelector('.w-12.h-12.rounded-xl');
+                            if(avatarBox) {
+                                avatarBox.innerHTML = `<img src="${blobData}" class="w-full h-full object-cover rounded-xl">`;
+                            }
                         }
-                        // เปลี่ยน ID การ์ดเผื่อมีการเปลี่ยนเลขบ้าน
+                        // เปลี่ยน ID ของการ์ด และคำสั่ง onclick เพื่อให้กดเปิดบิลได้ถูกต้อง
                         card.id = `card-${newHouseNo}`;
+                        card.setAttribute('onclick', `openBillingModal('${newHouseNo}')`);
+                        
+                        // 🌟 อัปเดตข้อมูลในปุ่มแก้ไข (Edit) ด้วย!
+                        const editBtn = card.querySelector(`button[onclick="event.stopPropagation(); openEditMember('${oldHouseNo}')"]`);
+                        if(editBtn) {
+                            editBtn.setAttribute('onclick', `event.stopPropagation(); openEditMember('${newHouseNo}')`);
+                        }
                     }
-                    // อัปเดตข้อมูลในตัวแปร Global ด้วย
+                    
+                    // 🌟 อัปเดตตัวแปร Global เพื่อให้การแก้ไขครั้งต่อไปหรือตอนค้นหาไม่ต้องโหลดใหม่
                     const userIndex = window.globalUsersList.findIndex(u => u.houseNo === oldHouseNo);
                     if (userIndex !== -1) {
-                        window.globalUsersList[userIndex] = { ...window.globalUsersList[userIndex], houseNo: newHouseNo, name: newName, phone: newPhone, profilePic: blobData || window.globalUsersList[userIndex].profilePic };
+                        window.globalUsersList[userIndex].houseNo = newHouseNo;
+                        window.globalUsersList[userIndex].name = newName;
+                        window.globalUsersList[userIndex].phone = newPhone;
+                        if(blobData) window.globalUsersList[userIndex].profilePic = blobData;
                     }
                 } else {
-                    // ถ้าเพิ่มใหม่ ให้โหลดใหม่ทั้งหมด (เพราะต้องเรียงลำดับใหม่)
+                    // ถ้าเพิ่มใหม่ ให้ดึงข้อมูลจาก Server ใหม่หมดเพื่อสร้างการ์ดใหม่
                     loadDashboardData();
                 }
             } else {
                 showToast(result.message, "error"); 
             }
         } catch (err) {
+            console.error(err);
             showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", "error");
         } finally {
             btn.disabled = false;
@@ -1824,6 +1859,7 @@ function applyRolePermissions() {
         }
     };
 
+    // เช็คว่ามีการเลือกรูปภาพหรือไม่
     if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
         const reader = new FileReader();
@@ -1831,11 +1867,11 @@ function applyRolePermissions() {
         reader.onload = (e) => {
             const img = new Image();
             img.onload = () => {
-                // 🎨 ส่วนการตั้งค่าบีบอัดรูปภาพ
+                // บีบอัดรูปภาพ
                 const canvas = document.createElement('canvas');
                 let width = img.width;
                 let height = img.height;
-                const MAX_WIDTH = 500; // 🎯 กำหนดความกว้างสูงสุดแค่ 500px (ประหยัดพื้นที่มาก)
+                const MAX_WIDTH = 500;
 
                 if (width > MAX_WIDTH) {
                     height *= MAX_WIDTH / width;
@@ -1847,15 +1883,15 @@ function applyRolePermissions() {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // 🎯 บีบอัดเป็น JPEG คุณภาพ 0.7 (70%)
                 const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                finishProcess(compressedBase64);
+                sendDataToServer(compressedBase64); // เรียกใช้ API หลังจากได้รูปภาพแล้ว
             };
             img.src = e.target.result;
         };
         reader.readAsDataURL(file);
     } else {
-        finishProcess(""); 
+        // ถ้าไม่มีรูป ให้ส่ง API เลย
+        sendDataToServer(""); 
     }
 }
 
