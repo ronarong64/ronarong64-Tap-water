@@ -74,22 +74,28 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbz_rkhS9bIVqcWGTNa2PhGfdw0Ik3cWy6rHzSU_pYtR9nQY7PupMSUdfqLaUgUGBLtj/exec"; 
 
         window.onload = () => {
-            getLocation();
+            // 🌟 สำคัญ: เอา getLocation() ออกจากตรงนี้ก่อน เพื่อไม่ให้มันแย่งกันทำงาน
             
-            // 🔴 2. ใส่ LIFF ID 
-            liff.init({ liffId: "2009962202-57vwaEPq" }).then(() => {
+            liff.init({ liffId: "YOUR_LIFF_ID_HERE" }).then(() => {
                 if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
+                        // 1. ดึงโปรไฟล์สำเร็จ
                         document.getElementById('uid').value = profile.userId;
-                        document.getElementById('lineName').value = profile.displayName; // 🌟 เก็บชื่อ LINE ไว้ส่งไปหลังบ้าน
+                        document.getElementById('lineName').value = profile.displayName; 
                         
                         document.getElementById('profile-name').innerText = profile.displayName;
                         if(profile.pictureUrl) {
                             document.getElementById('profile-img').src = profile.pictureUrl;
                         }
+                        
+                        // 🌟 2. ดึงโปรไฟล์เสร็จแล้ว ค่อยขอพิกัด GPS
+                        getLocation();
+
                     }).catch(err => {
                         document.getElementById('profile-name').innerText = "ดึงข้อมูลโปรไฟล์ไม่สำเร็จ";
                         document.getElementById('profile-name').classList.add("text-red-500");
+                        // ดึงโปรไฟล์พัง ก็ยังต้องขอพิกัดต่อไป
+                        getLocation();
                     });
                 } else { 
                     liff.login(); 
@@ -98,6 +104,8 @@
                 console.error("LIFF Init Error: ", err);
                 document.getElementById('profile-name').innerText = "ไม่ได้ตั้งค่า LIFF ID หรือเปิดนอก LINE";
                 document.getElementById('profile-name').classList.add("text-red-500");
+                // โหลด LINE พัง ก็ยังต้องขอพิกัดต่อไป
+                getLocation();
             });
         };
 
