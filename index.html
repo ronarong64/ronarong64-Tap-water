@@ -1932,7 +1932,7 @@ function filterByStatus(status) {
 }
 
 // ==========================================
-// 🌟 3. ระบบซ่อน/โชว์ และเรียงลำดับการ์ดบ้าน
+// 🌟 3. ระบบซ่อน/โชว์ และเรียงลำดับการ์ดบ้าน (ฉบับอัจฉริยะ + คืนค่าเดิม)
 // ==========================================
 function handleSearch(keyword) {
     const searchText = (keyword || "").trim().toLowerCase();
@@ -1941,6 +1941,7 @@ function handleSearch(keyword) {
     const statusFilter = window.currentStatusFilter || 'all'; 
     let visibleCards = [];
 
+    // 1. คัดกรองการ์ดตามคำค้นหาและสถานะ
     cards.forEach(card => {
         const cardText = card.innerText.toLowerCase();
         const cardHtml = card.innerHTML.toLowerCase();
@@ -1967,40 +1968,56 @@ function handleSearch(keyword) {
         }
     });
 
-    visibleCards.sort((a, b) => {
-        // ดึงข้อความเฉพาะ "บ้านเลขที่" และ "ชื่อ" ออกมาเป็นเกณฑ์หลัก
-        const houseA = (a.querySelector('.font-black.text-slate-800')?.innerText || "").toLowerCase().trim();
-        const houseB = (b.querySelector('.font-black.text-slate-800')?.innerText || "").toLowerCase().trim();
-        const nameA = (a.querySelector('p.text-slate-500.truncate')?.innerText || "").toLowerCase().trim();
-        const nameB = (b.querySelector('p.text-slate-500.truncate')?.innerText || "").toLowerCase().trim();
+    // 2. 🧠 จัดเรียงลำดับ
+    if (searchText !== "") {
+        // 🔍 กรณี "มีการค้นหา": ให้เรียงลำดับความแม่นยำ (ตรงเป๊ะอยู่บนสุด)
+        visibleCards.sort((a, b) => {
+            const houseA = (a.querySelector('.font-black.text-slate-800')?.innerText || "").toLowerCase().trim();
+            const houseB = (b.querySelector('.font-black.text-slate-800')?.innerText || "").toLowerCase().trim();
+            const nameA = (a.querySelector('p.text-slate-500.truncate')?.innerText || "").toLowerCase().trim();
+            const nameB = (b.querySelector('p.text-slate-500.truncate')?.innerText || "").toLowerCase().trim();
 
-        if (searchText !== "") {
-            
+            // กฎข้อ 1: บ้านเลขที่ตรงเป๊ะๆ
             const exactA = houseA === searchText;
             const exactB = houseB === searchText;
             if (exactA && !exactB) return -1;
             if (!exactA && exactB) return 1;
 
+            // กฎข้อ 2: บ้านเลขที่ หรือ ชื่อ "ขึ้นต้นด้วย" คำค้นหา
             const startsWithA = houseA.startsWith(searchText) || nameA.startsWith(searchText);
             const startsWithB = houseB.startsWith(searchText) || nameB.startsWith(searchText);
             if (startsWithA && !startsWithB) return -1;
             if (!startsWithA && startsWithB) return 1;
             
+            // กฎข้อ 3: มีคำค้นหาซ่อนอยู่
             const includesA = houseA.includes(searchText) || nameA.includes(searchText);
             const includesB = houseB.includes(searchText) || nameB.includes(searchText);
             if (includesA && !includesB) return -1;
             if (!includesA && includesB) return 1;
+
+            return houseA.localeCompare(houseB, undefined, { numeric: true, sensitivity: 'base' });
+        });
+    } else {
+        // 🔙 กรณี "ไม่ได้ค้นหา (ลบข้อความออก)": ให้คืนค่าการเรียงลำดับเดิมตาม Google Sheet
+        visibleCards.sort((a, b) => {
+            const houseA = (a.querySelector('.font-black.text-slate-800')?.innerText || "").trim();
+            const houseB = (b.querySelector('.font-black.text-slate-800')?.innerText || "").trim();
             
-        }
+            // ไปหาตำแหน่ง (Index) ดั้งเดิมจากข้อมูลที่โหลดมาครั้งแรก
+            const indexA = window.globalUsersList.findIndex(u => String(u.houseNo).trim() === houseA);
+            const indexB = window.globalUsersList.findIndex(u => String(u.houseNo).trim() === houseB);
+            
+            return indexA - indexB;
+        });
+    }
 
-        return houseA.localeCompare(houseB, undefined, { numeric: true, sensitivity: 'base' });
-    });
-
+    // 3. นำการ์ดที่เรียงเสร็จแล้วกลับไปแสดงในหน้าจอ
     visibleCards.forEach(card => {
         card.style.display = "block";
         listContainer.appendChild(card); // เอาไปต่อท้ายตามลำดับใหม่
     });
     
+    // อัปเดตจำนวนหลังที่ค้นเจอ
     const countEl = document.getElementById('search-count');
     if (countEl) countEl.innerText = visibleCards.length + " หลัง";
 }
