@@ -166,14 +166,13 @@
 
         function previewImage(input) {
             if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const preview = document.getElementById('preview');
-                    preview.src = e.target.result;
-                    preview.classList.remove('hidden');
-                    document.getElementById('placeholder').classList.add('hidden');
-                };
-                reader.readAsDataURL(input.files[0]);
+                const file = input.files[0];
+                const preview = document.getElementById('preview');
+                
+                // ใช้ createObjectURL แทน FileReader (ทำงานเร็วกว่าและไม่ทำให้เว็บค้าง)
+                preview.src = URL.createObjectURL(file);
+                preview.classList.remove('hidden');
+                document.getElementById('placeholder').classList.add('hidden');
             }
         }
 
@@ -224,68 +223,82 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังส่งข้อมูล...';
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width; let height = img.height;
-                    const MAX = 800; 
-                    if (width > MAX) { height *= MAX / width; width = MAX; }
-                    canvas.width = width; canvas.height = height;
-                    
-                    const ctx = canvas.getContext('2d');
-                    ctx.imageSmoothingQuality = 'low'; 
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    const base64 = canvas.toDataURL('image/jpeg', 0.6); 
+            const file = fileInput.files[0];
+            const img = new Image();
+            
+            // สร้าง URL ชั่วคราวจากไฟล์แทนการโหลดข้อมูลดิบทั้งหมด
+            const objectUrl = URL.createObjectURL(file);
 
-                    fetch(API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({
-                            action: 'submitRepair',
-                            lineId: lineId, 
-                            lineName: lineName, 
-                            detail: detail,
-                            lat: lat,
-                            lng: lng,
-                            imageBlob: base64
-                        })
-                    }).then(res => res.json()).then(data => {
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ทีมช่าง';
+            img.onload = () => {
+                // คืนหน่วยความจำให้ระบบทันที ป้องกันแอปค้าง
+                URL.revokeObjectURL(objectUrl); 
 
-                        if(data.success) {
-                            showToast('✅ ส่งเรื่องแจ้งซ่อมเรียบร้อยแล้วครับ!', 'success');
-                            
-                            // เคลียร์ค่า
-                            document.getElementById('detail').value = '';
-                            document.getElementById('imageFile').value = '';
-                            document.getElementById('preview').classList.add('hidden');
-                            document.getElementById('placeholder').classList.remove('hidden');
+                const canvas = document.createElement('canvas');
+                let width = img.width; 
+                let height = img.height;
+                const MAX = 800; // ขนาดความกว้างสูงสุด
+                
+                if (width > MAX) { 
+                    height *= MAX / width; 
+                    width = MAX; 
+                }
+                
+                canvas.width = width; 
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingQuality = 'low'; 
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // ลด Quality ลงเหลือ 0.5 (รูปยังชัดเจนสำหรับงานซ่อม แต่ขนาดไฟล์เล็กลง ส่งขึ้น Server ไวขึ้นมาก)
+                const base64 = canvas.toDataURL('image/jpeg', 0.5); 
 
-                            // หน่วงเวลา 2.5 วินาทีให้ผู้ใช้ได้อ่านแจ้งเตือนก่อนปิดหน้าต่าง
-                            setTimeout(() => {
-                                if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
-                                    liff.closeWindow();
-                                } else {
-                                    window.close(); 
-                                }
-                            }, 2500);
+                fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'submitRepair',
+                        lineId: lineId, 
+                        lineName: lineName, 
+                        detail: detail,
+                        lat: lat,
+                        lng: lng,
+                        imageBlob: base64
+                    })
+                }).then(res => res.json()).then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ทีมช่าง';
 
-                        } else {
-                            showToast('ขัดข้อง: ' + data.message, 'error');
-                        }
-                    }).catch(err => {
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ทีมช่าง';
-                        showToast('การเชื่อมต่อล้มเหลว โปรดลองอีกครั้ง', 'error');
-                    });
-                };
-                img.src = e.target.result;
+                    if(data.success) {
+                        showToast('✅ ส่งเรื่องแจ้งซ่อมเรียบร้อยแล้วครับ!', 'success');
+                        
+                        // เคลียร์ค่า
+                        document.getElementById('detail').value = '';
+                        document.getElementById('imageFile').value = '';
+                        document.getElementById('preview').classList.add('hidden');
+                        document.getElementById('placeholder').classList.remove('hidden');
+
+                        // หน่วงเวลาให้ผู้ใช้ได้อ่านแจ้งเตือนก่อนปิดหน้าต่าง
+                        setTimeout(() => {
+                            if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
+                                liff.closeWindow();
+                            } else {
+                                window.close(); 
+                            }
+                        }, 2500);
+
+                    } else {
+                        showToast('ขัดข้อง: ' + data.message, 'error');
+                    }
+                }).catch(err => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ทีมช่าง';
+                    showToast('การเชื่อมต่อล้มเหลว โปรดลองอีกครั้ง', 'error');
+                });
             };
-            reader.readAsDataURL(fileInput.files[0]);
+            
+            // สั่งให้ Image เริ่มโหลดข้อมูลจาก URL ชั่วคราว
+            img.src = objectUrl;
         }
     </script>
 </body>
