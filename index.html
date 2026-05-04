@@ -1932,26 +1932,22 @@ function filterByStatus(status) {
 }
 
 // ==========================================
-// 3. ระบบซ่อน/โชว์ การ์ดบ้าน (ทำงานร่วมกันทั้งช่องค้นหาและกล่อง)
+// 🌟 3. ระบบซ่อน/โชว์ และเรียงลำดับการ์ดบ้าน (ฉบับอัจฉริยะ)
 // ==========================================
 function handleSearch(keyword) {
     const searchText = (keyword || "").trim().toLowerCase();
-    const cards = document.getElementsByClassName('user-card');
+    const listContainer = document.getElementById('user-list');
+    const cards = Array.from(listContainer.getElementsByClassName('user-card'));
     const statusFilter = window.currentStatusFilter || 'all'; 
-    let visibleCount = 0;
+    let visibleCards = [];
 
-    // เช็คการ์ดทีละใบ
-    for (let i = 0; i < cards.length; i++) {
-        const card = cards[i];
-        
-        // เราจะเช็คสถานะจาก "ข้อความ" ที่ปรากฏในการ์ดแต่ละใบโดยตรง (แม่นยำ 100%)
+    // 1. คัดกรองการ์ดตามคำค้นหาและสถานะ (เหมือนเดิม)
+    cards.forEach(card => {
         const cardText = card.innerText.toLowerCase();
         const cardHtml = card.innerHTML.toLowerCase();
         
-        // เงื่อนไข 1: ตรงกับช่องค้นหาไหม?
         const isMatchText = cardText.includes(searchText);
 
-        // เงื่อนไข 2: ตรงกับสถานะกล่องที่กดไหม?
         let isMatchStatus = true;
         if (statusFilter !== 'all') {
             if (statusFilter === 'none') {
@@ -1959,31 +1955,63 @@ function handleSearch(keyword) {
             } else if (statusFilter === 'waiting') {
                 isMatchStatus = cardText.includes('รอชำระ');
             } else if (statusFilter === 'paid') {
-                // 🌟 ดึงบ้านที่มีคำว่า ชำระแล้ว, โอนเงิน หรือ ใช้น้ำฟรี มาแสดงทั้งหมด
                 isMatchStatus = cardText.includes('ชำระแล้ว') || cardText.includes('โอนเงิน') || cardText.includes('ใช้น้ำฟรี');
             } else if (statusFilter === 'overdue') {
-                // คนค้างชำระ จะมีป้ายสีแดง (ค้าง...เดือน)
                 isMatchStatus = cardHtml.includes('ค้าง') || cardText.includes('ค้าง');
             }
         }
 
-        // 🌟 แสดงบ้านหลังนี้ ก็ต่อเมื่อตรงทั้ง "คำค้นหา" และ "สถานะกล่อง"
         if (isMatchText && isMatchStatus) {
-            // ป้องกันรูปแบบ flex/block ตีกัน
-            if (card.classList.contains('flex')) {
-                card.style.display = "flex";
-            } else {
-                card.style.display = "block";
-            }
-            visibleCount++;
+            visibleCards.push(card);
         } else {
             card.style.display = "none";
         }
-    }
+    });
+
+    // 2. 🧠 จัดเรียงลำดับใหม่ให้ฉลาดขึ้น (Smart Sort)
+    visibleCards.sort((a, b) => {
+        // ดึงข้อความเฉพาะ "บ้านเลขที่" และ "ชื่อ" ออกมาเป็นเกณฑ์หลัก
+        const houseA = (a.querySelector('.font-black.text-slate-800')?.innerText || "").toLowerCase().trim();
+        const houseB = (b.querySelector('.font-black.text-slate-800')?.innerText || "").toLowerCase().trim();
+        const nameA = (a.querySelector('p.text-slate-500.truncate')?.innerText || "").toLowerCase().trim();
+        const nameB = (b.querySelector('p.text-slate-500.truncate')?.innerText || "").toLowerCase().trim();
+
+        if (searchText !== "") {
+            // 🥇 กฎข้อ 1: บ้านเลขที่ตรงเป๊ะๆ ให้อยู่บนสุด
+            const exactA = houseA === searchText;
+            const exactB = houseB === searchText;
+            if (exactA && !exactB) return -1;
+            if (!exactA && exactB) return 1;
+
+            // 🥈 กฎข้อ 2: บ้านเลขที่ หรือ ชื่อ "ขึ้นต้นด้วย" คำที่ค้นหา
+            const startsWithA = houseA.startsWith(searchText) || nameA.startsWith(searchText);
+            const startsWithB = houseB.startsWith(searchText) || nameB.startsWith(searchText);
+            if (startsWithA && !startsWithB) return -1;
+            if (!startsWithA && startsWithB) return 1;
+            
+            // 🥉 กฎข้อ 3: บ้านเลขที่ หรือ ชื่อ "มีคำค้นหาซ่อนอยู่"
+            const includesA = houseA.includes(searchText) || nameA.includes(searchText);
+            const includesB = houseB.includes(searchText) || nameB.includes(searchText);
+            if (includesA && !includesB) return -1;
+            if (!includesA && includesB) return 1;
+            
+            // (ถ้าไม่เข้า 3 กฎแรก แสดงว่าคำค้นหาไปตรงกับยอดเงิน/เลขมิเตอร์ ฯลฯ ระบบจะปัดให้ไปอยู่ล่างๆ)
+        }
+
+        // 🏅 กฎข้อสุดท้าย: ถ้าเงื่อนไขเท่ากัน ให้เรียงตาม "ตัวเลขบ้านเลขที่" (Numeric Sort)
+        // เทคนิคนี้จะทำให้บ้านเลขที่ 2 มาก่อบ 10 (เรียงแบบมนุษย์เข้าใจ)
+        return houseA.localeCompare(houseB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
+    // 3. นำการ์ดที่เรียงเสร็จแล้วกลับไปแสดงในหน้าจอ
+    visibleCards.forEach(card => {
+        card.style.display = "block";
+        listContainer.appendChild(card); // เอาไปต่อท้ายตามลำดับใหม่
+    });
     
-    // อัปเดตจำนวนหลังที่ค้นเจอ เฉพาะในช่องค้นหา (ไม่เกี่ยวกับ 4 กล่องด้านบนแล้ว)
+    // อัปเดตจำนวนหลังที่ค้นเจอ
     const countEl = document.getElementById('search-count');
-    if (countEl) countEl.innerText = visibleCount + " หลัง";
+    if (countEl) countEl.innerText = visibleCards.length + " หลัง";
 }
 
         // ==========================================
