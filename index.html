@@ -4294,40 +4294,19 @@ function renderFinanceHistory(history) {
     </div>
   </div>
 
-  <div id="collector-stats-modal"
-    class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 opacity-0">
-    <div id="collector-stats-box"
-      class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300 relative border border-white/20">
-
-      <div class="p-6 bg-gradient-to-br from-blue-600 to-indigo-700 text-white text-center relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
-        <button onclick="closeCollectorStats()" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-white/40 rounded-full transition active:scale-90"><i class="fas fa-times"></i></button>
-        <div
-          class="w-16 h-16 mx-auto bg-white/20 rounded-full flex items-center justify-center text-2xl mb-2 border border-white/30 backdrop-blur-md shadow-sm">
-          <i class="fas fa-user-tie"></i>
-        </div>
-        <h2 class="text-xl font-bold" id="stats-collector-name">ชื่อกรรมการ</h2>
-        <p class="text-blue-100 text-sm opacity-90 font-light mt-1">สรุปยอดเงินสดในมือ (เดือนปัจจุบัน)</p>
-      </div>
-
-      <div class="p-6" id="stats-loading-area">
-        <div class="flex flex-col items-center justify-center py-8">
-          <i class="fas fa-circle-notch fa-spin text-3xl text-blue-500 mb-3"></i>
-          <p class="text-slate-500 text-sm font-medium">กำลังคำนวณยอดเงิน...</p>
-        </div>
-      </div>
-
-      <div class="p-5 hidden" id="stats-data-area">
+  <div class="p-5 hidden" id="stats-data-area">
         <div class="grid grid-cols-2 gap-3 mb-5">
+          <!-- 🌟 กล่องที่ 1: เก็บบิลใหม่ของเดือนนี้ -->
           <div class="bg-blue-50 rounded-2xl p-4 text-center border border-blue-100 shadow-sm">
             <i class="fas fa-home text-blue-500 text-xl mb-1"></i>
             <div class="text-2xl font-black text-slate-800" id="stats-house-count">0</div>
-            <div class="text-[11px] font-bold text-slate-500">เก็บเงินสด (หลัง)</div>
+            <div class="text-[11px] font-bold text-slate-500">เก็บบิลใหม่ (หลัง)</div>
           </div>
+          <!-- 🌟 กล่องที่ 2: เก็บยอดค้างเก่าของเดือนก่อนๆ -->
           <div class="bg-orange-50 rounded-2xl p-4 text-center border border-orange-100 shadow-sm">
-            <i class="fas fa-clock text-orange-500 text-xl mb-1"></i>
+            <i class="fas fa-history text-orange-500 text-xl mb-1"></i>
             <div class="text-2xl font-black text-slate-800" id="stats-waiting">0</div>
-            <div class="text-[11px] font-bold text-slate-500">บิลรอชำระทั้งหมด</div>
+            <div class="text-[11px] font-bold text-slate-500">เก็บค้างเก่า (หลัง)</div>
           </div>
         </div>
 
@@ -4354,8 +4333,6 @@ function renderFinanceHistory(history) {
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
   <div id="change-meter-modal" onclick="if(event.target === this) closeChangeMeterMenu()"
     class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300 opacity-0">
@@ -4514,8 +4491,11 @@ function renderFinanceHistory(history) {
               document.getElementById('stats-loading-area').classList.add('hidden');
               
               if(result.success) {
-                  document.getElementById('stats-house-count').innerText = result.data.housesCount;
-                  document.getElementById('stats-waiting').innerText = Number(result.data.currentMonthWaiting).toLocaleString('th-TH');
+                  // 🌟 ดึงข้อมูลจำนวนบ้านที่เก็บได้ (บิลใหม่)
+                  document.getElementById('stats-house-count').innerText = Number(result.data.currentHousesCount).toLocaleString('th-TH');
+                  // 🌟 ดึงข้อมูลจำนวนบ้านที่เก็บได้ (บิลเก่า)
+                  document.getElementById('stats-waiting').innerText = Number(result.data.overdueHousesCount).toLocaleString('th-TH');
+                  
                   document.getElementById('stats-current-cash').innerText = Number(result.data.currentMonthCash).toLocaleString('th-TH') + ' บ.';
                   document.getElementById('stats-overdue-cash').innerText = Number(result.data.overdueCash).toLocaleString('th-TH') + ' บ.';
                   document.getElementById('stats-total-cash').innerText = Number(result.data.totalCash).toLocaleString('th-TH') + ' บ.';
