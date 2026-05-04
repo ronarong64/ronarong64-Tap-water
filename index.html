@@ -1932,7 +1932,7 @@ function filterByStatus(status) {
 }
 
 // ==========================================
-// 🌟 3. ระบบซ่อน/โชว์ และเรียงลำดับการ์ดบ้าน (ฉบับอัจฉริยะ)
+// 🌟 3. ระบบซ่อน/โชว์ และเรียงลำดับการ์ดบ้าน
 // ==========================================
 function handleSearch(keyword) {
     const searchText = (keyword || "").trim().toLowerCase();
@@ -1941,7 +1941,6 @@ function handleSearch(keyword) {
     const statusFilter = window.currentStatusFilter || 'all'; 
     let visibleCards = [];
 
-    // 1. คัดกรองการ์ดตามคำค้นหาและสถานะ (เหมือนเดิม)
     cards.forEach(card => {
         const cardText = card.innerText.toLowerCase();
         const cardHtml = card.innerHTML.toLowerCase();
@@ -1968,7 +1967,6 @@ function handleSearch(keyword) {
         }
     });
 
-    // 2. 🧠 จัดเรียงลำดับใหม่ให้ฉลาดขึ้น (Smart Sort)
     visibleCards.sort((a, b) => {
         // ดึงข้อความเฉพาะ "บ้านเลขที่" และ "ชื่อ" ออกมาเป็นเกณฑ์หลัก
         const houseA = (a.querySelector('.font-black.text-slate-800')?.innerText || "").toLowerCase().trim();
