@@ -5501,9 +5501,14 @@ function closeCustomAlert() {
           <p class="text-[11px] text-slate-300">กำหนดสิทธิ์เข้าใช้งานในระบบ</p>
         </div>
       </div>
-      <button onclick="openAccountModal('add')" class="bg-blue-500 hover:bg-blue-600 px-3 py-2 rounded-lg text-sm font-bold shadow transition active:scale-95">
-        <i class="fas fa-plus"></i> เพิ่ม
-      </button>
+      <div class="flex gap-2">
+        <button onclick="openAdminDirectorScreen()" class="bg-indigo-500 hover:bg-indigo-600 px-3 py-2 rounded-lg text-sm font-bold shadow transition active:scale-95 text-white">
+          <i class="fas fa-user-tie"></i> กรรมการ
+        </button>
+        <button onclick="openAccountModal('add')" class="bg-blue-500 hover:bg-blue-600 px-3 py-2 rounded-lg text-sm font-bold shadow transition active:scale-95 text-white">
+          <i class="fas fa-plus"></i> เพิ่ม
+        </button>
+      </div>
     </header>
 
     <main class="flex-1 overflow-y-auto p-4 hide-scrollbar">
@@ -5542,6 +5547,65 @@ function closeCustomAlert() {
       </div>
       <div class="p-5 pt-0">
         <button id="btn-save-account" onclick="saveAccountData()" class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg transition active:scale-95">
+          บันทึกข้อมูล
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- หน้าจอ จัดการคณะกรรมการ -->
+  <div id="admin-director-screen"
+    class="hidden fixed inset-0 z-[150] bg-slate-50 flex flex-col w-full max-w-md mx-auto shadow-2xl overflow-hidden">
+    <header
+      class="bg-gradient-to-r from-indigo-700 to-blue-800 text-white px-5 py-4 shrink-0 flex items-center justify-between shadow-lg relative">
+      <div class="flex items-center gap-3">
+        <button onclick="document.getElementById('admin-director-screen').classList.add('hidden'); document.getElementById('admin-account-screen').classList.remove('hidden');" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition shadow-sm">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div>
+          <h2 class="font-bold text-[18px] leading-tight">จัดการคณะกรรมการ</h2>
+          <p class="text-[11px] text-indigo-200">แก้ไขตำแหน่งและลบข้อมูล</p>
+        </div>
+      </div>
+    </header>
+    <main class="flex-1 overflow-y-auto p-4 hide-scrollbar">
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-3">
+        <div id="directors-list-body" class="space-y-2"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal แก้ไขตำแหน่งกรรมการ -->
+  <div id="director-modal"
+    class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+    <div id="director-modal-box"
+      class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300">
+      <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        <h3 class="font-bold text-slate-800" id="dir-modal-title">แก้ไขตำแหน่งกรรมการ</h3>
+        <button onclick="closeDirectorModal()" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="p-5 space-y-4 text-center">
+        <div class="w-20 h-20 mx-auto rounded-2xl bg-slate-100 overflow-hidden shadow-sm border border-slate-200 mb-2">
+          <img id="dir-image" src="" alt="profile" class="w-full h-full object-cover">
+        </div>
+        <h4 class="font-bold text-slate-800 text-lg" id="dir-name">ชื่อกรรมการ</h4>
+        <p class="text-xs text-slate-500 font-mono" id="dir-code">A001</p>
+
+        <input type="hidden" id="dir-row">
+        <div class="text-left mt-4">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">ตำแหน่งหน้าที่</label>
+          <select id="dir-position" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 mt-1 outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 font-bold text-slate-700">
+            <option value="">-- ไม่ระบุตำแหน่ง --</option>
+            <option value="ประธาน">ประธาน</option>
+            <option value="รองประธาน">รองประธาน</option>
+            <option value="เลขานุการ">เลขานุการ</option>
+            <option value="เหรัญญิก">เหรัญญิก</option>
+            <option value="กรรมการ">กรรมการ</option>
+          </select>
+        </div>
+      </div>
+      <div class="p-5 pt-0">
+        <button id="btn-save-director" onclick="saveDirectorData()" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold rounded-xl shadow-lg transition active:scale-95">
           บันทึกข้อมูล
         </button>
       </div>
@@ -5756,6 +5820,123 @@ function closeCustomAlert() {
                     loadAccountsData();
                 }
             } catch (e) {}
+        });
+    }
+
+    // ==========================================
+    // ฟังก์ชันจัดการ คณะกรรมการ (Director)
+    // ==========================================
+    let globalDirectors = [];
+
+    function openAdminDirectorScreen() {
+        document.getElementById('admin-account-screen').classList.add('hidden');
+        document.getElementById('admin-director-screen').classList.remove('hidden');
+        loadDirectorsData();
+    }
+
+    async function loadDirectorsData() {
+        const listBody = document.getElementById('directors-list-body');
+        listBody.innerHTML = `<div class="text-center py-10 text-slate-400"><i class="fas fa-circle-notch fa-spin text-3xl mb-3 text-indigo-500"></i><br>ดึงข้อมูลกรรมการ...</div>`;
+        try {
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getDirectors" }) });
+            const result = await res.json();
+            if (result.success) {
+                globalDirectors = result.directors;
+                renderDirectorsList();
+            }
+        } catch (e) {
+            listBody.innerHTML = `<div class="text-center py-10 text-red-500">เกิดข้อผิดพลาด</div>`;
+        }
+    }
+
+    function renderDirectorsList() {
+        const listBody = document.getElementById('directors-list-body');
+        let html = "";
+        globalDirectors.forEach((dir) => {
+            let avatar = dir.image ? `<img src="${dir.image}" class="w-full h-full object-cover">` : `<i class="fas fa-user text-slate-400"></i>`;
+            let posBadge = dir.position ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">${dir.position}</span>` : `<span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded border border-slate-200">ยังไม่ระบุตำแหน่ง</span>`;
+
+            html += `
+            <div class="flex items-center justify-between p-3 bg-white border border-slate-100 shadow-sm rounded-2xl mb-2">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border border-slate-200">
+                        ${avatar}
+                    </div>
+                    <div class="min-w-0">
+                        <div class="font-bold text-slate-800 text-[14px] truncate mb-1">${dir.name}</div>
+                        <div class="flex items-center gap-2 text-[10px] font-bold">
+                            <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 font-mono">${dir.code}</span>
+                            ${posBadge}
+                        </div>
+                        <div class="text-[10px] text-slate-500 mt-1"><i class="fas fa-phone-alt"></i> ${dir.phone || "-"}</div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col gap-1 shrink-0 ml-2">
+                    <button onclick="openDirectorModal(${dir.row})" class="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg active:scale-90 transition"><i class="fas fa-edit text-xs"></i></button>
+                    <button onclick="deleteDirectorRow(${dir.row})" class="w-8 h-8 bg-rose-50 text-rose-500 rounded-lg active:scale-90 transition"><i class="fas fa-trash text-xs"></i></button>
+                </div>
+            </div>`;
+        });
+        listBody.innerHTML = html || '<div class="text-center py-10 text-slate-400">ไม่มีข้อมูลกรรมการ</div>';
+    }
+
+    function openDirectorModal(row) {
+        const dir = globalDirectors.find(d => d.row === row);
+        if (!dir) return;
+
+        document.getElementById('dir-row').value = dir.row;
+        document.getElementById('dir-name').innerText = dir.name;
+        document.getElementById('dir-code').innerText = dir.code;
+        document.getElementById('dir-image').src = dir.image || "https://via.placeholder.com/150";
+        
+        const selectPos = document.getElementById('dir-position');
+        selectPos.value = dir.position || "";
+
+        const modal = document.getElementById('director-modal');
+        const box = document.getElementById('director-modal-box');
+        modal.classList.remove('hidden');
+        setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+    }
+
+    function closeDirectorModal() {
+        const modal = document.getElementById('director-modal');
+        const box = document.getElementById('director-modal-box');
+        modal.classList.add('opacity-0'); box.classList.add('scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    async function saveDirectorData() {
+        const row = document.getElementById('dir-row').value;
+        const position = document.getElementById('dir-position').value;
+        const btn = document.getElementById('btn-save-director');
+
+        const payload = { action: "updateDirector", row: row, position: position };
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> กำลังบันทึก...`;
+
+        try {
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await res.json();
+            if (result.success) {
+                showToast(result.message, "success");
+                closeDirectorModal();
+                loadDirectorsData();
+            } else showToast("ผิดพลาด", "error");
+        } catch (e) { showToast("เชื่อมต่อล้มเหลว", "error"); }
+        finally { btn.disabled = false; btn.innerHTML = `บันทึกข้อมูล`; }
+    }
+
+    function deleteDirectorRow(row) {
+        openConfirmModal("ลบข้อมูลกรรมการ", "ยืนยันการลบข้อมูลกรรมการท่านนี้ออกจากระบบถาวร?", "ลบข้อมูล", async () => {
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "deleteDirector", row }) });
+                const result = await res.json();
+                if (result.success) {
+                    showToast(result.message, "success");
+                    loadDirectorsData();
+                }
+            } catch (e) { showToast("เชื่อมต่อล้มเหลว", "error"); }
         });
     }
 
