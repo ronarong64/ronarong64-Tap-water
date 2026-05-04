@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบแจ้งซ่อมประปา</title>
+    <title>แจ้งซ่อมประปาบ้านหนองบัว</title>
     
     <link rel="preconnect" href="https://script.google.com" crossorigin>
     <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
@@ -17,8 +17,8 @@
 </head>
 <body class="p-4 flex flex-col items-center justify-center min-h-screen relative overflow-x-hidden">
 
-    <!-- 🌟 คอนเทนเนอร์สำหรับใส่ป๊อปอัปแจ้งเตือน -->
-    <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] flex flex-col items-center gap-3 pointer-events-none w-full px-4"></div>
+    <!-- 🌟 คอนเทนเนอร์สำหรับใส่ป๊อปอัปแจ้งเตือน (ย้ายมาไว้ตรงกลางจอ) -->
+    <div id="toast-container" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] flex flex-col items-center gap-3 pointer-events-none w-full px-6"></div>
 
     <div class="bg-white w-full max-w-md rounded-[2rem] shadow-xl overflow-hidden border border-slate-100">
         
@@ -82,57 +82,60 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbz_rkhS9bIVqcWGTNa2PhGfdw0Ik3cWy6rHzSU_pYtR9nQY7PupMSUdfqLaUgUGBLtj/exec"; 
 
         // ==========================================
-        // 🌟 ฟังก์ชันแจ้งเตือนแบบ Modern (Toast)
+        // 🌟 ฟังก์ชันแจ้งเตือนตรงกลางจอ สีเด่นชัด และค่อยๆ จางหาย
         // ==========================================
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             
             let icon = 'fa-check-circle';
-            let iconColor = 'text-emerald-500';
-            let bgLight = 'bg-emerald-50';
-            let progressColor = 'bg-emerald-500';
+            let bgClass = 'bg-emerald-500';
 
             if (type === 'error') {
-                icon = 'fa-times-circle'; iconColor = 'text-rose-500'; bgLight = 'bg-rose-50'; progressColor = 'bg-rose-500';
+                icon = 'fa-times-circle'; 
+                bgClass = 'bg-rose-600'; 
             } else if (type === 'warning') {
-                icon = 'fa-exclamation-triangle'; iconColor = 'text-amber-500'; bgLight = 'bg-amber-50'; progressColor = 'bg-amber-500';
+                icon = 'fa-exclamation-triangle'; 
+                bgClass = 'bg-amber-500'; 
             }
 
-            toast.className = `bg-white/90 backdrop-blur-xl text-slate-700 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] flex flex-col transform -translate-y-10 opacity-0 transition-all duration-500 pointer-events-auto w-full max-w-sm overflow-hidden border border-slate-100`;
+            // ตั้งค่าพื้นหลังสีทึบ ตัวอักษรสีขาวเงาเด่นๆ
+            toast.className = `${bgClass} text-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col transform scale-90 opacity-0 transition-all duration-300 ease-out pointer-events-auto w-full max-w-[280px] overflow-hidden`;
             
             toast.innerHTML = `
-                <div class="p-3.5 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full ${bgLight} flex items-center justify-center shrink-0 border border-white shadow-inner">
-                        <i class="fas ${icon} text-lg ${iconColor} drop-shadow-sm"></i>
-                    </div>
-                    <div class="font-bold text-[13px] flex-1 leading-snug text-slate-700">
+                <div class="p-6 flex flex-col items-center justify-center gap-3 text-center">
+                    <i class="fas ${icon} text-5xl drop-shadow-md mb-1"></i>
+                    <div class="font-bold text-[16px] leading-relaxed drop-shadow-sm w-full">
                         ${message}
                     </div>
                 </div>
-                <div class="w-full h-1 bg-slate-100">
-                    <div class="h-full ${progressColor} transition-all duration-[3000ms] ease-linear rounded-r-full" style="width: 100%;"></div>
+                <div class="w-full h-1.5 bg-black/20">
+                    <div class="h-full bg-white transition-all duration-[2500ms] ease-linear rounded-r-full" style="width: 100%;"></div>
                 </div>
             `;
             
             container.appendChild(toast);
 
-            // Animate เด้งลงมา
+            // เด้งและชัดขึ้น (Fade In & Scale Up)
             setTimeout(() => {
-                toast.classList.remove('-translate-y-10', 'opacity-0');
-                toast.classList.add('translate-y-0', 'opacity-100');
+                toast.classList.remove('scale-90', 'opacity-0');
+                toast.classList.add('scale-100', 'opacity-100');
+                
+                // ให้หลอดเวลาวิ่ง
                 setTimeout(() => {
                     const progressBar = toast.querySelector('div.h-full');
                     if (progressBar) progressBar.style.width = '0%';
                 }, 50);
             }, 10);
 
-            // Animate หายไป
+            // ค่อยๆ จางหายไป (Fade Out)
             setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('-translate-y-10', 'opacity-0');
-                setTimeout(() => toast.remove(), 500);
-            }, 3000);
+                toast.classList.remove('scale-100', 'opacity-100');
+                toast.classList.add('scale-95', 'opacity-0'); // ค่อยๆ หดและจาง
+                
+                // ลบทิ้งหลังจากจางเสร็จ
+                setTimeout(() => toast.remove(), 300);
+            }, 2500); // แสดงผลค้างไว้ 2.5 วินาที
         }
 
         window.onload = () => {
@@ -213,7 +216,6 @@
             const fileInput = document.getElementById('imageFile');
             const btn = document.getElementById('btn-submit');
 
-            // 🌟 เปลี่ยนมาใช้ระบบแจ้งเตือนแบบใหม่
             if (!lineId) return showToast('กำลังประมวลผลข้อมูล LINE โปรดรอสักครู่...', 'warning');
             if (!detail) return showToast('กรุณาระบุรายละเอียดที่ชำรุดด้วยครับ', 'warning');
             if (!fileInput.files[0]) return showToast('กรุณาถ่ายภาพจุดที่ชำรุดประกอบการแจ้งซ่อม', 'warning');
