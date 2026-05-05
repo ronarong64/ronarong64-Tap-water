@@ -6644,10 +6644,17 @@ function prepareAndPrintNotice(selectedData) {
           const dateParts = parts[0].split('/'); // แยก วัน, เดือน, ปี
           
           if (dateParts.length === 3) {
-              const d = dateParts[0];
+              const d = dateParts[0].padStart(2, '0');
               const mIndex = parseInt(dateParts[1], 10) - 1; 
-              const y = dateParts[2];
-              const timeStr = parts[1] ? " " + parts[1] : "";
+              let y = parseInt(dateParts[2], 10);
+              
+              // 🎯 ดักจับปี ค.ศ. ถ้าปีน้อยกว่า 2500 ให้บวก 543 ให้เป็น พ.ศ. ทันที
+              if (y < 2500) {
+                  y += 543;
+              }
+              
+              // 🎯 ดึงเฉพาะ ชั่วโมง:นาที (ตัดวินาทีทิ้งถ้ามี)
+              const timeStr = parts[1] ? " " + parts[1].substring(0, 5) : ""; 
               const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
               
               if (mIndex >= 0 && mIndex < 12) {
