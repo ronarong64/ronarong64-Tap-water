@@ -6636,7 +6636,26 @@ function prepareAndPrintNotice(selectedData) {
       // ใส่ข้อมูลลงใน Modal
       document.getElementById('slip-modal-house').innerText = `บ้านเลขที่ ${user.houseNo} (${user.name})`;
       document.getElementById('slip-modal-amount').innerText = Number(user.amount || 0).toLocaleString();
-      document.getElementById('slip-modal-date').innerText = user.paidDate || "-";
+      
+      // 🌟 แปลงรูปแบบวันที่ให้ออกมาเป็นแบบ 05/เม.ย./2569 16:25
+      let pDateStr = user.paidDate || "-";
+      if (pDateStr !== "-" && pDateStr.includes('/')) {
+          const parts = pDateStr.split(' '); // แยกวันที่ กับ เวลา
+          const dateParts = parts[0].split('/'); // แยก วัน, เดือน, ปี
+          
+          if (dateParts.length === 3) {
+              const d = dateParts[0];
+              const mIndex = parseInt(dateParts[1], 10) - 1; 
+              const y = dateParts[2];
+              const timeStr = parts[1] ? " " + parts[1] : "";
+              const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+              
+              if (mIndex >= 0 && mIndex < 12) {
+                  pDateStr = `${d}/${thMonths[mIndex]}/${y}${timeStr}`;
+              }
+          }
+      }
+      document.getElementById('slip-modal-date').innerText = pDateStr;
       
       // ใส่ลิงก์รูปสลิป
       const imgEl = document.getElementById('slip-modal-img');
