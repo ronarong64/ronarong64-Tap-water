@@ -2122,9 +2122,147 @@ function toggleOption(elementId, isChecked) {
             // เดี๋ยวเราเอาโค้ดระบบเปลี่ยนมิเตอร์ที่คุณเคยเขียนไว้มาใส่ตรงนี้ทีหลังครับ
         }
 
-        function openDirectorsModal() {
-            console.log("ต้องการเปิดหน้า: คณะกรรมการ");
-            toggleMenu(); // สั่งให้หุบเมนูเก็บทันทีหลังกด
+        // ==========================================
+        // 👥 ระบบแสดงและพิมพ์ คณะกรรมการกลุ่ม (ทำเนียบ)
+        // ==========================================
+        let globalCommitteeData = []; // เก็บข้อมูลไว้สำหรับกดพิมพ์
+
+        async function openDirectorsModal() {
+            // หุบเมนูด้านข้างก่อน
+            if (typeof toggleMenu === 'function') toggleMenu(); 
+            
+            const modal = document.getElementById('committee-modal');
+            const box = document.getElementById('committee-modal-box');
+            const listBody = document.getElementById('committee-list-body');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+            
+            listBody.innerHTML = `<div class="col-span-full text-center py-12"><i class="fas fa-circle-notch fa-spin text-4xl text-emerald-500 mb-3"></i><p class="text-sm font-bold text-slate-500">กำลังดึงข้อมูล...</p></div>`;
+
+            try {
+                // ยิง API ตัวเดิมที่เราสร้างไว้เพื่อดึงข้อมูลกรรมการ
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getDirectors" }) });
+                const result = await res.json();
+                
+                if (result.success) {
+                    globalCommitteeData = result.directors;
+                    renderCommitteeList(globalCommitteeData);
+                } else {
+                    listBody.innerHTML = `<div class="col-span-full text-center py-10 text-rose-500 font-bold bg-rose-50 rounded-2xl border border-rose-100">${result.message || 'ไม่พบข้อมูล'}</div>`;
+                }
+            } catch (e) {
+                listBody.innerHTML = `<div class="col-span-full text-center py-10 text-rose-500 font-bold bg-rose-50 rounded-2xl border border-rose-100">เกิดข้อผิดพลาดในการเชื่อมต่อ</div>`;
+            }
+        }
+
+        function closeDirectorsModal() {
+            const modal = document.getElementById('committee-modal');
+            const box = document.getElementById('committee-modal-box');
+            modal.classList.add('opacity-0'); box.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function renderCommitteeList(data) {
+            const listBody = document.getElementById('committee-list-body');
+            if (!data || data.length === 0) {
+                listBody.innerHTML = `<div class="col-span-full text-center py-10 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">ยังไม่มีการเพิ่มข้อมูลคณะกรรมการในระบบ</div>`;
+                return;
+            }
+
+            let html = "";
+            data.forEach(dir => {
+                let avatar = dir.image ? `<img src="${dir.image}" class="w-full h-full object-cover">` : `<i class="fas fa-user text-slate-300 text-2xl"></i>`;
+                let position = dir.position ? dir.position : "กรรมการ";
+                
+                html += `
+                <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 flex items-center gap-3 hover:shadow-md transition-shadow">
+                    <div class="w-14 h-14 rounded-xl bg-slate-50 flex items-center justify-center overflow-hidden shrink-0 border border-slate-200">
+                        ${avatar}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="font-bold text-slate-800 text-[14px] truncate leading-tight mb-0.5">${dir.name}</div>
+                        <div class="text-[11px] font-bold text-emerald-600 mb-1 flex items-center gap-1">
+                            <i class="fas fa-award text-emerald-400"></i> ${position}
+                        </div>
+                        <div class="text-[10px] text-slate-500 flex items-center gap-1 font-mono">
+                            <i class="fas fa-phone-alt opacity-70"></i> ${dir.phone || "-"}
+                        </div>
+                    </div>
+                </div>`;
+            });
+            listBody.innerHTML = html;
+        }
+
+        function printCommitteeReport() {
+            if (!globalCommitteeData || globalCommitteeData.length === 0) {
+                showToast("ไม่มีข้อมูลสำหรับพิมพ์", "warning");
+                return;
+            }
+
+            let p = document.getElementById('print-section');
+            if (!p) {
+                p = document.createElement('div');
+                p.id = 'print-section';
+                document.body.appendChild(p);
+            }
+
+            const now = new Date();
+            const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+            const printedDate = `${now.getDate()} ${thMonths[now.getMonth()]} ${now.getFullYear()+543}`;
+
+            // สร้างกริดการ์ดบนกระดาษ
+            let gridHtml = '';
+            globalCommitteeData.forEach(dir => {
+                let avatarSrc = dir.image || "https://via.placeholder.com/150?text=No+Image";
+                let position = dir.position ? dir.position : "กรรมการ";
+                gridHtml += `
+                <div style="width: 31%; margin-bottom: 25px; text-align: center; border: 2px solid #e5e7eb; border-radius: 16px; padding: 20px 10px; box-sizing: border-box; background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <div style="width: 90px; height: 90px; margin: 0 auto 15px auto; border-radius: 50%; overflow: hidden; border: 4px solid #10b981; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <img src="${avatarSrc}" style="width: 90px; height: 90px; object-fit: cover; display: block;" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+                    </div>
+                    <div style="font-size: 14pt; font-weight: bold; color: #1e293b; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${dir.name}</div>
+                    <div style="font-size: 12pt; font-weight: bold; color: #059669; margin-bottom: 8px; background: #d1fae5; display: inline-block; padding: 2px 10px; border-radius: 20px; border: 1px solid #a7f3d0;">${position}</div>
+                    <div style="font-size: 11pt; color: #64748b; font-family: monospace;">เบอร์โทร: ${dir.phone || "-"}</div>
+                </div>
+                `;
+            });
+
+            p.innerHTML = `
+                <style>
+                    @media print {
+                        @page { size: A4 portrait; margin: 0mm; }
+                        body * { visibility: hidden; }
+                        #print-section, #print-section * { visibility: visible; }
+                        #print-section { 
+                            position: absolute; left: 0; top: 0; width: 100%; background: #fff; 
+                            box-sizing: border-box;
+                        }
+                    }
+                </style>
+                <div style="font-family: 'Kanit', sans-serif; width: 100%; color: #000; padding: 15mm 10mm; box-sizing: border-box;">
+                    <div style="text-align: center; margin-bottom: 40px;">
+                        <img src="https://raw.githubusercontent.com/ronarong64/IMG/refs/heads/main/%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%9E%E0%B8%B4%E0%B9%89%E0%B8%99%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%87.png" style="width: 80px; height: 80px; margin-bottom: 10px; opacity: 0.9;">
+                        <h2 style="margin: 0 0 5px 0; font-size: 24pt; font-weight: bold; color: #0f172a;">ทำเนียบคณะกรรมการน้ำประปาหมู่บ้าน</h2>
+                        <h3 style="margin: 0; font-size: 16pt; font-weight: normal; color: #475569;">หมู่ที่ 2 บ้านหนองบัว</h3>
+                    </div>
+
+                    <div style="display: flex; flex-wrap: wrap; justify-content: space-around; gap: 10px;">
+                        ${gridHtml}
+                    </div>
+
+                    <div style="margin-top: 50px; text-align: right; font-size: 11pt; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+                        ข้อมูลปรับปรุงล่าสุด ณ วันที่: ${printedDate}
+                    </div>
+                </div>
+            `;
+
+            // หน่วงเวลาให้รูปภาพโหลดขึ้นกระดาษก่อนสั่งปรินต์
+            setTimeout(() => { window.print(); }, 800);
+
+            window.onafterprint = function() {
+                if (p) p.innerHTML = '';
+            };
         }
 
         // ==========================================
@@ -3918,6 +4056,43 @@ function renderFinanceHistory(history) {
 }
 
   </script>
+
+  <!-- Modal แสดงรายชื่อคณะกรรมการ (โชว์รูปและตำแหน่ง) -->
+  <div id="committee-modal"
+    class="fixed inset-0 z-[160] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300 opacity-0">
+    <div id="committee-modal-box"
+      class="bg-white rounded-[2rem] w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col transform scale-95 transition-transform duration-300 border border-white/20">
+      
+      <!-- Header -->
+      <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-emerald-500 to-teal-600 text-white relative overflow-hidden shrink-0">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mt-10 -mr-10"></div>
+        <div class="flex items-center gap-3 relative z-10">
+          <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shadow-inner border border-white/30">
+            <i class="fas fa-users-cog text-xl"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-lg leading-tight">ทำเนียบคณะกรรมการ</h3>
+            <p class="text-[11px] text-emerald-100 font-medium tracking-wide">หมู่ที่ 2 บ้านหนองบัว</p>
+          </div>
+        </div>
+        <button onclick="closeDirectorsModal()" class="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 shadow-sm flex items-center justify-center transition-colors relative z-10 active:scale-95">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <!-- Body (รายชื่อ) -->
+      <div id="committee-list-body" class="flex-1 overflow-y-auto p-5 bg-slate-50 grid grid-cols-1 sm:grid-cols-2 gap-3 custom-scroll">
+        <!-- ข้อมูลจะถูกวาดลงตรงนี้ -->
+      </div>
+
+      <!-- Footer (ปุ่มพิมพ์) -->
+      <div class="p-5 border-t border-slate-100 bg-white shrink-0">
+        <button onclick="printCommitteeReport()" class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 transition-all active:scale-95 text-sm flex items-center justify-center gap-2">
+          <i class="fas fa-print text-lg"></i> พิมพ์รายชื่อคณะกรรมการ (A4)
+        </button>
+      </div>
+    </div>
+  </div>
 
   <div id="toast-container"
     class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] flex flex-col items-center gap-3 pointer-events-none w-full px-6">
