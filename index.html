@@ -2200,10 +2200,18 @@ function toggleOption(elementId, isChecked) {
                 return;
             }
 
+            let p = document.getElementById('print-section');
+            if (!p) {
+                p = document.createElement('div');
+                p.id = 'print-section';
+                document.body.appendChild(p);
+            }
+
             const now = new Date();
             const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
             const printedDate = `${now.getDate()} ${thMonths[now.getMonth()]} ${now.getFullYear()+543}`;
 
+            // สร้างกริดการ์ดบนกระดาษ
             let gridHtml = '';
             globalCommitteeData.forEach(dir => {
                 let avatarSrc = dir.image || "https://via.placeholder.com/150?text=No+Image";
@@ -2238,7 +2246,9 @@ function toggleOption(elementId, isChecked) {
             <body>
                 <div class="a4-page">
                     <div style="text-align: center; margin-bottom: 40px;">
-                        <img src="https://raw.githubusercontent.com/ronarong64/IMG/refs/heads/main/%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%9E%E0%B8%B4%E0%B9%89%E0%B8%99%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%87.png" style="width: 80px; height: 80px; margin-bottom: 10px; opacity: 0.9;">
+                        <!-- 🌟 แก้ไขส่วนของโลโก้: ปรับขนาดและรักษาสัดส่วน -->
+                        <img src="https://raw.githubusercontent.com/ronarong64/IMG/refs/heads/main/%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B8%9E%E0%B8%B4%E0%B9%89%E0%B8%99%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%87.png" style="height: 85px; width: auto; object-fit: contain; margin-bottom: 10px; opacity: 0.9;">
+                        
                         <h2 style="margin: 0 0 5px 0; font-size: 24pt; font-weight: bold; color: #0f172a;">ทำเนียบคณะกรรมการน้ำประปาหมู่บ้าน</h2>
                         <h3 style="margin: 0; font-size: 16pt; font-weight: normal; color: #475569;">หมู่ที่ 2 บ้านหนองบัว</h3>
                     </div>
