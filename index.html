@@ -2823,7 +2823,10 @@ function openBillingModal(houseNo) {
             const btnPaid = document.getElementById('btn-save-paid');
             const warningBox = document.getElementById('high-usage-warning');
 
-            // 1. ถ้ายังไม่ได้กรอกเลขมิเตอร์ ให้แสดงค่า 0
+            // 🌟 1. เช็คตั้งค่าการใช้น้ำฟรีจากระบบ
+            const isFreeEnabled = document.getElementById('set-free-enabled').checked;
+            const freeLimit = parseInt(document.getElementById('set-free-limit').value) || 0;
+
             if (currUnitInput === "") {
                 document.getElementById('calc-usage').innerText = "0";
                 document.getElementById('calc-current-amount').innerText = "0";
@@ -2834,13 +2837,11 @@ function openBillingModal(houseNo) {
                 return;
             }
 
-            // 2. คำนวณหน่วยน้ำ
             const currUnit = parseInt(currUnitInput);
-            const baseUsage = currUnit - prevUnit; // หน่วยจากมิเตอร์ใหม่
+            const baseUsage = currUnit - prevUnit; 
             const cmUsage = currentBillState.cmUsage || 0;
-            const usage = baseUsage + cmUsage;    // รวมกับมิเตอร์เก่า
+            const usage = baseUsage + cmUsage;    
 
-            // 🛑 กรณีเลขมิเตอร์น้อยกว่าเดิม (ผิดพลาด)
             if (isNaN(baseUsage) || baseUsage < 0) {
                 document.getElementById('calc-usage').innerText = "ผิดพลาด";
                 document.getElementById('calc-current-amount').innerText = "0";
@@ -2850,18 +2851,73 @@ function openBillingModal(houseNo) {
                 if (btnPaid) { btnPaid.disabled = true; btnPaid.classList.add('opacity-50', 'cursor-not-allowed'); }
                 if (warningBox) warningBox.classList.add('hidden');
             } else {
-                // ✅ กรณีเลขถูกต้อง ให้คำนวณเงินและแสดงผล
-                const currentAmount = usage * price;
+                let currentAmount = usage * price;
+                let isFree = false;
+
+                // 🌟 2. ลอจิกใช้น้ำฟรี (ถ้าเปิดใช้งาน และใช้น้ำไม่เกินกำหนด)
+                if (isFreeEnabled && usage <= freeLimit) {
+                    currentAmount = 0;
+                    isFree = true; // เปิดโหมดบิลฟรี
+                }
+
                 const total = currentAmount + overdueAmount;
 
                 document.getElementById('calc-usage').innerText = usage.toLocaleString();
-                document.getElementById('calc-current-amount').innerText = currentAmount.toLocaleString();
+                
+                // 🌟 3. อัปเดต UI ให้แสดงว่าฟรี
+                if (isFree) {
+                    document.getElementById('calc-current-amount').innerHTML = `<span class="text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-lg text-[10px] mr-2 border border-emerald-200">ฟรีสวัสดิการ</span>0`;
+                } else {
+                    document.getElementById('calc-current-amount').innerText = currentAmount.toLocaleString();
+                }
+
                 document.getElementById('calc-total').innerText = total.toLocaleString();
                 
-                if (btnWaiting) { btnWaiting.disabled = false; btnWaiting.classList.remove('opacity-50', 'cursor-not-allowed'); }
-                if (btnPaid) { btnPaid.disabled = false; btnPaid.classList.remove('opacity-50', 'cursor-not-allowed'); }
+                // 🌟 4. จัดการเปลี่ยนปุ่มตามสถานะว่าฟรีหรือไม่
+                if (isFree) {
+                    if (overdueAmount === 0) {
+                        // 🟢 ฟรีทั้งบิล ไม่มีค้างเก่า
+                        if (btnWaiting) btnWaiting.classList.add('hidden');
+                        if (btnPaid) {
+                            btnPaid.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
+                            btnPaid.disabled = false;
+                            btnPaid.innerHTML = `<i class="fas fa-gift text-lg"></i> บันทึกบิลฟรี`;
+                            btnPaid.setAttribute('onclick', "saveBillingData('Free')");
+                            btnPaid.className = "flex-1 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-sm flex items-center justify-center gap-2";
+                        }
+                    } else {
+                        // 🟡 บิลนี้ฟรี แต่มีค้างเก่า
+                        if (btnWaiting) {
+                            btnWaiting.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
+                            btnWaiting.disabled = false;
+                            btnWaiting.innerHTML = `<i class="fas fa-forward text-lg text-amber-500"></i> บันทึกฟรี (รอจ่ายหนี้เก่า)`;
+                            btnWaiting.setAttribute('onclick', "saveBillingData('FreeAndWaiting')");
+                        }
+                        if (btnPaid) {
+                            btnPaid.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
+                            btnPaid.disabled = false;
+                            btnPaid.innerHTML = `<i class="fas fa-hand-holding-usd text-lg"></i> จ่ายหนี้เก่า (${overdueAmount} บ.)`;
+                            btnPaid.setAttribute('onclick', "saveBillingData('FreeAndPaid')");
+                            btnPaid.className = "flex-1 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md shadow-purple-500/30 active:scale-95 transition-all text-sm flex items-center justify-center gap-2";
+                        }
+                    }
+                } else {
+                    // 🔵 บิลปกติ เสียเงิน
+                    if (btnWaiting) {
+                        btnWaiting.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
+                        btnWaiting.disabled = false;
+                        btnWaiting.innerHTML = `<i class="fas fa-clock text-amber-500"></i> รอชำระ`;
+                        btnWaiting.setAttribute('onclick', "saveBillingData('Waiting')");
+                    }
+                    if (btnPaid) {
+                        btnPaid.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
+                        btnPaid.disabled = false;
+                        btnPaid.innerHTML = `<i class="fas fa-hand-holding-usd text-lg"></i> ชำระเงิน`;
+                        btnPaid.setAttribute('onclick', "saveBillingData('Paid')");
+                        btnPaid.className = "flex-1 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md shadow-purple-500/30 active:scale-95 transition-all text-sm flex items-center justify-center gap-2";
+                    }
+                }
 
-                // แจ้งเตือนถ้าใช้น้ำเกิน 50 หน่วย
                 if (warningBox) {
                     if (usage > 50) warningBox.classList.remove('hidden');
                     else warningBox.classList.add('hidden');
@@ -2869,39 +2925,55 @@ function openBillingModal(houseNo) {
             }
         }
 
-        // ==========================================
-        // บันทึกข้อมูลบิล (ปรับปรุง: บังคับคอลัมน์ O เป็น 0 หากสถานะคือ รอชำระ)
-        // ==========================================
         async function saveBillingData(status) {
             const currUnit = document.getElementById('bill-curr-unit').value;
             if (!currUnit) { showToast("กรุณากรอกเลขมิเตอร์ด้วย", "warning"); return; }
 
             let loggedInName = localStorage.getItem("username") || "ไม่ระบุชื่อ";
 
-            // 🌟 1. จัดการข้อมูลยอดค้างชำระตามสถานะที่กด
+            // 🌟 1. จัดการข้อมูลสถานะให้ครอบคลุมบิลฟรี
+            let actualStatus = 'Waiting';
+            let isPayingOverdue = false;
+            let paymentMethod = '';
+
+            if (status === 'Paid') {
+                actualStatus = 'Paid';
+                isPayingOverdue = true;
+                paymentMethod = 'เงินสด';
+            } else if (status === 'Free') {
+                actualStatus = 'Free';
+                isPayingOverdue = false;
+                paymentMethod = 'ใช้น้ำฟรี';
+            } else if (status === 'FreeAndPaid') {
+                actualStatus = 'Free';
+                isPayingOverdue = true;
+                paymentMethod = 'เงินสด (หนี้เก่า)';
+            } else if (status === 'FreeAndWaiting') {
+                actualStatus = 'Free';
+                isPayingOverdue = false;
+                paymentMethod = 'ใช้น้ำฟรี';
+            } else {
+                actualStatus = 'Waiting';
+                isPayingOverdue = false;
+            }
+
             let paidMonthsText = "";
             let overdueToSave = 0;
             let selectedIds = [];
 
-            if (status === 'Paid') {
-                // ถ้ากด "ชำระเงิน" ให้ดึงยอดค้างที่เลือกมาบันทึกจริง
+            if (isPayingOverdue) {
                 selectedIds = currentBillState.selectedOverdueIds || [];
                 if (selectedIds.length > 0) {
-                    const selectedBills = currentBillState.overdueDetails.filter(b => 
-                        selectedIds.includes(b.billingId)
-                    );
+                    const selectedBills = currentBillState.overdueDetails.filter(b => selectedIds.includes(b.billingId));
                     paidMonthsText = selectedBills.map(b => `${formatThaiMonth(b.month)}|${b.amount}`).join(',');
                 }
                 overdueToSave = currentBillState.selectedOverdueAmount;
             } else {
-                // 🎯 [จุดสำคัญ] ถ้ากด "รอชำระ" บังคับให้ OverdueAmount เป็น 0 เพื่อบันทึกลงคอลัมน์ O
                 overdueToSave = 0;
-                paidMonthsText = "";
-                selectedIds = [];
             }
 
             const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(currentBillState.houseNo).trim());
-            const remainingOverdueAmount = user ? (status === 'Paid' ? (user.overdue - overdueToSave) : user.overdue) : 0;
+            const remainingOverdueAmount = user ? (isPayingOverdue ? (user.overdue - overdueToSave) : user.overdue) : 0;
 
             const payload = {
                 action: "saveBilling",
@@ -2912,22 +2984,20 @@ function openBillingModal(houseNo) {
                 usage: parseInt(currUnit) - currentBillState.prevUnit + (currentBillState.cmUsage || 0),
                 cmUsage: currentBillState.cmUsage || 0, 
                 pricePerUnit: parseFloat(document.getElementById('calc-price').innerText) || 0,
-                currentAmount: parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, '')) || 0,
-                
-                // 🌟 บันทึก 0 หรือยอดจริงลงคอลัมน์ O ตามเงื่อนไขด้านบน
+                // กรองเอาข้อความ "ฟรีสวัสดิการ" ออกก่อนแปลงเป็นตัวเลข
+                currentAmount: parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, '').replace(/[^0-9.-]+/g,"")) || 0, 
                 overdueAmount: overdueToSave, 
-                
                 payOverdueIds: selectedIds,
+                isPayingOverdue: isPayingOverdue, // 🌟 ส่งสถานะนี้ไปบอกหลังบ้านว่าจ่ายหนี้เก่า
                 paidMonthsText: paidMonthsText, 
                 remainingOverdue: remainingOverdueAmount,
-                remainingOverdueText: "", 
                 grandTotal: parseFloat(document.getElementById('calc-total').innerText.replace(/,/g, '')) || 0,
-                status: status,
+                status: actualStatus, // 🌟 ส่ง Free, Paid หรือ Waiting เข้า Google Sheet
                 collector: loggedInName, 
-                paymentMethod: status === 'Paid' ? 'เงินสด' : ''
+                paymentMethod: paymentMethod
             };
 
-            const btn = status === 'Waiting' ? document.getElementById('btn-save-waiting') : document.getElementById('btn-save-paid');
+            const btn = (status === 'Waiting' || status === 'FreeAndWaiting') ? document.getElementById('btn-save-waiting') : document.getElementById('btn-save-paid');
             const oldText = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...`;
@@ -2937,47 +3007,40 @@ function openBillingModal(houseNo) {
                 const result = await response.json();
                 
                 if (result.success) {
-                    showToast(status === 'Paid' ? "รับชำระเงินสำเร็จ!" : "บันทึกบิลสำเร็จ!", "success");
+                    showToast("บันทึกข้อมูลสำเร็จ!", "success");
                     
                     const userIndex = window.globalUsersList.findIndex(u => String(u.houseNo).trim() === String(currentBillState.houseNo).trim());
                     if (userIndex !== -1) {
                         let u = window.globalUsersList[userIndex];
                         
-                        u.statusCode = status.toLowerCase();
+                        u.statusCode = actualStatus.toLowerCase(); // 'paid', 'free', 'waiting'
                         u.oldUnit = u.prevUnit;
                         u.prevUnit = parseInt(currUnit);
                         u.usage = parseInt(currUnit) - currentBillState.prevUnit + (currentBillState.cmUsage || 0);
-                        u.cmUsage = status.toLowerCase() === 'paid' ? 0 : (currentBillState.cmUsage || 0);
+                        u.cmUsage = (actualStatus.toLowerCase() === 'paid' || actualStatus.toLowerCase() === 'free') ? 0 : (currentBillState.cmUsage || 0);
                         
-                        u.amount = parseFloat(document.getElementById('calc-current-amount').innerText.replace(/,/g, ''));
+                        u.amount = payload.currentAmount;
                         if (result.paidDate) u.paidDate = result.paidDate;
-                        if (result.billingId) {
-                            u.billingId = result.billingId;
-                        }
+                        if (result.billingId) u.billingId = result.billingId;
                         u.collector = loggedInName;
                         u.paidMonthsText = paidMonthsText;
                         u.overdueAmount = overdueToSave;
-                        u.payMethod = status.toLowerCase() === 'paid' ? 'เงินสด' : ''; // 🌟 อัปเดตว่าเป็นเงินสดทันทีที่กดรับชำระ
+                        u.payMethod = paymentMethod;
                         
-                        // 🎯 จัดการยอดหนี้ค้างในหน่วยความจำ (หักลบเฉพาะเมื่อมีการจ่ายจริง)
-                        if (status.toLowerCase() === 'paid' && selectedIds.length > 0) {
+                        if (isPayingOverdue && selectedIds.length > 0) {
                             u.overdueList = (u.overdueList || []).filter(bill => !selectedIds.includes(bill.billingId));
                             u.overdue = u.overdueList.reduce((sum, bill) => sum + Number(bill.amount), 0);
                         }
 
-                        // 🌟 วาดหน้าจอใหม่ทันทีโดยไม่ต้องโหลด API ทั้งหมด 
                         window.globalUsersList[userIndex] = u;
                         renderRealData(window.globalUsersList); 
                         
-                        // คืนค่าการค้นหาเดิมถ้ามี
                         const searchBox = document.getElementById('search-input');
-                        if (searchBox && searchBox.value.trim() !== "") {
-                            handleSearch(searchBox.value);
-                        }
+                        if (searchBox && searchBox.value.trim() !== "") handleSearch(searchBox.value);
                     }
 
                     closeBillingModal();
-                    if (status === 'Paid' || status.toLowerCase() === 'paid') {
+                    if (actualStatus === 'Paid' || actualStatus === 'Free') {
                       payload.paidDate = result.paidDate;
                       setTimeout(() => { showReceiptModal(payload); }, 400);
                     }
