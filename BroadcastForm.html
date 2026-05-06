@@ -143,23 +143,17 @@
                             .then(data => {
                                 document.getElementById('loading-screen').classList.add('hidden'); // ปิดหน้าโหลด
                                 
-                                // เพิ่มบรรทัดนี้เพื่อเช็คว่า API ตอบกลับมาว่าอะไร
-                                console.log("API Response:", data); 
-
                                 if (data.success && data.isDirector) {
                                     // ถ้าเป็นกรรมการ ให้แสดงฟอร์ม
                                     document.getElementById('profile-name').innerText = data.name || profile.displayName;
                                     document.getElementById('form-container').classList.remove('hidden');
                                 } else {
                                     // 🌟 ถ้าไม่ใช่กรรมการ เรียกหน้าต่างแจ้งเตือนขึ้นมาแทนการเด้งปิดทันที
-                                    // ลอง alert ดูว่า API ส่ง error อะไรมา
-                                    alert("Line ID ของคุณคือ:\n" + lineId + "\n\nAPI ตอบกลับมาว่า:\n" + JSON.stringify(data)); 
                                     showUnauthorizedModal();
                                 }
                             })
                             .catch(err => {
                                 document.getElementById('loading-screen').classList.add('hidden');
-                                alert("Fetch Error: " + err); // ดูว่าติดปัญหาเรื่องการเชื่อมต่อหรือไม่
                                 showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ", "error");
                             });
 
