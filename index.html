@@ -2890,7 +2890,7 @@ function openBillingModal(houseNo) {
                         if (btnWaiting) {
                             btnWaiting.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
                             btnWaiting.disabled = false;
-                            btnWaiting.innerHTML = `<i class="fas fa-forward text-lg text-amber-500"></i> บันทึกฟรี (รอจ่ายหนี้เก่า)`;
+                            btnWaiting.innerHTML = `<i class="fas fa-hand-holding-usd text-lg"></i> บันทึกฟรี (รอจ่ายหนี้เก่า)`;
                             btnWaiting.setAttribute('onclick', "saveBillingData('FreeAndWaiting')");
                         }
                         if (btnPaid) {
