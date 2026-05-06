@@ -14,8 +14,15 @@
 
     <div id="toast-container" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] flex flex-col items-center gap-3 pointer-events-none w-full px-6"></div>
 
-    <div class="bg-white w-full max-w-md rounded-[2rem] shadow-xl overflow-hidden border border-slate-100">
-        
+    <!-- ⏳ หน้าจอ Loading เช็คสิทธิ์ -->
+    <div id="loading-screen" class="w-full max-w-md flex flex-col items-center justify-center py-20">
+        <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+        <h3 class="text-lg font-bold text-slate-700">กำลังตรวจสอบสิทธิ์...</h3>
+        <p class="text-sm text-slate-500">กรุณารอสักครู่</p>
+    </div>
+
+    <!-- 📝 หน้าจอแบบฟอร์ม (ซ่อนไว้ก่อนจนกว่าจะเช็คสิทธิ์ผ่าน) -->
+    <div id="form-container" class="bg-white w-full max-w-md rounded-[2rem] shadow-xl overflow-hidden border border-slate-100 hidden">
         <div class="bg-gradient-to-r from-sky-500 to-blue-600 py-4 px-6 text-white shadow-md relative flex items-center gap-4">
             <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl shrink-0 backdrop-blur-sm border border-white/30">
                 <i class="fas fa-bullhorn"></i>
@@ -35,7 +42,7 @@
                 </div>
                 <div>
                     <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">คณะกรรมการ</div>
-                    <div id="profile-name" class="text-sm font-bold text-slate-700 mt-0.5">กำลังเชื่อมต่อ LINE...</div>
+                    <div id="profile-name" class="text-sm font-bold text-slate-700 mt-0.5">...</div>
                 </div>
             </div>
 
@@ -69,7 +76,7 @@
 
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
     <script>
-        // ⚠️ ใส่ลิงก์ API Script.google.com ของคุณ
+        // ⚠️ ใส่ลิงก์ API Script.google.com ของคุณรณรงค์
         const API_URL = "https://script.google.com/macros/s/AKfycbz_rkhS9bIVqcWGTNa2PhGfdw0Ik3cWy6rHzSU_pYtR9nQY7PupMSUdfqLaUgUGBLtj/exec"; 
 
         function showToast(message, type = 'success') {
@@ -87,12 +94,34 @@
         }
 
         window.onload = () => {
-            // ⚠️ ใส่รหัส LIFF ID ที่คุณสร้างสำหรับแบบฟอร์มกระจายข่าวนี้
+            // ⚠️ ใส่รหัส LIFF ID ของฟอร์มแจ้งข่าว
             liff.init({ liffId: "2009962202-57vwaEPq" }).then(() => {
                 if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
-                        document.getElementById('uid').value = profile.userId;
-                        document.getElementById('profile-name').innerText = profile.displayName;
+                        const lineId = profile.userId;
+                        document.getElementById('uid').value = lineId;
+                        
+                        // 🌟 ยิง API ไปเช็คสิทธิ์ที่ Google Apps Script
+                        fetch(API_URL + "?action=checkDirector&lineId=" + lineId)
+                            .then(res => res.json())
+                            .then(data => {
+                                document.getElementById('loading-screen').classList.add('hidden'); // ปิดหน้าโหลด
+                                
+                                if (data.success && data.isDirector) {
+                                    // ถ้าเป็นกรรมการ ให้แสดงฟอร์ม
+                                    document.getElementById('profile-name').innerText = data.name || profile.displayName;
+                                    document.getElementById('form-container').classList.remove('hidden');
+                                } else {
+                                    // ถ้าไม่ใช่กรรมการ แจ้งเตือนและปิดแอปทันที
+                                    showToast("⛔ ไม่มีสิทธิ์เข้าถึง (เฉพาะคณะกรรมการเท่านั้น)", "error");
+                                    setTimeout(() => { liff.closeWindow(); }, 2500);
+                                }
+                            })
+                            .catch(err => {
+                                document.getElementById('loading-screen').classList.add('hidden');
+                                showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ", "error");
+                            });
+
                     });
                 } else { liff.login(); }
             });
@@ -114,7 +143,6 @@
             const fileInput = document.getElementById('imageFile');
             const btn = document.getElementById('btn-submit');
 
-            if (!lineId) return showToast('กำลังประมวลผลข้อมูล LINE โปรดรอสักครู่...', 'warning');
             if (!title) return showToast('กรุณาระบุหัวข้อประกาศ', 'warning');
             if (!detail) return showToast('กรุณาระบุรายละเอียดข้อความ', 'warning');
 
@@ -137,11 +165,7 @@
 
                     if(data.success) {
                         showToast(data.message, 'success');
-                        setTimeout(() => {
-                            if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
-                                liff.closeWindow();
-                            } else { window.close(); }
-                        }, 3000);
+                        setTimeout(() => { liff.closeWindow(); }, 2500);
                     } else {
                         showToast(data.message, 'error');
                     }
@@ -167,7 +191,7 @@
                 };
                 img.src = objectUrl;
             } else {
-                sendData(""); // ถ้าไม่มีรูป ก็ส่งข้อความเปล่าๆ ไป
+                sendData(""); 
             }
         }
     </script>
