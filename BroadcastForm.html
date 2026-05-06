@@ -98,15 +98,61 @@
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            let icon = type === 'error' ? 'fa-times-circle' : (type === 'warning' ? 'fa-exclamation-triangle' : 'fa-check-circle');
-            let bgClass = type === 'error' ? 'bg-rose-600' : (type === 'warning' ? 'bg-amber-500' : 'bg-emerald-500');
+            
+            let icon = 'fa-check-circle';
+            let bgClass = 'bg-emerald-500';
 
-            toast.className = `${bgClass} text-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col transform scale-90 opacity-0 transition-all duration-300 ease-out pointer-events-auto w-full max-w-[280px] overflow-hidden`;
-            toast.innerHTML = `<div class="p-6 flex flex-col items-center justify-center gap-3 text-center"><i class="fas ${icon} text-5xl drop-shadow-md mb-1"></i><div class="font-bold text-[16px] leading-relaxed drop-shadow-sm w-full">${message}</div></div>`;
+            if (type === 'error') {
+                icon = 'fa-times-circle'; 
+                bgClass = 'bg-rose-600'; 
+            } else if (type === 'warning' || type === 'info') {
+                icon = type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+                bgClass = type === 'warning' ? 'bg-amber-500' : 'bg-blue-500';
+            }
+
+            // ตั้งค่าพื้นหลังสีทึบ ตัวอักษรสีขาวเงาเด่นๆ และเพิ่ม border
+            toast.className = `${bgClass} text-white rounded-[1.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col transform scale-90 opacity-0 transition-all duration-300 ease-out pointer-events-auto w-full max-w-[280px] overflow-hidden border border-white/20`;
+            
+            toast.innerHTML = `
+                <div class="p-6 flex flex-col items-center justify-center gap-3 text-center relative">
+                    <!-- ปุ่มกากบาทมุมขวาบน สำหรับกดปิดทันที -->
+                    <button onclick="this.closest('.flex-col').remove()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                    
+                    <i class="fas ${icon} text-5xl drop-shadow-md mb-1"></i>
+                    <div class="font-bold text-[16px] leading-relaxed drop-shadow-sm w-full">
+                        ${message}
+                    </div>
+                </div>
+                <!-- 🌟 แถบเวลาสีขาววิ่งด้านล่าง -->
+                <div class="w-full h-1.5 bg-black/20">
+                    <div class="h-full bg-white transition-all duration-[2500ms] ease-linear rounded-r-full" style="width: 100%;"></div>
+                </div>
+            `;
+            
             container.appendChild(toast);
 
-            setTimeout(() => { toast.classList.remove('scale-90', 'opacity-0'); toast.classList.add('scale-100', 'opacity-100'); }, 10);
-            setTimeout(() => { toast.classList.remove('scale-100', 'opacity-100'); toast.classList.add('scale-95', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
+            // เด้งและชัดขึ้น (Fade In & Scale Up)
+            setTimeout(() => {
+                toast.classList.remove('scale-90', 'opacity-0');
+                toast.classList.add('scale-100', 'opacity-100');
+                
+                // ให้หลอดเวลาเริ่มหดลง
+                setTimeout(() => {
+                    const progressBar = toast.querySelector('div.h-full');
+                    if (progressBar) progressBar.style.width = '0%';
+                }, 50);
+            }, 10);
+
+            // ค่อยๆ จางหายไป (Fade Out) หลังจากเวลาผ่านไป 2.5 วินาที
+            setTimeout(() => {
+                toast.classList.remove('scale-100', 'opacity-100');
+                toast.classList.add('scale-95', 'opacity-0'); 
+                
+                // ลบทิ้งหลังจากจางเสร็จ
+                setTimeout(() => toast.remove(), 300);
+            }, 2500); 
         }
 
         // 🌟 1. ฟังก์ชันแสดงหน้าต่าง ไม่มีสิทธิ์เข้าถึง
