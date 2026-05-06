@@ -81,7 +81,7 @@
                         <p class="text-xs font-bold">แตะเพื่อเลือกรูปภาพ</p>
                     </div>
                 </div>
-                <input type="file" id="imageFile" accept="image/*" class="hidden" onchange="previewImage(this)">
+                <input type="file" id="imageFile" accept="image/*" capture="environment" class="hidden" onchange="previewImage(this)">
             </div>
 
             <button id="btn-submit" onclick="submitBroadcast()" class="w-full py-4 mt-4 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 active:scale-[0.98] transition-all text-sm flex justify-center items-center gap-2">
