@@ -153,7 +153,7 @@
                                 } else {
                                     // 🌟 ถ้าไม่ใช่กรรมการ เรียกหน้าต่างแจ้งเตือนขึ้นมาแทนการเด้งปิดทันที
                                     // ลอง alert ดูว่า API ส่ง error อะไรมา
-                                    alert("API Result: " + JSON.stringify(data)); 
+                                    alert("Line ID ของคุณคือ:\n" + lineId + "\n\nAPI ตอบกลับมาว่า:\n" + JSON.stringify(data)); 
                                     showUnauthorizedModal();
                                 }
                             })
