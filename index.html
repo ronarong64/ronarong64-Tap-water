@@ -6427,25 +6427,23 @@ function printSelectedNotices() {
 }
 
        // ==========================================
-        // 🖨️ ฟังก์ชันพิมพ์รายงานสรุป (เทคนิค Iframe แยกหน้าจอ ป้องกันหน้าขาว 100%)
+        // 🖨️ ฟังก์ชันพิมพ์รายงานสรุป (รวมสถานะธนาคาร + ซ่อน URL หัว/ท้ายกระดาษ)
         // ==========================================
         async function printMonthlyReport() {
-            console.log("Starting print process via Iframe...");
             const printBtn = document.querySelector('button[onclick="printMonthlyReport()"]');
             const originalBtnText = printBtn.innerHTML;
 
-            // 1. ตรวจสอบว่าดึงข้อมูลขึ้นหน้าจอหรือยัง
+            // ตรวจสอบว่ามีข้อมูลบนหน้าจอหรือยัง
             const incomeTotalEl = document.getElementById('report-income');
             if (!incomeTotalEl || incomeTotalEl.innerText === "" || incomeTotalEl.innerText === "0") {
                 showToast("⚠️ กรุณากดปุ่ม 'ดูรายงาน' สีน้ำเงินก่อนทำการพิมพ์ครับ", "warning");
                 return;
             }
 
-            printBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังสร้างแบบพิมพ์...';
+            printBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังเตรียมแบบพิมพ์...';
             printBtn.disabled = true;
 
             try {
-                // 2. ดึงค่าจากหน้าจอ
                 const safeGet = (id) => document.getElementById(id) ? document.getElementById(id).innerText : "0";
 
                 const monthDisplay = safeGet('report-picker-display');
@@ -6470,99 +6468,128 @@ function printSelectedNotices() {
                 const expOther = safeGet('report-exp-other');
                 const expTotalOther = (parseFloat(expFee.replace(/,/g,'')) + parseFloat(expOther.replace(/,/g,''))).toLocaleString();
 
+                // 🌟 ดึงข้อมูลยอดเงินคงเหลือจากระบบ
+                const apiMonthStr = document.getElementById('report-month-input').value;
+                const parts = apiMonthStr.split('-');
+                const targetMonthStr = `${parts[1]}/${parseInt(parts[0]) + 543}`;
+                
+                const response = await fetch(API_URL + "?action=getFinanceDashboard&monthStr=" + encodeURIComponent(targetMonthStr));
+                const finResult = await response.json();
+                
+                let bankBal = 0, cashBal = 0;
+                if(finResult.success) {
+                    bankBal = finResult.data.bankBalance || 0;
+                    cashBal = finResult.data.cashBalance || 0;
+                }
+
                 const now = new Date();
-                const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+                const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค. "];
                 const printedDate = `${now.getDate()} ${thMonths[now.getMonth()]} ${now.getFullYear()+543} เวลา ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} น.`;
 
-                // 3. จัดเตรียมเนื้อหา HTML ที่จะพิมพ์
+                // 🏗️ สร้างเนื้อหา HTML
                 const printContent = `
                     <div class="header-title">
-                        <h2 style="margin: 0; font-size: 24pt;">รายงานสรุปผลการดำเนินงาน</h2>
-                        <p style="margin: 5px 0; font-size: 16pt;">ประจำเดือน: ${monthDisplay}</p>
-                        <p style="margin: 0; color: #555; font-size: 14pt;">คณะกรรมการน้ำประปาหมู่บ้าน บ้านหนองบัว หมู่ที่ 2</p>
+                        <h2 style="margin: 0; font-size: 22pt; font-weight: bold;">รายงานสรุปผลการดำเนินงาน</h2>
+                        <p style="margin: 8px 0; font-size: 16pt;">ประจำเดือน: ${monthDisplay}</p>
+                        <p style="margin: 0; color: #444; font-size: 14pt;">คณะกรรมการน้ำประปาหมู่บ้าน บ้านหนองบัว หมู่ที่ 2</p>
+                    </div>
+
+                    <div class="box" style="border: 2px solid #3b82f6; border-radius: 15px; padding: 15px; margin-bottom: 25px; background: #f0f7ff !important;">
+                        <div style="font-size: 13pt; font-weight: bold; color: #1e40af; margin-bottom: 10px; border-bottom: 2px solid #bfdbfe; padding-bottom: 5px;">สถานะการเงินรวม (กลุ่มประปา) ณ ปัจจุบัน</div>
+                        <div style="display: flex; justify-content: space-around; text-align: center;">
+                            <div style="flex: 1;">
+                                <div style="font-size: 11pt; color: #4b5563; font-weight: bold;">เงินฝากธนาคาร</div>
+                                <div style="font-size: 20pt; font-weight: bold; color: #2563eb;">${Math.round(bankBal).toLocaleString()} <span style="font-size: 12pt; font-weight: normal;">บาท</span></div>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 11pt; color: #4b5563; font-weight: bold;">เงินสดสำรองจ่าย</div>
+                                <div style="font-size: 20pt; font-weight: bold; color: #0d9488;">${Math.round(cashBal).toLocaleString()} <span style="font-size: 12pt; font-weight: normal;">บาท</span></div>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 11pt; color: #4b5563; font-weight: bold;">รวมทุนทรัพย์ทั้งสิ้น</div>
+                                <div style="font-size: 20pt; font-weight: bold; color: #4338ca;">${Math.round(bankBal + cashBal).toLocaleString()} <span style="font-size: 12pt; font-weight: normal;">บาท</span></div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="flex-row">
-                        <div class="box" style="border-color: #10b981; background: #ecfdf5;">
-                            <div style="font-weight: bold; color: #065f46; font-size: 14pt;">รายรับทั้งหมด</div>
-                            <div style="font-size: 26pt; font-weight: bold; color: #059669; margin: 10px 0;">${incomeTotal} <span style="font-size:14pt">บาท</span></div>
-                            <div style="font-size: 12pt; border-top: 1px solid #a7f3d0; padding-top: 10px; line-height: 1.6;">
-                                - จากบิลค้างเก่า: <b>${incOverdue}</b> บาท<br>
-                                - จากบิลเดือนนี้: <b>${incCurrent}</b> บาท<br>
-                                &nbsp;&nbsp;&nbsp;<span style="color:#666;">(โอน: ${incTransfer} / เงินสด: ${incCash})</span>
+                        <div class="box" style="border-color: #10b981; background: #f0fdf4 !important;">
+                            <div style="font-weight: bold; color: #065f46; font-size: 13pt; border-bottom: 1px solid #10b981; padding-bottom: 5px; margin-bottom: 10px;">รายรับประจำเดือน</div>
+                            <div style="font-size: 24pt; font-weight: bold; color: #059669; margin: 10px 0;">${incomeTotal} <span style="font-size:13pt; font-weight: normal;">บาท</span></div>
+                            <div style="font-size: 11pt; line-height: 1.7;">
+                                • จากบิลค้างเก่า: <b>${incOverdue}</b> บาท<br>
+                                • จากบิลเดือนนี้: <b>${incCurrent}</b> บาท<br>
+                                <span style="color:#666; font-size: 10pt;">&nbsp;&nbsp;&nbsp;(โอน: ${incTransfer} / เงินสด: ${incCash})</span>
                             </div>
                         </div>
 
-                        <div class="box" style="border-color: #f43f5e; background: #fff1f2;">
-                            <div style="font-weight: bold; color: #9f1239; font-size: 14pt;">รายจ่ายทั้งหมด</div>
-                            <div style="font-size: 26pt; font-weight: bold; color: #e11d48; margin: 10px 0;">${expenseTotal} <span style="font-size:14pt">บาท</span></div>
-                            <div style="font-size: 12pt; border-top: 1px solid #fecdd3; padding-top: 10px; line-height: 1.6;">
-                                - ค่าซ่อมแซม: <b>${expRepair}</b> บาท<br>
-                                - ค่าไฟฟ้า: <b>${expElec}</b> บาท<br>
-                                - ค่าจัดเก็บและอื่นๆ: <b>${expTotalOther}</b> บาท
+                        <div class="box" style="border-color: #f43f5e; background: #fff1f2 !important;">
+                            <div style="font-weight: bold; color: #9f1239; font-size: 13pt; border-bottom: 1px solid #f43f5e; padding-bottom: 5px; margin-bottom: 10px;">รายจ่ายประจำเดือน</div>
+                            <div style="font-size: 24pt; font-weight: bold; color: #e11d48; margin: 10px 0;">${expenseTotal} <span style="font-size:13pt; font-weight: normal;">บาท</span></div>
+                            <div style="font-size: 11pt; line-height: 1.7;">
+                                • ค่าซ่อมแซม: <b>${expRepair}</b> บาท<br>
+                                • ค่าไฟฟ้า: <b>${expElec}</b> บาท<br>
+                                • ค่าจัดเก็บและอื่นๆ: <b>${expTotalOther}</b> บาท
                             </div>
                         </div>
                     </div>
 
-                    <div class="box" style="background: #f8fafc; border-color: #cbd5e1;">
-                        <div style="font-size: 14pt; font-weight: bold; text-align: center; margin-bottom: 15px; color: #334155;">สถิติการจัดการบิล</div>
-                        <div class="flex-row" style="text-align: center; margin-bottom: 0;">
-                            <div style="flex: 1;"><span style="font-size: 24pt; font-weight: bold; color: #10b981;">${countPd}</span><br><b>ชำระแล้ว (หลัง)</b></div>
-                            <div style="flex: 1;"><span style="font-size: 24pt; font-weight: bold; color: #0d9488;">${countFree}</span><br><b>ใช้น้ำฟรี (หลัง)</b></div>
-                            <div style="flex: 1;"><span style="font-size: 24pt; font-weight: bold; color: #f59e0b;">${countWp}</span><br><b>รอชำระ (หลัง)</b></div>
-                            <div style="flex: 1;"><span style="font-size: 24pt; font-weight: bold; color: #64748b;">${countNc}</span><br><b>ยังไม่เก็บ (หลัง)</b></div>
+                    <div class="box" style="background: #f8fafc !important; border-color: #cbd5e1; margin-bottom: 25px;">
+                        <div style="font-size: 12pt; font-weight: bold; text-align: center; margin-bottom: 15px; color: #334155; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px;">สถิติการจัดการบ้านพักอาศัย</div>
+                        <div style="display: flex; justify-content: space-around; text-align: center;">
+                            <div style="flex: 1;"><span style="font-size: 22pt; font-weight: bold; color: #10b981;">${countPd}</span><br><b style="font-size: 10pt;">ชำระแล้ว (หลัง)</b></div>
+                            <div style="flex: 1;"><span style="font-size: 22pt; font-weight: bold; color: #0d9488;">${countFree}</span><br><b style="font-size: 10pt;">ใช้น้ำฟรี (หลัง)</b></div>
+                            <div style="flex: 1;"><span style="font-size: 22pt; font-weight: bold; color: #f59e0b;">${countWp}</span><br><b style="font-size: 10pt;">รอชำระ (หลัง)</b></div>
+                            <div style="flex: 1;"><span style="font-size: 22pt; font-weight: bold; color: #64748b;">${countNc}</span><br><b style="font-size: 10pt;">ยังไม่เก็บ (หลัง)</b></div>
                         </div>
                     </div>
 
-                    <div style="text-align: center; font-size: 16pt; margin-top: 20px; padding: 20px; border: 2px dashed #94a3b8; border-radius: 12px; background: #fff;">
-                        ปริมาณการใช้น้ำรวม: <b>${waterUsage}</b> หน่วย &nbsp;&nbsp;|&nbsp;&nbsp; 
-                        คงเหลือสุทธิ: <b style="color: #4f46e5; font-size: 22pt;">${netProfit}</b> บาท
+                    <div style="text-align: center; font-size: 15pt; padding: 20px; border: 2px dashed #94a3b8; border-radius: 15px; background: #fff !important;">
+                        ปริมาณการใช้น้ำรวมประจำเดือน: <b style="color: #1e293b;">${waterUsage}</b> หน่วย <br>
+                        คงเหลือสุทธิ (รายรับ - รายจ่าย): <b style="color: #4f46e5; font-size: 22pt;">${netProfit}</b> บาท
                     </div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 60px;">
-                        <div style="font-size: 11pt; color: #64748b;">พิมพ์เมื่อ: ${printedDate}</div>
-                        <div class="text-center" style="font-size: 12pt;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 80px;">
+                        <div style="font-size: 10pt; color: #64748b;">พิมพ์เมื่อ: ${printedDate}</div>
+                        <div style="text-align: center; font-size: 12pt; min-width: 280px;">
                             ลงชื่อ..........................................................<br><br>
                             ( .......................................................... )<br><br>
-                            ผู้สรุปรายงาน
+                            ตำแหน่ง ผู้สรุปรายงาน
                         </div>
                     </div>
                 `;
 
-                // 4. สร้าง Iframe ล่องหนเพื่อใช้สั่งพิมพ์โดยเฉพาะ
                 let printFrame = document.getElementById('hidden-print-frame');
-                if (printFrame) {
-                    printFrame.remove(); // ลบเฟรมเก่าทิ้งถ้ามี
-                }
+                if (printFrame) printFrame.remove();
                 
                 printFrame = document.createElement('iframe');
                 printFrame.id = 'hidden-print-frame';
-                printFrame.style.position = 'fixed';
-                printFrame.style.right = '0';
-                printFrame.style.bottom = '0';
-                printFrame.style.width = '0px';
-                printFrame.style.height = '0px';
-                printFrame.style.border = 'none';
+                printFrame.style.display = 'none';
                 document.body.appendChild(printFrame);
 
-                // 5. เขียนเนื้อหาลงใน Iframe พร้อมบังคับรูปแบบ CSS อิสระ
                 const doc = printFrame.contentWindow.document;
                 doc.open();
                 doc.write(`
                     <!DOCTYPE html>
                     <html>
                     <head>
-                        <title>พิมพ์รายงานสรุป</title>
+                        <title>รายงานสรุปประจำเดือน</title>
                         <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
                         <style>
-                            body { font-family: 'Sarabun', sans-serif; padding: 0; margin: 0; color: #000; background: #fff; }
-                            @page { size: A4 portrait; margin: 15mm; }
-                            .page-container { padding: 10px; }
-                            .header-title { text-align: center; margin-bottom: 25px; }
-                            .flex-row { display: flex; gap: 20px; margin-bottom: 20px; }
-                            .box { flex: 1; border: 2px solid #ccc; border-radius: 12px; padding: 20px; }
-                            .text-center { text-align: center; }
-                            /* บังคับให้เครื่องพิมพ์ลากสีพื้นหลังไปพิมพ์ด้วย */
+                            @page { 
+                                size: A4 portrait; 
+                                margin: 0; 
+                            }
+                            body { 
+                                font-family: 'Sarabun', sans-serif; 
+                                padding: 15mm 20mm; 
+                                margin: 0; 
+                                color: #000; 
+                                background: #fff; 
+                            }
+                            .header-title { text-align: center; margin-bottom: 30px; }
+                            .flex-row { display: flex; gap: 15px; margin-bottom: 20px; }
+                            .box { flex: 1; border: 1.5px solid #ddd; border-radius: 12px; padding: 15px; box-sizing: border-box; }
                             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                         </style>
                     </head>
@@ -6570,20 +6597,21 @@ function printSelectedNotices() {
                         <div class="page-container">
                             ${printContent}
                         </div>
+                        <script>
+                            window.onload = function() {
+                                window.focus();
+                                window.print();
+                            };
+                        <\/script>
                     </body>
                     </html>
                 `);
                 doc.close();
 
-                // 6. รอให้ข้อมูลวาดเสร็จ แล้วเด้งหน้าต่างพิมพ์
                 setTimeout(() => {
-                    printFrame.contentWindow.focus();
-                    printFrame.contentWindow.print();
-                    
-                    // คืนค่าปุ่ม
                     printBtn.disabled = false;
                     printBtn.innerHTML = originalBtnText;
-                }, 1000);
+                }, 1500);
 
             } catch (error) {
                 console.error("Print Failed:", error);
