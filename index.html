@@ -5179,7 +5179,7 @@ async function loadMonthlyReport(monthStr = null) {
                     displaySub = `<span class="text-[10px] text-slate-400 font-medium"><i class="far fa-calendar-check mr-1 text-${colorClass}-500"></i> ${formattedDate}</span>`;
                 } 
                 else if (containerId === 'list-wp') {
-                    displaySub = `<span class="text-[10px] text-orange-500 font-bold">ยอดค้าง ${item.amount.toLocaleString()} บ.</span>`;
+                    displaySub = `<span class="text-[10px] text-orange-500 font-bold">รอชำระ ${item.amount.toLocaleString()} บ.</span>`;
                 } 
                 else {
                     displaySub = `<span class="text-[10px] text-slate-400">ยังไม่จดมิเตอร์</span>`;
