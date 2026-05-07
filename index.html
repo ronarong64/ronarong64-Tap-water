@@ -6427,164 +6427,133 @@ function printSelectedNotices() {
 }
 
        // ==========================================
-        // 🖨️ ฟังก์ชันพิมพ์รายงานสรุปรายเดือน (ฉบับปรับปรุง - แก้ไขหน้าขาว)
+        // 🖨️ ฟังก์ชันพิมพ์รายงานสรุป (ฉบับแก้ปัญหาหน้าขาว)
         // ==========================================
         async function printMonthlyReport() {
+            console.log("Starting print process..."); // เช็คใน Console (F12)
             const printBtn = document.querySelector('button[onclick="printMonthlyReport()"]');
             const originalBtnText = printBtn.innerHTML;
 
-            // 🌟 1. ตรวจสอบก่อนว่ามีการโหลดข้อมูลรายงานมาแสดงบนจอหรือยัง
+            // 1. ตรวจสอบเบื้องต้นว่ามีข้อมูลบนหน้าจอหรือยัง
             const incomeTotalEl = document.getElementById('report-income');
-            if (!incomeTotalEl || incomeTotalEl.innerText === "0" || incomeTotalEl.innerText === "") {
-                showToast("กรุณาเลือกเดือนและกด 'ดูรายงาน' ให้ข้อมูลแสดงบนจอก่อนพิมพ์ครับ", "warning");
+            if (!incomeTotalEl || incomeTotalEl.innerText === "" || incomeTotalEl.innerText === "0") {
+                showToast("⚠️ กรุณากดปุ่ม 'ดูรายงาน' ให้ข้อมูลขึ้นบนจอก่อนกดพิมพ์ครับ", "warning");
                 return;
             }
 
-            printBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังเตรียมข้อมูล...';
+            printBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังเตรียมหน้าพิมพ์...';
             printBtn.disabled = true;
 
             try {
-                // 🌟 2. ดึงข้อมูลจากหน้าจอ (ดักจับค่าว่างป้องกันหน้าขาว)
-                const getValue = (id) => document.getElementById(id) ? document.getElementById(id).innerText : "0";
+                // 2. ดึงค่าจากหน้าจอแบบปลอดภัย (ถ้าไม่มี ID นั้นให้ใช้ "0")
+                const safeGet = (id) => {
+                    const el = document.getElementById(id);
+                    return el ? el.innerText : "0";
+                };
 
-                const monthText = getValue('report-picker-display');
-                const incomeTotal = getValue('report-income');
-                const incOverdue = getValue('report-income-overdue');
-                const incCurrent = getValue('report-income-current');
-                const incCash = getValue('report-income-current-cash');
-                const incTransfer = getValue('report-income-current-transfer');
-                const expenseTotal = getValue('report-expense');
-                const expRepair = getValue('report-exp-repair');
-                const expElec = getValue('report-exp-elec');
-                const expFee = getValue('report-exp-fee');
-                const expOther = getValue('report-exp-other');
-                const usage = getValue('report-usage');
-                const net = getValue('report-net');
-                
-                const countPd = getValue('badge-pd');
-                const countFree = document.getElementById('badge-free') ? document.getElementById('badge-free').innerText : "0";
-                const countWp = getValue('badge-wp');
-                const countNc = getValue('badge-nc');
+                const monthDisplay = safeGet('report-picker-display');
+                const incomeTotal = safeGet('report-income');
+                const expenseTotal = safeGet('report-expense');
+                const netProfit = safeGet('report-net');
+                const waterUsage = safeGet('report-usage');
 
-                // ดึงยอดเงินในบัญชีจาก API อีกครั้งเพื่อความแม่นยำ
-                const apiMonthStr = document.getElementById('report-month-input').value;
-                const parts = apiMonthStr.split('-');
-                const targetMonthStr = `${parts[1]}/${parseInt(parts[0]) + 543}`;
-                
-                const response = await fetch(API_URL + "?action=getFinanceDashboard&monthStr=" + encodeURIComponent(targetMonthStr));
-                const finResult = await response.json();
-                
-                let bankBal = 0, cashBal = 0;
-                if(finResult.success) {
-                    bankBal = finResult.data.bankBalance || 0;
-                    cashBal = finResult.data.cashBalance || 0;
-                }
+                // ดึงจำนวนรายบ้าน
+                const countPd = safeGet('badge-pd');
+                const countFree = safeGet('badge-free');
+                const countWp = safeGet('badge-wp');
+                const countNc = safeGet('badge-nc');
+
+                // รายละเอียดรายรับ
+                const incOverdue = safeGet('report-income-overdue');
+                const incCurrent = safeGet('report-income-current');
+                const incCash = safeGet('report-income-current-cash');
+                const incTransfer = safeGet('report-income-current-transfer');
+
+                // รายละเอียดรายจ่าย
+                const expRepair = safeGet('report-exp-repair');
+                const expElec = safeGet('report-exp-elec');
+                const expFee = safeGet('report-exp-fee');
+                const expOther = safeGet('report-exp-other');
 
                 const now = new Date();
-                const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-                const printedDate = `${now.getDate()} ${thMonths[now.getMonth()]} ${now.getFullYear()+543} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                const printedDate = now.toLocaleDateString('th-TH', { 
+                    year: 'numeric', month: 'short', day: 'numeric', 
+                    hour: '2-digit', minute: '2-digit' 
+                });
 
-                // 🌟 3. สร้าง Layout สำหรับพิมพ์ (บังคับให้สีพื้นหลังและตัวอักษรแสดงผลในหน้าพิมพ์)
-                let p = document.getElementById('print-section');
-                if (!p) {
-                    p = document.createElement('div');
-                    p.id = 'print-section';
-                    document.body.appendChild(p);
+                // 3. เตรียมพื้นที่สำหรับพิมพ์
+                let printContainer = document.getElementById('print-section');
+                if (!printContainer) {
+                    printContainer = document.createElement('div');
+                    printContainer.id = 'print-section';
+                    document.body.appendChild(printContainer);
                 }
 
-                const printHtml = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <style>
-                        @media print {
-                            body { margin: 0; padding: 0; background: white !important; }
-                            #print-section { display: block !important; position: absolute; top: 0; left: 0; width: 100%; }
-                            .a4-page { width: 210mm; min-height: 297mm; padding: 15mm; margin: 0 auto; background: white; font-family: 'Sarabun', sans-serif; color: black; }
-                            .flex-row-print { display: flex !important; flex-direction: row !important; gap: 20px; }
-                            /* บังคับให้สีพื้นหลังพิมพ์ออกมาด้วย */
-                            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                        }
-                        .a4-page { width: 210mm; padding: 15mm; margin: 10mm auto; border: 1px solid #ddd; background: white; font-family: sans-serif; }
-                        .flex-row-print { display: flex; gap: 20px; margin-bottom: 20px; }
-                        .box { flex: 1; border: 2px solid #333; border-radius: 10px; padding: 15px; }
-                        .text-center { text-align: center; }
-                    </style>
-                </head>
-                <body>
-                    <div class="a4-page">
-                        <div class="text-center">
-                            <h1 style="margin:0;">รายงานสรุปผลการดำเนินงาน</h1>
-                            <p style="font-size: 14pt; margin: 5px 0;">ประจำเดือน: ${monthText}</p>
-                            <p style="margin-bottom: 20px;">คณะกรรมการน้ำประปาหมู่บ้าน บ้านหนองบัว หมู่ที่ 2</p>
-                        </div>
+                // 4. สร้างเนื้อหา HTML (เน้น Inline Style เพื่อป้องกัน CSS ไม่โหลด)
+                const content = `
+                <div style="padding: 20px; font-family: 'Kanit', sans-serif; color: #000; line-height: 1.6;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="margin: 0; font-size: 24pt;">รายงานสรุปผลการดำเนินงาน</h1>
+                        <p style="font-size: 16pt; margin: 5px 0;">ประจำเดือน: ${monthDisplay}</p>
+                        <p style="font-size: 12pt; color: #666;">คณะกรรมการน้ำประปาหมู่บ้าน บ้านหนองบัว หมู่ที่ 2</p>
+                    </div>
 
-                        <div class="box" style="background: #f0f7ff !important; border-color: #2563eb; margin-bottom: 20px;">
-                            <div style="font-weight:bold; color:#1e40af; border-bottom:1px solid #2563eb; padding-bottom:5px; margin-bottom:10px;">สถานะทุนทรัพย์ปัจจุบัน</div>
-                            <div class="flex-row-print" style="text-align:center;">
-                                <div style="flex:1;"><b>เงินฝากธนาคาร:</b><br><span style="font-size:18pt; color:#2563eb;">${bankBal.toLocaleString()}</span> บาท</div>
-                                <div style="flex:1;"><b>เงินสดสำรอง:</b><br><span style="font-size:18pt; color:#0d9488;">${cashBal.toLocaleString()}</span> บาท</div>
-                                <div style="flex:1;"><b>รวมทั้งหมด:</b><br><span style="font-size:18pt; color:#4338ca;">${(bankBal + cashBal).toLocaleString()}</span> บาท</div>
+                    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                        <div style="flex: 1; border: 2px solid #10b981; border-radius: 15px; padding: 15px; background: #f0fdf4;">
+                            <div style="color: #065f46; font-weight: bold;">รายรับรวม</div>
+                            <div style="font-size: 22pt; font-weight: bold; color: #059669;">${incomeTotal} บาท</div>
+                            <div style="font-size: 10pt; margin-top: 10px; border-top: 1px solid #bbf7d0; pt: 5px;">
+                                • บิลค้างเก่า: ${incOverdue} บาท<br>
+                                • บิลเดือนนี้: ${incCurrent} บาท (โอน: ${incTransfer} / เงินสด: ${incCash})
                             </div>
                         </div>
-
-                        <div class="flex-row-print">
-                            <div class="box" style="background: #ecfdf5 !important; border-color: #10b981;">
-                                <div style="font-weight:bold; color:#065f46;">รายรับทั้งหมด: ${incomeTotal} บาท</div>
-                                <div style="font-size:10pt; margin-top:10px;">
-                                    - บิลค้างเก่า: ${incOverdue} บาท<br>
-                                    - บิลเดือนนี้: ${incCurrent} บาท (โอน: ${incTransfer} / เงินสด: ${incCash})
-                                </div>
-                            </div>
-                            <div class="box" style="background: #fff1f2 !important; border-color: #f43f5e;">
-                                <div style="font-weight:bold; color:#9f1239;">รายจ่ายทั้งหมด: ${expenseTotal} บาท</div>
-                                <div style="font-size:10pt; margin-top:10px;">
-                                    - ค่าซ่อมแซม: ${expRepair} บาท<br>
-                                    - ค่าไฟฟ้า: ${expElec} บาท<br>
-                                    - ค่าจัดเก็บ/อื่นๆ: ${(parseFloat(expFee.replace(/,/g,'')) + parseFloat(expOther.replace(/,/g,''))).toLocaleString()} บาท
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="box" style="text-align:center; background:#f9fafb !important;">
-                            <div class="flex-row-print">
-                                <div style="flex:1;"><b>ชำระแล้ว:</b> ${countPd} หลัง</div>
-                                <div style="flex:1;"><b>ใช้น้ำฟรี:</b> ${countFree} หลัง</div>
-                                <div style="flex:1;"><b>รอชำระ:</b> ${countWp} หลัง</div>
-                            </div>
-                            <div style="margin-top:15px; font-size:14pt;"><b>หน่วยน้ำรวม:</b> ${usage} หน่วย | <b>คงเหลือสุทธิ:</b> ${net} บาท</div>
-                        </div>
-
-                        <div style="margin-top: 60px; display: flex; justify-content: space-between;">
-                            <div style="color: #999; font-size: 9pt;">พิมพ์เมื่อ: ${printedDate}</div>
-                            <div style="text-align: center;">
-                                ลงชื่อ..........................................................<br>( ผู้สรุปรายงาน )
+                        <div style="flex: 1; border: 2px solid #f43f5e; border-radius: 15px; padding: 15px; background: #fff1f2;">
+                            <div style="color: #9f1239; font-weight: bold;">รายจ่ายรวม</div>
+                            <div style="font-size: 22pt; font-weight: bold; color: #e11d48;">${expenseTotal} บาท</div>
+                            <div style="font-size: 10pt; margin-top: 10px; border-top: 1px solid #fecdd3; pt: 5px;">
+                                • ค่าซ่อมแซม: ${expRepair} บาท<br>
+                                • ค่าไฟฟ้า: ${expElec} บาท<br>
+                                • ค่าอื่นๆ: ${(parseFloat(expFee.replace(/,/g,'')) + parseFloat(expOther.replace(/,/g,''))).toLocaleString()} บาท
                             </div>
                         </div>
                     </div>
-                </body>
-                </html>`;
 
-                p.innerHTML = `
-                    <style>
-                        @media print {
-                            body > *:not(#print-section) { display: none !important; }
-                        }
-                    </style>
-                    ${printHtml}
+                    <div style="border: 1px solid #ddd; border-radius: 15px; padding: 20px; background: #f8fafc; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-around; text-align: center;">
+                            <div><b style="color:#059669">ชำระแล้ว</b><br><span style="font-size:18pt">${countPd}</span> หลัง</div>
+                            <div><b style="color:#0d9488">ใช้น้ำฟรี</b><br><span style="font-size:18pt">${countFree}</span> หลัง</div>
+                            <div><b style="color:#f59e0b">รอชำระ</b><br><span style="font-size:18pt">${countWp}</span> หลัง</div>
+                            <div><b style="color:#64748b">ยังไม่เก็บ</b><br><span style="font-size:18pt">${countNc}</span> หลัง</div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; border-top: 2px dashed #ccc; padding-top: 20px;">
+                        <span style="font-size: 14pt;">ปริมาณน้ำรวม: <b>${waterUsage}</b> หน่วย | ยอดคงเหลือสุทธิ: <b style="color: #4f46e5; font-size: 18pt;">${netProfit}</b> บาท</span>
+                    </div>
+
+                    <div style="margin-top: 80px; display: flex; justify-content: space-between; align-items: flex-end;">
+                        <div style="font-size: 9pt; color: #999;">พิมพ์ข้อมูลเมื่อ: ${printedDate}</div>
+                        <div style="text-align: center; min-width: 250px;">
+                            <p>ลงชื่อ..........................................................</p>
+                            <p>( .......................................................... )</p>
+                            <p>ผู้สรุปรายงาน</p>
+                        </div>
+                    </div>
+                </div>
                 `;
 
-                // 🌟 4. สั่งพิมพ์หลังจากเนื้อหาโหลดเสร็จ
+                printContainer.innerHTML = content;
+
+                // 5. สั่งพิมพ์
                 setTimeout(() => {
                     window.print();
                     printBtn.disabled = false;
                     printBtn.innerHTML = originalBtnText;
-                    p.innerHTML = ""; // ล้างข้อมูลหลังพิมพ์เสร็จ
-                }, 500);
+                }, 800); // เพิ่มเวลาให้ Browser Render หน่อยครับ
 
-            } catch (err) {
-                console.error(err);
-                showToast("เกิดข้อผิดพลาดในการดึงข้อมูลมาพิมพ์", "error");
+            } catch (error) {
+                console.error("Print Error:", error);
+                showToast("❌ เกิดข้อผิดพลาด: " + error.message, "error");
                 printBtn.disabled = false;
                 printBtn.innerHTML = originalBtnText;
             }
