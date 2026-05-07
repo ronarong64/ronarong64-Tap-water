@@ -1346,163 +1346,188 @@ function applyRolePermissions() {
                 return escapeMap[match];
             });
         }
-        function renderRealData(users) {
-    window.globalUsersList = users;
-    const listContainer = document.getElementById('user-list');
-    let stats = { todo: 0, waiting: 0, paid: 0, overdue: 0 };
-    let htmlContent = "";
-
-    // ⚙️ 1. เตรียมค่ากำหนดและวันที่
-    const maxLimit = parseInt(document.getElementById('set-max-overdue').value) || 1;
-    let criticalOverdueCount = 0;
-    const isAdmin = (window.currentUserRole === 'admin');
-
-    // เตรียมเดือนปัจจุบัน (พุทธศักราช) เพื่อใช้กรองหนี้ค้าง
-    const now = new Date();
-    const currM = now.getMonth() + 1;
-    const currY = now.getFullYear() + 543;
-    const currMonthFull = `${String(currM).padStart(2, '0')}/${currY}`; // 04/2569
-    const currMonthShort = `${currM}/${currY}`; // 4/2569
-
-    // 🔄 2. เริ่มวนลูปประมวลผลข้อมูลบ้าน
-    users.forEach(user => {
-        const houseNo = escapeHTML(user.houseNo || "-");
-        const safeName = escapeHTML(user.name || "ไม่มีชื่อเจ้าบ้าน");
-        const statusCode = user.statusCode || "none";
-        const amount = Number(user.amount || 0);
-        const payMethod = String(user.payMethod || "").trim();
-
-        // 🎯 กรองหนี้ค้าง (ไม่นับเดือนปัจจุบัน)
-        let overdueMonths = [];
-        if (user.overdueList && user.overdueList.length > 0) {
-            overdueMonths = user.overdueList.filter(bill => 
-                bill.month !== currMonthFull && bill.month !== currMonthShort
-            );
-        }
-        const overdueCount = overdueMonths.length;
-
-        // 📊 เก็บสถิติ
-        if (overdueCount > 0) stats.overdue++;
-        if (overdueCount >= maxLimit) criticalOverdueCount++;
-
-        if (statusCode === 'none') stats.todo++;
-        else if (statusCode === 'waiting') stats.waiting++;
-        else if (statusCode === 'paid' || statusCode === 'free') stats.paid++;
-
-        // 🎨 กำหนดรูปแบบสถานะ (Badge)
-        let sClass = "text-slate-500", sBg = "bg-slate-50", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
-        let borderColor = "border-slate-200";
-
-        if (statusCode === 'paid' || statusCode === 'free') {
-            sClass = "text-emerald-600"; sBg = "bg-emerald-50"; sIcon = "fa-check-circle";
-            borderColor = "border-emerald-300 shadow-sm";
+       function renderRealData(users) {
+            window.globalUsersList = users;
+            const listContainer = document.getElementById('user-list');
             
-            if (statusCode === 'free') {
-                sText = "ใช้น้ำฟรี";
-            } else {
-                // แสดงผลแยก "โอนเงิน" หรือ "ชำระแล้ว" (เงินสด)
-                const isTransfer = payMethod.includes('โอน');
-                sText = `${isTransfer ? 'โอนเงิน' : 'ชำระแล้ว'} ${amount.toLocaleString()} บ.`;
-            }
-        } else if (statusCode === 'waiting') {
-            sClass = "text-blue-600 font-bold"; sBg = "bg-blue-50"; sIcon = "fa-clock";
-            sText = `รอชำระ ${amount.toLocaleString()} บ.`;
-            borderColor = "border-blue-300 shadow-sm";
-        }
+            // 🌟 1. เพิ่ม stats.free และตัวเก็บยอดเงิน (amounts)
+            let stats = { todo: 0, waiting: 0, paid: 0, free: 0, overdue: 0 };
+            let amounts = { paid: 0, waiting: 0 };
+            let htmlContent = "";
 
-        // 🔴 ป้ายแจ้งเตือนหนี้ค้าง (Badge ด้านบน)
-        let overdueBadge = "";
-        if (overdueCount > 0) {
-            overdueBadge = `
-                <div onclick="event.stopPropagation(); openOverdueOnly('${houseNo}')" 
-                     class="cursor-pointer hover:scale-105 active:scale-95 transition-transform bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-                    <i class="fas fa-exclamation-triangle text-[8px]"></i> ค้าง ${overdueCount} ด.
-                </div>`;
-        }
+            // ⚙️ เตรียมค่ากำหนดและวันที่
+            const maxLimit = parseInt(document.getElementById('set-max-overdue').value) || 1;
+            let criticalOverdueCount = 0;
+            const isAdmin = (window.currentUserRole === 'admin');
 
-       // 🖼️ จัดการรูปภาพโปรไฟล์
-        let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`;
-        let pic = String(user.profilePic || "").trim();
-        
-        if (pic) {
-            let fId = "";
-            if (pic.includes("id=")) fId = pic.split('id=')[1].split('&')[0];
-            else if (pic.includes("/d/")) fId = pic.split('/d/')[1].split('/')[0];
-            
-            if (fId) {
-                // 🌟 กลับมาใช้วิธีดึงรูปหลัก และมีรูปสำรองกันโหลดไม่ขึ้นแบบเดิม (เสถียรที่สุด)
-                const mainImage = `https://lh3.googleusercontent.com/d/${fId}`;
-                const backupImage = `https://drive.google.com/thumbnail?id=${fId}&sz=w200`;
-                avatarHtml = `<img src="${mainImage}" alt="profile" class="w-full h-full object-cover rounded-xl" onerror="this.onerror=null; this.src='${backupImage}';">`;
-            } else if (pic.startsWith("http") || pic.startsWith("data:")) {
-                avatarHtml = `<img src="${pic}" alt="profile" class="w-full h-full object-cover rounded-xl" onerror="this.style.display='none';">`;
-            }
-        }
+            const now = new Date();
+            const currM = now.getMonth() + 1;
+            const currY = now.getFullYear() + 543;
+            const currMonthFull = `${String(currM).padStart(2, '0')}/${currY}`; 
+            const currMonthShort = `${currM}/${currY}`; 
 
-        // 📱 เบอร์โทรและ LINE
-        const phone = escapeHTML(user.phone || "");
-        const phoneHtml = phone 
-            ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fas fa-phone-alt text-[9px]"></i> ${phone}</a>`
-            : `<span class="text-[11px] text-slate-300 italic">ไม่มีเบอร์โทร</span>`;
-        const lineIcon = user.lineId ? `<i class="fab fa-line text-green-500 text-base"></i>` : "";
+            // 🔄 2. เริ่มวนลูปประมวลผลข้อมูลบ้าน
+            users.forEach(user => {
+                const houseNo = escapeHTML(user.houseNo || "-");
+                const safeName = escapeHTML(user.name || "ไม่มีชื่อเจ้าบ้าน");
+                const statusCode = user.statusCode || "none";
+                const amount = Number(user.amount || 0);
+                const payMethod = String(user.payMethod || "").trim();
 
-        // 🛠️ ปุ่มแก้ไขสำหรับ Admin
-        const editBtn = isAdmin ? `
-            <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-300 hover:text-blue-500 transition-colors p-1">
-                <i class="fas fa-edit"></i>
-            </button>` : "";
+                // 🎯 กรองหนี้ค้าง (ไม่นับเดือนปัจจุบัน)
+                let overdueMonths = [];
+                if (user.overdueList && user.overdueList.length > 0) {
+                    overdueMonths = user.overdueList.filter(bill => 
+                        bill.month !== currMonthFull && bill.month !== currMonthShort
+                    );
+                }
+                const overdueCount = overdueMonths.length;
 
-        // 🏗️ ประกอบร่าง HTML Card
-        htmlContent += `
-            <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 mb-3 border-2 ${borderColor} transition-all active:scale-[0.98]" onclick="openBillingModal('${houseNo}')">
-                <div class="flex items-start gap-3">
-                    <div class="w-12 h-12 rounded-xl ${sBg} flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-100">
-                        ${avatarHtml}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-[15px] font-black text-slate-800">${houseNo}</span>
-                                ${lineIcon}
-                                ${overdueBadge}
+                // 📊 เก็บสถิติ
+                if (overdueCount > 0) stats.overdue++;
+                if (overdueCount >= maxLimit) criticalOverdueCount++;
+
+                // 🌟 แยกการนับสถิติให้ชัดเจน
+                if (statusCode === 'none') {
+                    stats.todo++;
+                } else if (statusCode === 'waiting') {
+                    stats.waiting++;
+                    amounts.waiting += amount;
+                } else if (statusCode === 'paid') {
+                    stats.paid++;
+                    amounts.paid += amount;
+                } else if (statusCode === 'free') {
+                    stats.free++; // 🌟 นับบ้านที่ฟรีแยกต่างหาก
+                }
+
+                // 🎨 กำหนดรูปแบบสถานะ (Badge)
+                let sClass = "text-slate-500", sBg = "bg-slate-50", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
+                let borderColor = "border-slate-200";
+
+                // 🌟 ปรับแต่งสีและป้ายแสดงสถานะ
+                if (statusCode === 'paid') {
+                    sClass = "text-emerald-600"; sBg = "bg-emerald-50"; sIcon = "fa-check-circle";
+                    borderColor = "border-emerald-300 shadow-sm";
+                    const isTransfer = payMethod.includes('โอน');
+                    sText = `${isTransfer ? 'โอนเงิน' : 'ชำระแล้ว'} ${amount.toLocaleString()} บ.`;
+                    
+                } else if (statusCode === 'free') {
+                    // ✨ ดีไซน์ใหม่สำหรับสวัสดิการใช้น้ำฟรี (โทนสีฟ้าเขียว Teal)
+                    sClass = "text-teal-600"; sBg = "bg-teal-50"; sIcon = "fa-hand-holding-water";
+                    borderColor = "border-teal-300 shadow-sm";
+                    sText = "สวัสดิการใช้น้ำฟรี";
+
+                } else if (statusCode === 'waiting') {
+                    sClass = "text-blue-600 font-bold"; sBg = "bg-blue-50"; sIcon = "fa-clock";
+                    sText = `รอชำระ ${amount.toLocaleString()} บ.`;
+                    borderColor = "border-blue-300 shadow-sm";
+                }
+
+                // 🔴 ป้ายแจ้งเตือนหนี้ค้าง
+                let overdueBadge = "";
+                if (overdueCount > 0) {
+                    overdueBadge = `
+                        <div onclick="event.stopPropagation(); openOverdueOnly('${houseNo}')" 
+                             class="cursor-pointer hover:scale-105 active:scale-95 transition-transform bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                            <i class="fas fa-exclamation-triangle text-[8px]"></i> ค้าง ${overdueCount} ด.
+                        </div>`;
+                }
+
+               // 🖼️ จัดการรูปภาพโปรไฟล์
+                let avatarHtml = `<i class="fas ${sIcon} text-sm"></i>`;
+                let pic = String(user.profilePic || "").trim();
+                
+                if (pic) {
+                    let fId = "";
+                    if (pic.includes("id=")) fId = pic.split('id=')[1].split('&')[0];
+                    else if (pic.includes("/d/")) fId = pic.split('/d/')[1].split('/')[0];
+                    
+                    if (fId) {
+                        const mainImage = `https://lh3.googleusercontent.com/d/$/${fId}`;
+                        const backupImage = `https://drive.google.com/thumbnail?id=${fId}&sz=w200`;
+                        avatarHtml = `<img src="${mainImage}" alt="profile" class="w-full h-full object-cover rounded-xl" onerror="this.onerror=null; this.src='${backupImage}';">`;
+                    } else if (pic.startsWith("http") || pic.startsWith("data:")) {
+                        avatarHtml = `<img src="${pic}" alt="profile" class="w-full h-full object-cover rounded-xl" onerror="this.style.display='none';">`;
+                    }
+                }
+
+                // 📱 เบอร์โทรและ LINE
+                const phone = escapeHTML(user.phone || "");
+                const phoneHtml = phone 
+                    ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fas fa-phone-alt text-[9px]"></i> ${phone}</a>`
+                    : `<span class="text-[11px] text-slate-300 italic">ไม่มีเบอร์โทร</span>`;
+                const lineIcon = user.lineId ? `<i class="fab fa-line text-green-500 text-base"></i>` : "";
+
+                // 🛠️ ปุ่มแก้ไขสำหรับ Admin
+                const editBtn = isAdmin ? `
+                    <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-300 hover:text-blue-500 transition-colors p-1">
+                        <i class="fas fa-edit"></i>
+                    </button>` : "";
+
+                // 🏗️ ประกอบร่าง HTML Card
+                htmlContent += `
+                    <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 mb-3 border-2 ${borderColor} transition-all active:scale-[0.98]" onclick="openBillingModal('${houseNo}')">
+                        <div class="flex items-start gap-3">
+                            <div class="w-12 h-12 rounded-xl ${sBg} flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-100">
+                                ${avatarHtml}
                             </div>
-                            ${editBtn}
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[15px] font-black text-slate-800">${houseNo}</span>
+                                        ${lineIcon}
+                                        ${overdueBadge}
+                                    </div>
+                                    ${editBtn}
+                                </div>
+                                <p class="text-[13px] text-slate-500 truncate mb-2">${safeName}</p>
+                                <div class="flex items-center justify-between pt-2 border-t border-slate-50">
+                                    ${phoneHtml}
+                                    <span class="text-[11px] font-extrabold ${sClass} ${sBg} px-2 py-0.5 rounded-lg border border-white shadow-sm">${sText}</span>
+                                </div>
+                            </div>
                         </div>
-                        <p class="text-[13px] text-slate-500 truncate mb-2">${safeName}</p>
-                        <div class="flex items-center justify-between pt-2 border-t border-slate-50">
-                            ${phoneHtml}
-                            <span class="text-[11px] font-extrabold ${sClass} ${sBg} px-2 py-0.5 rounded-lg border border-white shadow-sm">${sText}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-    });
+                    </div>`;
+            });
 
-    // 🏁 3. อัปเดต UI ทั้งหมด
-    listContainer.innerHTML = htmlContent;
+            // 🏁 3. อัปเดต UI ทั้งหมด
+            listContainer.innerHTML = htmlContent;
 
-    const updateStat = (id, count) => {
-        document.getElementById(id).innerHTML = `<span class="text-base font-bold">${count}</span><span class="text-[10px] opacity-60 ml-1">หลัง</span>`;
-    };
+            const updateStat = (id, count) => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = `<span class="text-base font-bold">${count}</span><span class="text-[10px] opacity-60 ml-1">หลัง</span>`;
+            };
 
-    updateStat('dash-count-todo', stats.todo);
-    updateStat('dash-count-waiting', stats.waiting);
-    updateStat('dash-count-paid', stats.paid);
-    updateStat('dash-count-overdue', stats.overdue);
+            // อัปเดต Card สถิติในแท็บ "จดมิเตอร์"
+            updateStat('dash-count-todo', stats.todo);
+            updateStat('dash-count-waiting', stats.waiting);
+            updateStat('dash-count-paid', stats.paid);
+            updateStat('dash-count-overdue', stats.overdue);
 
-    // แจ้งเตือน Banner
-    const banner = document.getElementById('overdue-warning-banner');
-    if (criticalOverdueCount > 0) {
-        banner.classList.remove('hidden');
-        document.getElementById('overdue-warning-count').innerText = criticalOverdueCount;
-    } else {
-        banner.classList.add('hidden');
-    }
+            // 🌟 อัปเดตสถิติลงหน้า "Dashboard" หลักด้วย (มีการดักจับป้องกัน Error)
+            if (document.getElementById('stat-paid-count')) document.getElementById('stat-paid-count').innerText = stats.paid + " ราย";
+            if (document.getElementById('stat-free-count')) document.getElementById('stat-free-count').innerText = stats.free + " ราย";
+            if (document.getElementById('stat-paid-amount')) document.getElementById('stat-paid-amount').innerText = amounts.paid.toLocaleString();
+            
+            if (document.getElementById('stat-waiting-count')) document.getElementById('stat-waiting-count').innerText = stats.waiting + " ราย";
+            if (document.getElementById('stat-waiting-amount')) document.getElementById('stat-waiting-amount').innerText = amounts.waiting.toLocaleString();
 
-    // จำนวนรวมในช่องค้นหา
-    const searchCount = document.getElementById('search-count');
-    if (searchCount) searchCount.innerText = `${users.length} หลัง`;
-}
+            // แจ้งเตือน Banner
+            const banner = document.getElementById('overdue-warning-banner');
+            if (banner) {
+                if (criticalOverdueCount > 0) {
+                    banner.classList.remove('hidden');
+                    const warningCountEl = document.getElementById('overdue-warning-count');
+                    if(warningCountEl) warningCountEl.innerText = criticalOverdueCount;
+                } else {
+                    banner.classList.add('hidden');
+                }
+            }
+
+            // จำนวนรวมในช่องค้นหา
+            const searchCount = document.getElementById('search-count');
+            if (searchCount) searchCount.innerText = `${users.length} หลัง`;
+        }
 
         // ฟังก์ชันเปิด Modal จาก Badge ป้ายแจ้งเตือนในบ้าน
         function openOverdueOnly(houseNo) {
