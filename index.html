@@ -1415,35 +1415,27 @@ function applyRolePermissions() {
                     if (statusCode === 'free') stats.free++; // นับแยกเก็บไว้ เผื่อเอาไปโชว์ว่าให้สวัสดิการฟรีกี่หลัง
                 }
 
-                // 🎨 กำหนดรูปแบบสถานะ (Badge) และสีกรอบ
+                // 🎨 กำหนดรูปแบบสถานะ (Badge)
                 let sClass = "text-slate-500", sBg = "bg-slate-50", sIcon = "fa-clipboard-list", sText = "ยังไม่จดมิเตอร์";
                 let borderColor = "border-slate-200";
 
-                // 🌟 ปรับแต่งสีและป้ายแสดงสถานะใหม่
+                // 🌟 ปรับแต่งสีและป้ายแสดงสถานะ
                 if (statusCode === 'paid') {
-                    // 🟢 ชำระแล้ว -> สีเขียว
-                    sClass = "text-emerald-600"; 
-                    sBg = "bg-emerald-50"; 
-                    sIcon = "fa-check-circle";
-                    borderColor = "border-emerald-400 shadow-sm"; 
+                    sClass = "text-emerald-600"; sBg = "bg-emerald-50"; sIcon = "fa-check-circle";
+                    borderColor = "border-emerald-300 shadow-sm";
                     const isTransfer = payMethod.includes('โอน');
                     sText = `${isTransfer ? 'โอนเงิน' : 'ชำระแล้ว'} ${amount.toLocaleString()} บ.`;
                     
                 } else if (statusCode === 'free') {
-                    // 🔵 ใช้น้ำฟรี -> สีฟ้า
-                    sClass = "text-blue-500"; 
-                    sBg = "bg-blue-50"; 
-                    sIcon = "fa-hand-holding-water";
-                    borderColor = "border-blue-400 shadow-sm"; 
+                    // ✨ ดีไซน์สำหรับสวัสดิการใช้น้ำฟรี (โทนสีฟ้าเขียว Teal)
+                    sClass = "text-teal-600"; sBg = "bg-teal-50"; sIcon = "fa-hand-holding-water";
+                    borderColor = "border-teal-300 shadow-sm";
                     sText = "สวัสดิการใช้น้ำฟรี";
 
                 } else if (statusCode === 'waiting') {
-                    // 🟠 รอชำระ -> สีส้ม
-                    sClass = "text-orange-500 font-bold"; 
-                    sBg = "bg-orange-50"; 
-                    sIcon = "fa-clock";
+                    sClass = "text-blue-600 font-bold"; sBg = "bg-blue-50"; sIcon = "fa-clock";
                     sText = `รอชำระ ${amount.toLocaleString()} บ.`;
-                    borderColor = "border-orange-400 shadow-sm"; 
+                    borderColor = "border-blue-300 shadow-sm";
                 }
 
                 // 🔴 ป้ายแจ้งเตือนหนี้ค้าง
@@ -1488,8 +1480,8 @@ function applyRolePermissions() {
                     </button>` : "";
 
                 // 🏗️ ประกอบร่าง HTML Card
-                      htmlContent += `
-                      <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 mb-3 border ${borderColor} transition-all active:scale-[0.98]" onclick="openBillingModal('${houseNo}')">
+                htmlContent += `
+                    <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-3 mb-3 border-2 ${borderColor} transition-all active:scale-[0.98]" onclick="openBillingModal('${houseNo}')">
                         <div class="flex items-start gap-3">
                             <div class="w-12 h-12 rounded-xl ${sBg} flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-100">
                                 ${avatarHtml}
