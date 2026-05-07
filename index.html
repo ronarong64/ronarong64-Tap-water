@@ -2434,6 +2434,40 @@ function toggleOption(elementId, isChecked) {
             if(document.getElementById('set-free-limit')) document.getElementById('set-free-limit').value = d.FREE_LIMIT || "";
         }
 
+        // ==========================================
+        // ⚙️ ฟังก์ชันนำข้อมูลตั้งค่ามาแสดงบนหน้าจอ (แบบปลอดภัย)
+        // ==========================================
+        function applySettingsToUI(data) {
+            // ฟังก์ชันตัวช่วย: เช็คก่อนว่ามีกล่อง Input นั้นอยู่จริงไหม ถึงจะใส่ค่าลงไป
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            };
+            const setCheck = (id, isChecked) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.checked = (isChecked === true || String(isChecked).toLowerCase() === "true");
+                    // เปิด/ปิด กล่องสวัสดิการใช้น้ำฟรี
+                    if (id === 'set-free-enabled' && typeof toggleOption === 'function') {
+                        toggleOption('free-limit-box', el.checked);
+                    }
+                }
+            };
+
+            // ใส่ข้อมูลเฉพาะช่องที่ยังมีอยู่ในดีไซน์ใหม่
+            setVal('set-price', data.PRICE || 0);
+            setVal('set-collection-rate', data.COLLECTION_RATE || 0);
+            setVal('set-max-overdue', data.MAX_OVERDUE || 0);
+            setVal('set-start-day', data.START_DAY || 1);
+            setVal('set-end-day', data.END_DAY || 31);
+            
+            setCheck('set-free-enabled', data.FREE_ENABLED);
+            setVal('set-free-limit', data.FREE_LIMIT || 0);
+        }
+
+        // ==========================================
+        // ⚙️ ฟังก์ชันโหลดการตั้งค่าจากฐานข้อมูล
+        // ==========================================
         async function loadSettingsData() {
             const btn = document.getElementById('btn-save-settings');
             if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> กำลังโหลด...`; }
@@ -2443,41 +2477,60 @@ function toggleOption(elementId, isChecked) {
                 const result = await response.json();
                 
                 if (result.success && result.data) {
-                    applySettingsToUI(result.data);
+                    applySettingsToUI(result.data); // เรียกใช้ฟังก์ชันด้านบน
+
                     // ถ้าดึงตั้งค่าเสร็จแล้ว ให้วาดรายชื่อบ้านใหม่ (เพื่อให้สีแดงแจ้งเตือนตัดหนี้ค้างทำงาน)
                     if (window.globalUsersList && window.globalUsersList.length > 0) {
                         renderRealData(window.globalUsersList);
                     }
                 }
             } catch (err) {
+                console.error(err);
                 showToast("ไม่สามารถโหลดข้อมูลตั้งค่าได้", "error");
             } finally {
-                if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fas fa-save"></i> บันทึกการตั้งค่า`; }
+                if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fas fa-save text-lg"></i> บันทึกการตั้งค่าทั้งหมด`; }
             }
         }
 
+        // ==========================================
+        // 💾 ฟังก์ชันบันทึกการตั้งค่า
+        // ==========================================
         async function saveSettingsData() {
             const btn = document.getElementById('btn-save-settings');
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
+            if(btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
+            }
+
+            // ฟังก์ชันตัวช่วย: ดึงค่าอย่างปลอดภัย ถ้าหาช่องไม่เจอให้ส่งค่าว่างป้องกัน Error
+            const getVal = (id, defaultVal = 0) => {
+                const el = document.getElementById(id);
+                return el ? el.value : defaultVal;
+            };
+            const getCheck = (id) => {
+                const el = document.getElementById(id);
+                return el ? el.checked : false;
+            };
 
             // กวาดข้อมูลทั้งหมดในฟอร์ม
             const payload = {
                 action: "saveSettings",
                 settingsData: {
-                    PRICE: document.getElementById('set-price').value,
-                    COLLECTION_RATE: document.getElementById('set-collection-rate').value,
-                    MAX_OVERDUE: document.getElementById('set-max-overdue').value,
-                    START_DAY: document.getElementById('set-start-day').value,
-                    END_DAY: document.getElementById('set-end-day').value,
-                    AUTO_REPORT: document.getElementById('set-auto-report').checked,
-                    REPORT_DAY: document.getElementById('set-report-day').value,
-                    REPORT_TIME: document.getElementById('set-report-time').value,
-                    AUTO_BILL: document.getElementById('set-auto-bill').checked,
-                    BILL_DAY: document.getElementById('set-bill-day').value,
-                    BILL_TIME: document.getElementById('set-bill-time').value,
-                    FREE_ENABLED: document.getElementById('set-free-enabled').checked,
-                    FREE_LIMIT: document.getElementById('set-free-limit').value
+                    PRICE: getVal('set-price'),
+                    COLLECTION_RATE: getVal('set-collection-rate'),
+                    MAX_OVERDUE: getVal('set-max-overdue'),
+                    START_DAY: getVal('set-start-day', 1),
+                    END_DAY: getVal('set-end-day', 31),
+                    FREE_ENABLED: getCheck('set-free-enabled'),
+                    FREE_LIMIT: getVal('set-free-limit'),
+
+                    // 🌟 ส่งค่า "ปิดการใช้งาน (false)" กลับไปให้ชีต สำหรับเมนูที่ถูกลบออกไปแล้ว
+                    AUTO_REPORT: false,
+                    REPORT_DAY: 1,
+                    REPORT_TIME: "8",
+                    AUTO_BILL: false,
+                    BILL_DAY: 1,
+                    BILL_TIME: "8"
                 }
             };
 
@@ -2490,14 +2543,19 @@ function toggleOption(elementId, isChecked) {
                 
                 if (result.success) {
                     showToast("บันทึกการตั้งค่าเรียบร้อยแล้ว", "success");
+                    // โหลดข้อมูลมารีเฟรชอีกรอบเพื่อให้แน่ใจว่าเซฟติด
+                    loadSettingsData(); 
                 } else {
                     showToast("เกิดข้อผิดพลาดในการบันทึก", "error");
                 }
             } catch (err) {
+                console.error(err);
                 showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", "error");
             } finally {
-                btn.disabled = false;
-                btn.innerHTML = `<i class="fas fa-save"></i> บันทึกการตั้งค่า`;
+                if(btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fas fa-save text-lg"></i> บันทึกการตั้งค่าทั้งหมด`;
+                }
             }
         }
 
