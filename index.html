@@ -1346,6 +1346,7 @@ function applyRolePermissions() {
                 return escapeMap[match];
             });
         }
+        
        function renderRealData(users) {
             window.globalUsersList = users;
             const listContainer = document.getElementById('user-list');
@@ -1383,21 +1384,20 @@ function applyRolePermissions() {
                 }
                 const overdueCount = overdueMonths.length;
 
-                // 📊 เก็บสถิติ
+                // 📊 เก็บสถิติหนี้ค้าง
                 if (overdueCount > 0) stats.overdue++;
                 if (overdueCount >= maxLimit) criticalOverdueCount++;
 
-                // 🌟 แยกการนับสถิติให้ชัดเจน
+                // 🌟 แยกการนับสถิติ (อัปเดตใหม่ให้นับบ้านที่ "ใช้น้ำฟรี" รวมเป็น "ชำระแล้ว")
                 if (statusCode === 'none') {
                     stats.todo++;
                 } else if (statusCode === 'waiting') {
                     stats.waiting++;
                     amounts.waiting += amount;
-                } else if (statusCode === 'paid') {
-                    stats.paid++;
-                    amounts.paid += amount;
-                } else if (statusCode === 'free') {
-                    stats.free++; // 🌟 นับบ้านที่ฟรีแยกต่างหาก
+                } else if (statusCode === 'paid' || statusCode === 'free') {
+                    stats.paid++; // 🌟 นับจำนวนรวมกันไปเลย (Paid + Free) เพราะถือว่าจัดการบิลเสร็จแล้ว
+                    if (statusCode === 'paid') amounts.paid += amount; // ยอดเงินบวกเฉพาะคนที่จ่ายจริง
+                    if (statusCode === 'free') stats.free++; // นับแยกเก็บไว้ เผื่อเอาไปโชว์ว่าให้สวัสดิการฟรีกี่หลัง
                 }
 
                 // 🎨 กำหนดรูปแบบสถานะ (Badge)
@@ -1412,7 +1412,7 @@ function applyRolePermissions() {
                     sText = `${isTransfer ? 'โอนเงิน' : 'ชำระแล้ว'} ${amount.toLocaleString()} บ.`;
                     
                 } else if (statusCode === 'free') {
-                    // ✨ ดีไซน์ใหม่สำหรับสวัสดิการใช้น้ำฟรี (โทนสีฟ้าเขียว Teal)
+                    // ✨ ดีไซน์สำหรับสวัสดิการใช้น้ำฟรี (โทนสีฟ้าเขียว Teal)
                     sClass = "text-teal-600"; sBg = "bg-teal-50"; sIcon = "fa-hand-holding-water";
                     borderColor = "border-teal-300 shadow-sm";
                     sText = "สวัสดิการใช้น้ำฟรี";
@@ -1498,13 +1498,13 @@ function applyRolePermissions() {
                 if (el) el.innerHTML = `<span class="text-base font-bold">${count}</span><span class="text-[10px] opacity-60 ml-1">หลัง</span>`;
             };
 
-            // อัปเดต Card สถิติในแท็บ "จดมิเตอร์"
+            // อัปเดต Card สถิติในแท็บ "จดมิเตอร์" (dash-count-paid จะแสดงผลรวม Paid + Free แล้ว)
             updateStat('dash-count-todo', stats.todo);
             updateStat('dash-count-waiting', stats.waiting);
             updateStat('dash-count-paid', stats.paid);
             updateStat('dash-count-overdue', stats.overdue);
 
-            // 🌟 อัปเดตสถิติลงหน้า "Dashboard" หลักด้วย (มีการดักจับป้องกัน Error)
+            // 🌟 อัปเดตสถิติลงหน้า "Dashboard" หลัก
             if (document.getElementById('stat-paid-count')) document.getElementById('stat-paid-count').innerText = stats.paid + " ราย";
             if (document.getElementById('stat-free-count')) document.getElementById('stat-free-count').innerText = stats.free + " ราย";
             if (document.getElementById('stat-paid-amount')) document.getElementById('stat-paid-amount').innerText = amounts.paid.toLocaleString();
