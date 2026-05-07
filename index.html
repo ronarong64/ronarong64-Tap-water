@@ -431,7 +431,7 @@
 
       <div id="page-settings" class="hidden space-y-4 animate-fade-in pb-10">
         <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 space-y-6">
-          
+
           <h2 class="text-xl font-extrabold text-slate-800 flex items-center gap-3 border-b border-slate-100 pb-4">
             <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
               <i class="fas fa-sliders-h text-lg"></i>
@@ -444,15 +444,18 @@
               <i class="fas fa-coins text-amber-500"></i> ค่าบริการและเงื่อนไข
             </h3>
             <div class="grid grid-cols-3 gap-3">
-              <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center">
+              <div
+                class="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center">
                 <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">ราคา/หน่วย</label>
                 <input type="number" id="set-price" class="text-xl font-black text-slate-700 bg-transparent text-center w-full outline-none p-0" placeholder="0">
               </div>
-              <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center">
+              <div
+                class="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center">
                 <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">ค่าจัดเก็บ(%)</label>
                 <input type="number" id="set-collection-rate" class="text-xl font-black text-slate-700 bg-transparent text-center w-full outline-none p-0" placeholder="0">
               </div>
-              <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center">
+              <div
+                class="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center">
                 <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">ตัดค้าง(ด.)</label>
                 <input type="number" id="set-max-overdue" class="text-xl font-black text-red-500 bg-transparent text-center w-full outline-none p-0" placeholder="0">
               </div>
@@ -464,11 +467,13 @@
               <i class="fas fa-calendar-alt text-blue-500"></i> วันที่ทำรายการ (รอบบิล)
             </h3>
             <div class="grid grid-cols-2 gap-3">
-              <div class="bg-white border border-slate-200 px-4 py-3 rounded-2xl flex items-center justify-between shadow-sm">
+              <div
+                class="bg-white border border-slate-200 px-4 py-3 rounded-2xl flex items-center justify-between shadow-sm">
                 <label class="text-[12px] font-bold text-slate-500">วันเริ่มจด</label>
                 <input type="number" id="set-start-day" class="text-center font-bold text-blue-600 w-12 outline-none bg-blue-50 rounded-lg py-1 text-sm" placeholder="1">
               </div>
-              <div class="bg-white border border-slate-200 px-4 py-3 rounded-2xl flex items-center justify-between shadow-sm">
+              <div
+                class="bg-white border border-slate-200 px-4 py-3 rounded-2xl flex items-center justify-between shadow-sm">
                 <label class="text-[12px] font-bold text-slate-500">วันสิ้นสุด</label>
                 <input type="number" id="set-end-day" class="text-center font-bold text-red-500 w-12 outline-none bg-red-50 rounded-lg py-1 text-sm" placeholder="31">
               </div>
@@ -490,7 +495,8 @@
                   <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
                 </label>
               </div>
-              <div id="free-limit-box" class="flex items-center justify-between bg-white p-3 rounded-xl border border-cyan-100 transition-all duration-300 opacity-50 pointer-events-none">
+              <div id="free-limit-box"
+                class="flex items-center justify-between bg-white p-3 rounded-xl border border-cyan-100 transition-all duration-300 opacity-50 pointer-events-none">
                 <span class="text-xs text-slate-600 font-bold">จำกัดไม่เกิน (หน่วย):</span>
                 <input type="number" id="set-free-limit" class="py-1 px-3 text-sm h-8 bg-cyan-50 text-center font-bold text-cyan-600 w-24 rounded-lg outline-none border border-cyan-200" placeholder="0">
               </div>
@@ -2434,34 +2440,34 @@ function toggleOption(elementId, isChecked) {
             if(document.getElementById('set-free-limit')) document.getElementById('set-free-limit').value = d.FREE_LIMIT || "";
         }
 
-        // ==========================================
-        // ⚙️ ฟังก์ชันนำข้อมูลตั้งค่ามาแสดงบนหน้าจอ (แบบปลอดภัย)
-        // ==========================================
+        // ⚙️ ฟังก์ชันนำข้อมูลตั้งค่ามาแสดงบนหน้าจอ (เพิ่มส่วนธนาคาร)
         function applySettingsToUI(data) {
-            // ฟังก์ชันตัวช่วย: เช็คก่อนว่ามีกล่อง Input นั้นอยู่จริงไหม ถึงจะใส่ค่าลงไป
             const setVal = (id, val) => {
                 const el = document.getElementById(id);
                 if (el) el.value = val;
             };
             const setCheck = (id, isChecked) => {
                 const el = document.getElementById(id);
-                if (el) {
-                    el.checked = (isChecked === true || String(isChecked).toLowerCase() === "true");
-                    // เปิด/ปิด กล่องสวัสดิการใช้น้ำฟรี
-                    if (id === 'set-free-enabled' && typeof toggleOption === 'function') {
-                        toggleOption('free-limit-box', el.checked);
-                    }
-                }
+                if (el) el.checked = (isChecked === true || String(isChecked).toLowerCase() === "true");
             };
 
-            // ใส่ข้อมูลเฉพาะช่องที่ยังมีอยู่ในดีไซน์ใหม่
+            // ข้อมูลพื้นฐาน
             setVal('set-price', data.PRICE || 0);
             setVal('set-collection-rate', data.COLLECTION_RATE || 0);
             setVal('set-max-overdue', data.MAX_OVERDUE || 0);
             setVal('set-start-day', data.START_DAY || 1);
             setVal('set-end-day', data.END_DAY || 31);
             
-            setCheck('set-free-enabled', data.FREE_ENABLED);
+            // 🌟 เพิ่มส่วนนี้: ข้อมูลธนาคาร
+            setVal('set-bank-name', data.BANK_NAME || "");
+            setVal('set-account-name', data.ACCOUNT_NAME || "");
+            setVal('set-account-no', data.ACCOUNT_NO || "");
+            setVal('set-promptpay-id', data.PROMPTPAY_ID || ""); // ถ้ามีพร้อมเพย์
+
+            if (document.getElementById('set-free-enabled')) {
+                setCheck('set-free-enabled', data.FREE_ENABLED);
+                toggleOption('free-limit-box', document.getElementById('set-free-enabled').checked);
+            }
             setVal('set-free-limit', data.FREE_LIMIT || 0);
         }
 
@@ -2492,71 +2498,43 @@ function toggleOption(elementId, isChecked) {
             }
         }
 
-        // ==========================================
-        // 💾 ฟังก์ชันบันทึกการตั้งค่า
-        // ==========================================
+        // 💾 ฟังก์ชันบันทึกการตั้งค่า (เพิ่มส่วนธนาคาร)
         async function saveSettingsData() {
             const btn = document.getElementById('btn-save-settings');
-            if(btn) {
-                btn.disabled = true;
-                btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
-            }
+            const getVal = (id, defaultVal = "") => document.getElementById(id) ? document.getElementById(id).value : defaultVal;
+            const getCheck = (id) => document.getElementById(id) ? document.getElementById(id).checked : false;
 
-            // ฟังก์ชันตัวช่วย: ดึงค่าอย่างปลอดภัย ถ้าหาช่องไม่เจอให้ส่งค่าว่างป้องกัน Error
-            const getVal = (id, defaultVal = 0) => {
-                const el = document.getElementById(id);
-                return el ? el.value : defaultVal;
-            };
-            const getCheck = (id) => {
-                const el = document.getElementById(id);
-                return el ? el.checked : false;
-            };
-
-            // กวาดข้อมูลทั้งหมดในฟอร์ม
             const payload = {
                 action: "saveSettings",
                 settingsData: {
-                    PRICE: getVal('set-price'),
-                    COLLECTION_RATE: getVal('set-collection-rate'),
-                    MAX_OVERDUE: getVal('set-max-overdue'),
+                    PRICE: getVal('set-price', 0),
+                    COLLECTION_RATE: getVal('set-collection-rate', 0),
+                    MAX_OVERDUE: getVal('set-max-overdue', 0),
                     START_DAY: getVal('set-start-day', 1),
                     END_DAY: getVal('set-end-day', 31),
                     FREE_ENABLED: getCheck('set-free-enabled'),
-                    FREE_LIMIT: getVal('set-free-limit'),
-
-                    // 🌟 ส่งค่า "ปิดการใช้งาน (false)" กลับไปให้ชีต สำหรับเมนูที่ถูกลบออกไปแล้ว
-                    AUTO_REPORT: false,
-                    REPORT_DAY: 1,
-                    REPORT_TIME: "8",
-                    AUTO_BILL: false,
-                    BILL_DAY: 1,
-                    BILL_TIME: "8"
+                    FREE_LIMIT: getVal('set-free-limit', 0),
+                    
+                    // 🌟 เพิ่มส่วนนี้: ส่งข้อมูลธนาคารไปบันทึก
+                    BANK_NAME: getVal('set-bank-name'),
+                    ACCOUNT_NAME: getVal('set-account-name'),
+                    ACCOUNT_NO: getVal('set-account-no'),
+                    PROMPTPAY_ID: getVal('set-promptpay-id'),
+                    
+                    // ปิดส่วนที่ไม่ได้ใช้งาน
+                    AUTO_REPORT: false, AUTO_BILL: false 
                 }
             };
 
+            // ... (โค้ดส่วนการ fetch ส่งข้อมูลเหมือนเดิม)
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
                 const result = await response.json();
-                
                 if (result.success) {
-                    showToast("บันทึกการตั้งค่าเรียบร้อยแล้ว", "success");
-                    // โหลดข้อมูลมารีเฟรชอีกรอบเพื่อให้แน่ใจว่าเซฟติด
-                    loadSettingsData(); 
-                } else {
-                    showToast("เกิดข้อผิดพลาดในการบันทึก", "error");
+                    showToast("บันทึกข้อมูลเรียบร้อยแล้ว", "success");
+                    loadSettingsData(); // โหลดใหม่เพื่ออัปเดต UI
                 }
-            } catch (err) {
-                console.error(err);
-                showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", "error");
-            } finally {
-                if(btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = `<i class="fas fa-save text-lg"></i> บันทึกการตั้งค่าทั้งหมด`;
-                }
-            }
+            } catch (err) { showToast("บันทึกไม่สำเร็จ", "error"); }
         }
 
         // ==========================================
