@@ -168,6 +168,10 @@
   <div id="main-screen"
     class="hidden fixed inset-0 flex flex-col bg-slate-50 w-full max-w-md mx-auto shadow-2xl overflow-hidden">
 
+    <div id="global-progress" class="fixed top-0 left-0 w-full h-1.5 z-[9999] pointer-events-none hidden">
+      <div id="global-progress-bar" class="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 w-0 transition-all shadow-[0_0_10px_rgba(168,85,247,0.8)]"></div>
+    </div>
+
     <div id="menu-overlay" onclick="toggleMenu()"
       class="fixed inset-0 bg-slate-900/40 z-[60] hidden opacity-0 backdrop-blur-sm transition-opacity duration-300">
     </div>
@@ -321,14 +325,8 @@
       </div>
     </header>
 
-     <div id="global-progress" class="fixed top-0 left-0 w-full h-1.5 z-[9999] pointer-events-none hidden">
-        <div id="global-progress-bar"
-          class="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 w-0 transition-all shadow-[0_0_10px_rgba(168,85,247,0.8)]">
-        </div>
-      </div>
-
     <main class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-4 pb-24">
-      
+
       <div id="page-home" class="space-y-4 animate-fade-in">
         <div class="relative w-full">
           <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
