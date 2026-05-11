@@ -3184,7 +3184,36 @@ function openBillingModal(houseNo) {
                 const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(payload.houseNo).trim());
                 const houseName = user && user.name ? user.name : "ไม่ระบุชื่อ";
                 
-                document.getElementById('rcp-date').innerText = formatReceiptDate(data.paidDate) || "-";
+                // 🌟 1. ฟังก์ชันตัวช่วยสำหรับแปลงวันที่ให้เป็นรูปแบบ "03/พ.ค./2569"
+                const formatReceiptDate = (dateStr) => {
+                    if (!dateStr || dateStr === "-") return "-";
+                    
+                    // ตัดเอาเฉพาะวันที่ (เผื่อมีเวลาติดมาด้วย เช่น "03/05/2569 14:30")
+                    let dateOnly = String(dateStr).split(" ")[0]; 
+                    
+                    if (dateOnly.includes('/')) {
+                        let parts = dateOnly.split('/');
+                        if (parts.length >= 3) {
+                            let day = parts[0].padStart(2, '0');
+                            let monthIndex = parseInt(parts[1], 10) - 1;
+                            let year = parseInt(parts[2], 10);
+                            
+                            // เช็คให้ชัวร์ว่าเป็นปี พ.ศ. แน่นอน
+                            if (year > 0 && year < 2500) year += 543;
+                            
+                            let shortMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+                            
+                            if (monthIndex >= 0 && monthIndex < 12) {
+                                return `${day}/${shortMonths[monthIndex]}/${year}`;
+                            }
+                        }
+                    }
+                    return dateStr; // ถ้าไม่ใช่รูปแบบที่รู้จัก ให้คืนค่าเดิมกลับไป
+                };
+                
+                // 🌟 2. เรียกใช้ฟังก์ชันแปลงวันที่ตรงนี้
+                document.getElementById('rcp-date').innerText = formatReceiptDate(payload.paidDate);
+                
                 document.getElementById('rcp-house').innerText = payload.houseNo || "-";
                 document.getElementById('rcp-name').innerText = houseName;
                 document.getElementById('rcp-prev').innerText = payload.prevUnit || 0;
@@ -6767,25 +6796,6 @@ function prepareAndPrintNotice(selectedData) {
       const modal = document.getElementById('slip-image-modal');
       modal.classList.remove('hidden');
   }
-  
-  function formatReceiptDate(dateInput) {
-    if (!dateInput) return "-";
-    
-    // แปลงข้อมูลที่รับมาให้เป็นรูปแบบ Date (วันที่)
-    let d = new Date(dateInput);
-    
-    // ถ้าแปลงไม่ได้ (เช่น รูปแบบวันที่แปลกๆ) ให้คืนค่าเดิมกลับไป
-    if (isNaN(d.getTime())) return dateInput; 
-
-    let day = String(d.getDate()).padStart(2, '0');
-    let shortMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-    let month = shortMonths[d.getMonth()];
-    
-    let year = d.getFullYear();
-    if (year < 2500) year += 543; // แปลง ค.ศ. เป็น พ.ศ.
-
-    return `${day}/${month}/${year}`;
-}
 
   </script>
 
