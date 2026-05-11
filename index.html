@@ -122,10 +122,6 @@
 
 <body class="bg-slate-50 text-slate-900 h-screen w-screen overflow-hidden flex flex-col items-center justify-center">
 
-  <div id="global-progress" class="fixed top-0 left-0 w-full h-1.5 z-[9999] pointer-events-none hidden">
-      <div id="global-progress-bar" class="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 w-0 transition-all shadow-[0_0_10px_rgba(168,85,247,0.8)]"></div>
-  </div>
-
   <div id="login-screen"
     class="fixed inset-0 z-[100] bg-slate-50 flex flex-col items-center justify-center p-6 transition-opacity duration-500">
     <div class="absolute inset-0 pointer-events-none overflow-hidden opacity-70">
@@ -6800,75 +6796,6 @@ function prepareAndPrintNotice(selectedData) {
       const modal = document.getElementById('slip-image-modal');
       modal.classList.remove('hidden');
   }
-
-  // ==========================================
-        // 🚀 ระบบ Progress Bar อัตโนมัติ (ดักจับทุกการโหลดข้อมูล)
-        // ==========================================
-        let progressInterval;
-        
-        function startGlobalProgress() {
-            const container = document.getElementById('global-progress');
-            const bar = document.getElementById('global-progress-bar');
-            if(!container || !bar) return;
-            
-            container.classList.remove('hidden');
-            bar.style.transition = 'none';
-            bar.style.width = '0%';
-            bar.style.opacity = '1';
-            
-            // บังคับให้เริ่มวาด 0% ก่อน animate
-            void bar.offsetWidth; 
-            bar.style.transition = 'width 0.3s ease, opacity 0.3s ease';
-            
-            let width = 10;
-            bar.style.width = width + '%';
-            
-            // ปล่อยให้หลอดวิ่งไปเรื่อยๆ ไปหยุดรอที่ 90%
-            clearInterval(progressInterval);
-            progressInterval = setInterval(() => {
-                if (width >= 90) {
-                    clearInterval(progressInterval);
-                } else {
-                    let step = Math.random() * 15;
-                    width += step;
-                    if(width > 90) width = 90;
-                    bar.style.width = width + '%';
-                }
-            }, 300);
-        }
-
-        function stopGlobalProgress() {
-            const container = document.getElementById('global-progress');
-            const bar = document.getElementById('global-progress-bar');
-            if(!container || !bar) return;
-
-            clearInterval(progressInterval);
-            bar.style.width = '100%'; // วิ่งให้เต็ม 100%
-            
-            // รอให้หลอดวิ่งเต็มแป๊บสนึง แล้วค่อยๆ จางหายไป
-            setTimeout(() => {
-                bar.style.opacity = '0';
-                setTimeout(() => {
-                    container.classList.add('hidden');
-                    bar.style.width = '0%';
-                }, 300);
-            }, 400);
-        }
-
-        // 🌟 ดักจับการทำงานของ fetch ทั้งหมดในระบบ (ตัวแฮกให้ทำงานอัตโนมัติ)
-        const originalFetch = window.fetch;
-        window.fetch = async function(...args) {
-            startGlobalProgress(); // 1. เด้งแถบโหลดขึ้นมา
-            try {
-                const response = await originalFetch.apply(this, args); // 2. ปล่อยให้ระบบดึงข้อมูลตามปกติ
-                return response;
-            } catch (error) {
-                console.error("Fetch Error:", error);
-                throw error;
-            } finally {
-                stopGlobalProgress(); // 3. ดึงข้อมูลเสร็จแล้ว ปิดแถบโหลด
-            }
-        };
 
   </script>
 
