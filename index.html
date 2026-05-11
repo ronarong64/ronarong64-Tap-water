@@ -119,13 +119,7 @@
     }
   </style>
 </head>
-
 <body class="bg-slate-50 text-slate-900 h-screen w-screen overflow-hidden flex flex-col items-center justify-center">
-
-  <div id="global-progress" class="fixed top-0 left-0 w-full h-1.5 z-[9999] pointer-events-none hidden">
-      <div id="global-progress-bar" class="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 w-0 transition-all shadow-[0_0_10px_rgba(168,85,247,0.8)]"></div>
-  </div>
-
   <div id="login-screen"
     class="fixed inset-0 z-[100] bg-slate-50 flex flex-col items-center justify-center p-6 transition-opacity duration-500">
     <div class="absolute inset-0 pointer-events-none overflow-hidden opacity-70">
@@ -289,6 +283,11 @@
     </aside>
 
     <header
+
+    <div id="global-progress" class="fixed top-0 left-0 w-full h-1.5 z-[9999] pointer-events-none hidden">
+      <div id="global-progress-bar" class="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 w-0 transition-all shadow-[0_0_10px_rgba(168,85,247,0.8)]"></div>
+    </div>
+
       class="bg-gradient-to-r from-purple-700 via-indigo-600 to-blue-600 z-50 px-5 py-4 shrink-0 flex items-center justify-between shadow-lg shadow-indigo-500/20 sticky top-0 rounded-b-xl relative overflow-hidden">
       <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mt-10 -mr-10"></div>
       <div class="absolute bottom-0 left-0 w-24 h-24 bg-blue-400/20 rounded-full blur-xl -mb-10 -ml-10"></div>
