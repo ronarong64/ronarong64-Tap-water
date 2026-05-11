@@ -6867,12 +6867,23 @@ function prepareAndPrintNotice(selectedData) {
         const originalFetch = window.fetch;
         window.fetch = async function(...args) {
             
-            // 👉 เช็คว่าตอนนี้หน้าล็อกอินแสดงอยู่หรือไม่
-            const loginPage = document.getElementById('page-login');
-            const isLoginPage = loginPage && !loginPage.classList.contains('hidden');
+            let isLoginRequest = false;
 
-            // ถ้าไม่ใช่หน้าล็อกอิน ถึงจะให้แสดงแถบโหลด
-            if (!isLoginPage) {
+            // 👉 แอบดูข้อมูลที่กำลังจะส่งไปหลังบ้าน
+            try {
+                if (args[1] && typeof args[1].body === 'string') {
+                    const bodyData = JSON.parse(args[1].body);
+                    // ถ้าคำสั่งคือ login ให้ตั้งค่าเป็น true
+                    if (bodyData.action === "login") {
+                        isLoginRequest = true;
+                    }
+                }
+            } catch (e) {
+                // เผื่อกรณี parse JSON ไม่ได้
+            }
+
+            // ถ้า "ไม่ใช่" คำสั่งล็อกอิน ถึงจะให้แสดงแถบโหลด
+            if (!isLoginRequest) {
                 startGlobalProgress(); 
             }
 
@@ -6883,8 +6894,8 @@ function prepareAndPrintNotice(selectedData) {
                 console.error("Fetch Error:", error);
                 throw error;
             } finally {
-                // ถ้าไม่ใช่หน้าล็อกอิน ถึงจะสั่งปิดแถบโหลด
-                if (!isLoginPage) {
+                // ถ้า "ไม่ใช่" คำสั่งล็อกอิน ถึงจะสั่งปิดแถบโหลด
+                if (!isLoginRequest) {
                     stopGlobalProgress(); 
                 }
             }
