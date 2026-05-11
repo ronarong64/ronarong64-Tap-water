@@ -121,6 +121,13 @@
 </head>
 
 <body class="bg-slate-50 text-slate-900 h-screen w-screen overflow-hidden flex flex-col items-center justify-center">
+
+  <div id="global-progress" class="fixed top-0 left-0 w-full h-1.5 z-[9999] pointer-events-none hidden">
+    <div id="global-progress-bar"
+      class="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 w-0 transition-all shadow-[0_0_10px_rgba(168,85,247,0.8)]">
+    </div>
+  </div>
+
   <div id="login-screen"
     class="fixed inset-0 z-[100] bg-slate-50 flex flex-col items-center justify-center p-6 transition-opacity duration-500">
     <div class="absolute inset-0 pointer-events-none overflow-hidden opacity-70">
@@ -167,10 +174,6 @@
 
   <div id="main-screen"
     class="hidden fixed inset-0 flex flex-col bg-slate-50 w-full max-w-md mx-auto shadow-2xl overflow-hidden">
-
-    <div id="global-progress" class="fixed top-0 left-0 w-full h-1.5 z-[9999] pointer-events-none hidden">
-      <div id="global-progress-bar" class="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 w-0 transition-all shadow-[0_0_10px_rgba(168,85,247,0.8)]"></div>
-    </div>
 
     <div id="menu-overlay" onclick="toggleMenu()"
       class="fixed inset-0 bg-slate-900/40 z-[60] hidden opacity-0 backdrop-blur-sm transition-opacity duration-300">
@@ -328,6 +331,7 @@
     <main class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-4 pb-24">
 
       <div id="page-home" class="space-y-4 animate-fade-in">
+
         <div class="relative w-full">
           <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
           <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="ค้นหาบ้านเลขที่ หรือ ชื่อ..."
@@ -6862,15 +6866,27 @@ function prepareAndPrintNotice(selectedData) {
         // 🌟 ดักจับการทำงานของ fetch ทั้งหมดในระบบ (ตัวแฮกให้ทำงานอัตโนมัติ)
         const originalFetch = window.fetch;
         window.fetch = async function(...args) {
-            startGlobalProgress(); // 1. เด้งแถบโหลดขึ้นมา
+            
+            // 👉 เช็คว่าตอนนี้หน้าล็อกอินแสดงอยู่หรือไม่
+            const loginPage = document.getElementById('page-login');
+            const isLoginPage = loginPage && !loginPage.classList.contains('hidden');
+
+            // ถ้าไม่ใช่หน้าล็อกอิน ถึงจะให้แสดงแถบโหลด
+            if (!isLoginPage) {
+                startGlobalProgress(); 
+            }
+
             try {
-                const response = await originalFetch.apply(this, args); // 2. ปล่อยให้ระบบดึงข้อมูลตามปกติ
+                const response = await originalFetch.apply(this, args); 
                 return response;
             } catch (error) {
                 console.error("Fetch Error:", error);
                 throw error;
             } finally {
-                stopGlobalProgress(); // 3. ดึงข้อมูลเสร็จแล้ว ปิดแถบโหลด
+                // ถ้าไม่ใช่หน้าล็อกอิน ถึงจะสั่งปิดแถบโหลด
+                if (!isLoginPage) {
+                    stopGlobalProgress(); 
+                }
             }
         };
 
