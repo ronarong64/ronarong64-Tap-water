@@ -207,14 +207,14 @@
             <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-colors duration-300">
                 <i class="fas fa-chart-pie text-base"></i>
             </div>
-            <span class="text-base group-hover:translate-x-1 transition-transform">สรุปราย -เดือน</span>
+            <span class="text-base group-hover:translate-x-1 transition-transform">รายงาน -เดือน</span>
         </button>
 
         <button onclick="setActiveMenu(this); showPage('yearly')" class="menu-btn w-full text-left p-2.5 rounded-xl font-medium flex items-center gap-3 transition-all hover:bg-white/10 active:scale-95 group">
             <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300">
                 <i class="fas fa-calendar-alt text-base"></i>
             </div>
-            <span class="text-base group-hover:translate-x-1 transition-transform">สรุปราย -ปี</span>
+            <span class="text-base group-hover:translate-x-1 transition-transform">รายงาน -ปี</span>
         </button>
 
         <div class="border-t border-white/10 my-1 mx-3 admin-only"></div>
@@ -3184,7 +3184,7 @@ function openBillingModal(houseNo) {
                 const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(payload.houseNo).trim());
                 const houseName = user && user.name ? user.name : "ไม่ระบุชื่อ";
                 
-                document.getElementById('rcp-date').innerText = payload.paidDate || "-";
+                document.getElementById('rcp-date').innerText = formatReceiptDate(data.paidDate) || "-";
                 document.getElementById('rcp-house').innerText = payload.houseNo || "-";
                 document.getElementById('rcp-name').innerText = houseName;
                 document.getElementById('rcp-prev').innerText = payload.prevUnit || 0;
@@ -6767,6 +6767,25 @@ function prepareAndPrintNotice(selectedData) {
       const modal = document.getElementById('slip-image-modal');
       modal.classList.remove('hidden');
   }
+  
+  function formatReceiptDate(dateInput) {
+    if (!dateInput) return "-";
+    
+    // แปลงข้อมูลที่รับมาให้เป็นรูปแบบ Date (วันที่)
+    let d = new Date(dateInput);
+    
+    // ถ้าแปลงไม่ได้ (เช่น รูปแบบวันที่แปลกๆ) ให้คืนค่าเดิมกลับไป
+    if (isNaN(d.getTime())) return dateInput; 
+
+    let day = String(d.getDate()).padStart(2, '0');
+    let shortMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    let month = shortMonths[d.getMonth()];
+    
+    let year = d.getFullYear();
+    if (year < 2500) year += 543; // แปลง ค.ศ. เป็น พ.ศ.
+
+    return `${day}/${month}/${year}`;
+}
 
   </script>
 
