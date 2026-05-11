@@ -321,16 +321,15 @@
       </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-4 pb-24">
-
-      <div id="global-progress" class="fixed top-0 left-0 w-full h-1.5 z-[9999] pointer-events-none hidden">
+     <div id="global-progress" class="fixed top-0 left-0 w-full h-1.5 z-[9999] pointer-events-none hidden">
         <div id="global-progress-bar"
           class="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 w-0 transition-all shadow-[0_0_10px_rgba(168,85,247,0.8)]">
         </div>
       </div>
 
+    <main class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-4 pb-24">
+      
       <div id="page-home" class="space-y-4 animate-fade-in">
-
         <div class="relative w-full">
           <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
           <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="ค้นหาบ้านเลขที่ หรือ ชื่อ..."
