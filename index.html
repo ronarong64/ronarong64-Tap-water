@@ -1428,7 +1428,7 @@ function applyRolePermissions() {
                 const phoneHtml = phone 
                     ? `<a href="tel:${phone}" onclick="event.stopPropagation()" class="text-[11px] text-slate-500 flex items-center gap-1"><i class="fas fa-phone-alt text-[9px]"></i> ${phone}</a>`
                     : `<span class="text-[11px] text-slate-300 italic">ไม่มีเบอร์โทร</span>`;
-                const lineIcon = user.lineId ? `<i class="fab fa-line text-green-500 text-sm"></i>` : "";
+                const lineIcon = user.lineId ? `<i class="fab fa-line text-green-500 text-xs"></i>` : "";
 
                 // 🛠️ ปุ่มแก้ไขสำหรับ Admin
                 const editBtn = isAdmin ? `
