@@ -9,6 +9,8 @@
   <script>
     // 👇 นำ URL ที่ลงท้ายด้วย /exec จาก Google Apps Script มาใส่ในเครื่องหมายคำพูดด้านล่าง
         const API_URL = "https://script.google.com/macros/s/AKfycbzq88OZCsNZqxdmfe4otNoypsepDeVj-baYlTwEYIFlTtU9wqiUNKbPh76XJYy4Ys6uTw/exec";
+        // 🌟 นำ Token ที่ตั้งไว้ใน GS มาใส่ตรงนี้
+        const SYSTEM_API_TOKEN = "NongBuaWaterSecretKey2026";
         
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -1290,7 +1292,7 @@ function applyRolePermissions() {
                     <p class="text-xs font-medium">กำลังโหลดข้อมูลบ้าน...</p>
                 </div>`;
 
-            fetch(API_URL + "?action=getUsersData")
+            fetch(`${API_URL}?action=getUsersData&token=${SYSTEM_API_TOKEN}`)
                 .then(res => res.json())
                 .then(result => {
                     if (result.status === "error") throw new Error(result.message);
@@ -2448,7 +2450,7 @@ function toggleOption(elementId, isChecked) {
             if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> กำลังโหลด...`; }
 
             try {
-                const response = await fetch(API_URL + "?action=getSettings");
+                const response = await fetch(`${API_URL}?action=getSettings&token=${SYSTEM_API_TOKEN}`)
                 const result = await response.json();
                 
                 if (result.success && result.data) {
@@ -2848,7 +2850,8 @@ function openBillingModal(houseNo) {
                 if (btnPaid) { btnPaid.disabled = true; btnPaid.classList.add('opacity-50', 'cursor-not-allowed'); }
                 if (warningBox) warningBox.classList.add('hidden');
             } else {
-                let currentAmount = usage * price;
+                // 🌟 แก้ไข: ใช้ Math.round ปัดเศษสตางค์ให้แม่นยำ 100% ป้องกันจุดทศนิยมเกิน
+                let currentAmount = Math.round((usage * price) * 100) / 100;
                 let isFree = false;
 
                 // 🌟 2. ลอจิกใช้น้ำฟรี (ถ้าเปิดใช้งาน และใช้น้ำไม่เกินกำหนด)
@@ -2857,8 +2860,9 @@ function openBillingModal(houseNo) {
                     isFree = true; // เปิดโหมดบิลฟรี
                 }
 
-                const total = currentAmount + overdueAmount;
-
+                // 🌟 ป้องกันเศษทศนิยมสำหรับยอดรวมเช่นกัน
+                const total = Math.round((currentAmount + overdueAmount) * 100) / 100;
+                
                 document.getElementById('calc-usage').innerText = usage.toLocaleString();
                 
                 // 🌟 3. อัปเดต UI ให้แสดงว่าฟรี
@@ -3359,7 +3363,7 @@ async function loadFinance(monthStr = null) {
 
     // 🌟 4. ดึงข้อมูลจากเซิร์ฟเวอร์ด้วยรูปแบบ "04/2569"
     try {
-        const response = await fetch(API_URL + "?action=getFinanceDashboard&monthStr=" + encodeURIComponent(apiMonthStr));
+        const response = await fetch(`${API_URL}?action=getFinanceDashboard&token=${SYSTEM_API_TOKEN}&monthStr=${encodeURIComponent(apiMonthStr)}`);
         const result = await response.json();
 
         if (result.success) {
@@ -4036,7 +4040,7 @@ function renderFinanceHistory(history) {
             }
 
             try {
-                const response = await fetch(API_URL + "?action=getCollectorReport&month=" + encodeURIComponent(reqMonth) + "&year=" + encodeURIComponent(reqYear));
+                const response = await fetch(`${API_URL}?action=getCollectorReport&token=${SYSTEM_API_TOKEN}&month=${encodeURIComponent(reqMonth)}&year=${encodeURIComponent(reqYear)}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -5027,7 +5031,7 @@ async function loadMonthlyReport(monthStr = null) {
 
     try {
         // 🚀 เรียก API เส้นเดียว ได้ทั้งรายรับเดือนนี้, ค้างเก่า และรายจ่าย
-        const response = await fetch(API_URL + "?action=getMonthlyReportFull&monthStr=" + encodeURIComponent(targetMonthStr));
+        const response = await fetch(`${API_URL}?action=getMonthlyReportFull&token=${SYSTEM_API_TOKEN}&monthStr=${encodeURIComponent(targetMonthStr)}`)
         const res = await response.json();
 
         if (res.success) {
@@ -5377,7 +5381,7 @@ async function loadYearlyReport() {
     });
 
     try {
-        const response = await fetch(API_URL + "?action=getYearlyReport&year=" + year);
+        const response = await fetch(`${API_URL}?action=getYearlyReport&token=${SYSTEM_API_TOKEN}&year=${year}`);
         const result = await response.json();
         
         if (result.success) {
@@ -6459,7 +6463,7 @@ function printSelectedNotices() {
                 const parts = apiMonthStr.split('-');
                 const targetMonthStr = `${parts[1]}/${parseInt(parts[0]) + 543}`;
                 
-                const response = await fetch(API_URL + "?action=getFinanceDashboard&monthStr=" + encodeURIComponent(targetMonthStr));
+                const response = await fetch(`${API_URL}?action=getFinanceDashboard&token=${SYSTEM_API_TOKEN}&monthStr=${encodeURIComponent(targetMonthStr)}`);
                 const finResult = await response.json();
                 
                 let bankBal = 0, cashBal = 0;
