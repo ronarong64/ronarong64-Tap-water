@@ -112,6 +112,7 @@
   <script>
     // ⚠️ ใส่ลิงก์ API Script.google.com ของคุณรณรงค์
         const API_URL = "https://script.google.com/macros/s/AKfycbzq88OZCsNZqxdmfe4otNoypsepDeVj-baYlTwEYIFlTtU9wqiUNKbPh76XJYy4Ys6uTw/exec"; 
+        let lineAccessToken = "";
 
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
@@ -199,10 +200,18 @@
                 if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
                         const lineId = profile.userId;
+                        lineAccessToken = liff.getAccessToken() || "";
                         document.getElementById('uid').value = lineId;
                         
                         // 🌟 ยิง API ไปเช็คสิทธิ์ที่ Google Apps Script
-                        fetch(API_URL + "?action=checkDirector&lineId=" + lineId)
+                        fetch(API_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                action: "checkDirector",
+                                lineId: lineId,
+                                lineAccessToken: lineAccessToken
+                            })
+                        })
                             .then(res => res.json())
                             .then(data => {
                                 document.getElementById('loading-screen').classList.add('hidden'); // ปิดหน้าโหลด
@@ -254,6 +263,7 @@
                     body: JSON.stringify({
                         action: 'sendBroadcast',
                         lineId: lineId, 
+                        lineAccessToken: lineAccessToken,
                         title: title,
                         detail: detail,
                         imageBlob: base64Img
