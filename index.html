@@ -9,44 +9,9 @@
   <script>
     // 👇 นำ URL ที่ลงท้ายด้วย /exec จาก Google Apps Script มาใส่ในเครื่องหมายคำพูดด้านล่าง
         const API_URL = "https://script.google.com/macros/s/AKfycbzq88OZCsNZqxdmfe4otNoypsepDeVj-baYlTwEYIFlTtU9wqiUNKbPh76XJYy4Ys6uTw/exec";
-
-        async function apiFetch(url, options = {}) {
-            if (typeof url !== "string" || !url.startsWith(API_URL)) {
-                return fetch(url, options);
-            }
-
-            const savedSession = sessionStorage.getItem("water_app_session");
-            const session = savedSession ? JSON.parse(savedSession) : null;
-            if (!session || !session.authToken) {
-                throw new Error("กรุณาเข้าสู่ระบบใหม่");
-            }
-
-            const requestUrl = new URL(url, window.location.href);
-            const method = String(options.method || "GET").toUpperCase();
-            let payload;
-
-            if (method === "GET") {
-                payload = {};
-                requestUrl.searchParams.forEach((value, key) => { payload[key] = value; });
-            } else {
-                try {
-                    payload = options.body ? JSON.parse(options.body) : {};
-                } catch (error) {
-                    throw new Error("รูปแบบคำขอ API ไม่ถูกต้อง");
-                }
-            }
-
-            payload.authToken = session.authToken;
-            return fetch(API_URL, {
-                ...options,
-                method: "POST",
-                headers: {
-                    ...(options.headers || {}),
-                    "Content-Type": "text/plain;charset=utf-8"
-                },
-                body: JSON.stringify(payload)
-            });
-        }
+        // 🌟 นำ Token ที่ตั้งไว้ใน GS มาใส่ตรงนี้
+        const SYSTEM_API_TOKEN = "NongBuaWaterSecretKey2026";
+        
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -181,54 +146,8 @@
       </p>
 
       <div class="w-full relative mb-6">
-        <input type="password" inputmode="text" id="pin-input" placeholder="ป้อนรหัส PIN" maxlength="6" autofocus
+        <input type="password" inputmode="numeric" id="pin-input" placeholder="ป้อนรหัส PIN" maxlength="6" autofocus
           class="w-full h-16 bg-slate-50 border border-slate-200 rounded-2xl text-center text-3xl font-bold tracking-[0.5em] focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:tracking-normal placeholder:font-normal placeholder:text-base shadow-inner text-slate-700">
-      </div>
-
-      <div id="registration-screen"
-        class="hidden fixed inset-0 z-[110] bg-slate-50 flex flex-col items-center justify-center p-6 overflow-y-auto">
-        <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-slate-100 p-7">
-          <button type="button" onclick="closeRegistrationScreen()"
-            class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center mb-5">
-            <i class="fas fa-arrow-left"></i>
-          </button>
-          <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mb-4">
-            <i class="fas fa-user-plus"></i>
-          </div>
-          <h2 class="text-2xl font-bold text-slate-800">ลงทะเบียนผู้ใช้งาน</h2>
-          <p class="text-sm text-slate-500 mt-1 mb-6">สร้างบัญชีสำหรับเข้าใช้งานระบบ บัญชีใหม่จะได้รับสิทธิ์ผู้ใช้งานทั่วไป</p>
-
-          <form id="account-registration-form" onsubmit="submitAccountRegistration(event)" class="space-y-4">
-            <div>
-              <label for="registration-username" class="text-xs font-bold text-slate-600">ชื่อผู้ใช้</label>
-              <input id="registration-username" type="text" maxlength="50" autocomplete="username" required
-                class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 mt-1 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 font-medium"
-                placeholder="ชื่อที่ใช้แสดงในระบบ">
-            </div>
-            <div>
-              <label for="registration-pin" class="text-xs font-bold text-slate-600">PIN 4 หลัก</label>
-              <input id="registration-pin" type="password" inputmode="numeric" autocomplete="new-password"
-                maxlength="4" pattern="[0-9]{4}" required
-                class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 mt-1 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 font-bold tracking-[0.4em] text-center"
-                placeholder="••••">
-            </div>
-            <div>
-              <label for="registration-pin-confirm" class="text-xs font-bold text-slate-600">ยืนยัน PIN</label>
-              <input id="registration-pin-confirm" type="password" inputmode="numeric" autocomplete="new-password"
-                maxlength="4" pattern="[0-9]{4}" required
-                class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 mt-1 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 font-bold tracking-[0.4em] text-center"
-                placeholder="••••">
-            </div>
-            <p class="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
-              <i class="fas fa-info-circle text-blue-500 mr-1"></i> สิทธิ์ผู้ใช้งานทั่วไป: ดูข้อมูลเท่านั้น
-            </p>
-            <p id="registration-message" class="hidden rounded-xl px-3 py-2 text-sm font-medium" role="status"></p>
-            <button id="btn-register-account" type="submit"
-              class="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-xl font-bold shadow-lg active:scale-95 transition">
-              ลงทะเบียน
-            </button>
-          </form>
-        </div>
       </div>
 
       <button onclick="submitLogin()" id="btn-login"
@@ -1147,33 +1066,22 @@
         document.addEventListener('DOMContentLoaded', () => {
             const savedUser = sessionStorage.getItem('water_app_session');
             if (savedUser) {
-                try {
-                    const userData = JSON.parse(savedUser);
-                    if (userData.authToken && Number(userData.expiresAt) > Date.now()) {
-                        showMainScreen(userData);
-                        return;
-                    }
-                } catch (error) {
-                    console.warn("Stored session is invalid and will be cleared.");
-                }
-                sessionStorage.removeItem('water_app_session');
+                // ถ้าเคยล๊อกอินแล้ว ข้ามไปหน้าหลักเลย
+                const userData = JSON.parse(savedUser);
+                showMainScreen(userData);
+            } else {
+                // ถ้ายังไม่ล๊อกอิน บังคับคีย์บอร์ดเด้งขึ้นมา
+                setTimeout(() => {
+                    const pinInput = document.getElementById('pin-input');
+                    if(pinInput) pinInput.focus();
+                }, 300);
             }
-
-            setTimeout(() => {
-                const pinInput = document.getElementById('pin-input');
-                if(pinInput) pinInput.focus();
-            }, 300);
         });
 
         // 2. ฟังก์ชันตรวจสอบการล๊อกอิน
         async function submitLogin() {
             let pinInput = document.getElementById('pin-input').value.trim();
             if (!pinInput) return;
-
-            if (pinInput.toUpperCase() === "B99B") {
-                openRegistrationScreen();
-                return;
-            }
             
             let pin = pinInput;
             let isSuperAdminMode = false;
@@ -1222,70 +1130,6 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = 'เข้าสู่ระบบ <i class="fas fa-arrow-right ml-1 text-sm"></i>';
-            }
-        }
-
-        function openRegistrationScreen() {
-            document.getElementById('error-msg').classList.add('hidden');
-            document.getElementById('pin-input').value = '';
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('registration-screen').classList.remove('hidden');
-            document.getElementById('registration-username').focus();
-        }
-
-        function closeRegistrationScreen() {
-            document.getElementById('registration-screen').classList.add('hidden');
-            document.getElementById('login-screen').classList.remove('hidden', 'opacity-0', 'pointer-events-none');
-            document.getElementById('pin-input').focus();
-        }
-
-        async function submitAccountRegistration(event) {
-            event.preventDefault();
-            const usernameInput = document.getElementById('registration-username');
-            const pinInput = document.getElementById('registration-pin');
-            const confirmInput = document.getElementById('registration-pin-confirm');
-            const message = document.getElementById('registration-message');
-            const button = document.getElementById('btn-register-account');
-            const username = usernameInput.value.trim();
-            const pin = pinInput.value.trim();
-
-            message.classList.add('hidden');
-            if (pin !== confirmInput.value.trim()) {
-                message.textContent = "PIN ที่กรอกไม่ตรงกัน";
-                message.className = "rounded-xl px-3 py-2 text-sm font-medium bg-rose-50 text-rose-600";
-                return;
-            }
-
-            button.disabled = true;
-            button.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i> กำลังบันทึก...';
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({
-                        action: "registerAccount",
-                        registrationCode: "B99B",
-                        username: username,
-                        pin: pin
-                    })
-                });
-                const result = await response.json();
-                message.textContent = result.message || (result.success ? "ลงทะเบียนสำเร็จ" : "ไม่สามารถลงทะเบียนได้");
-                message.className = result.success
-                    ? "rounded-xl px-3 py-2 text-sm font-medium bg-emerald-50 text-emerald-700"
-                    : "rounded-xl px-3 py-2 text-sm font-medium bg-rose-50 text-rose-600";
-                message.classList.remove('hidden');
-
-                if (result.success) {
-                    document.getElementById('account-registration-form').reset();
-                }
-            } catch (error) {
-                message.textContent = "เชื่อมต่อระบบไม่สำเร็จ กรุณาลองใหม่";
-                message.className = "rounded-xl px-3 py-2 text-sm font-medium bg-rose-50 text-rose-600";
-                message.classList.remove('hidden');
-            } finally {
-                button.disabled = false;
-                button.innerHTML = 'ลงทะเบียน';
             }
         }
 
@@ -1362,8 +1206,7 @@ function applyPermissions(role) {
         function logout() {
             // ล้างข้อมูลทั้งหมดในเครื่อง
             sessionStorage.clear();
-            localStorage.removeItem("username");
-            localStorage.removeItem("role");
+            localStorage.removeItem("username"); // ลบชื่อผู้บันทึกที่จำไว้ด้วย
 
             // 🎯 พยายามสั่งปิดหน้าต่าง
             window.close(); 
@@ -1455,7 +1298,7 @@ function applyRolePermissions() {
                     <p class="text-xs font-medium">กำลังโหลดข้อมูลบ้าน...</p>
                 </div>`;
 
-            apiFetch(`${API_URL}?action=getUsersData`)
+            fetch(`${API_URL}?action=getUsersData&token=${SYSTEM_API_TOKEN}`)
                 .then(res => res.json())
                 .then(result => {
                     if (result.status === "error") throw new Error(result.message);
@@ -1774,7 +1617,7 @@ function applyRolePermissions() {
             };
 
             try {
-                const res = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
                 const result = await res.json();
                 if (result.success) {
                     showToast("ชำระยอดค้างสำเร็จ!", "success");
@@ -1944,7 +1787,7 @@ async function saveUserData() {
         const payload = { action: actionType, oldHouseNo, newHouseNo, newName, newPhone, imageBlob: blobData };
 
         try {
-            const response = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
             const result = await response.json();
 
             if (result.success) {
@@ -2304,7 +2147,7 @@ function toggleOption(elementId, isChecked) {
 
             try {
                 // ยิง API ตัวเดิมที่เราสร้างไว้เพื่อดึงข้อมูลกรรมการ
-                const res = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getDirectors" }) });
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getDirectors" }) });
                 const result = await res.json();
                 
                 if (result.success) {
@@ -2613,7 +2456,7 @@ function toggleOption(elementId, isChecked) {
             if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> กำลังโหลด...`; }
 
             try {
-                const response = await apiFetch(`${API_URL}?action=getSettings`)
+                const response = await fetch(`${API_URL}?action=getSettings&token=${SYSTEM_API_TOKEN}`)
                 const result = await response.json();
                 
                 if (result.success && result.data) {
@@ -2656,7 +2499,7 @@ function toggleOption(elementId, isChecked) {
             };
 
             try {
-                const response = await apiFetch(API_URL, {
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
@@ -2743,7 +2586,7 @@ function toggleOption(elementId, isChecked) {
             };
 
             try {
-                const response = await apiFetch(API_URL, {
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
@@ -3173,7 +3016,7 @@ function openBillingModal(houseNo) {
             btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...`;
 
             try {
-                const response = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
                 const result = await response.json();
                 
                 if (result.success) {
@@ -3526,7 +3369,7 @@ async function loadFinance(monthStr = null) {
 
     // 🌟 4. ดึงข้อมูลจากเซิร์ฟเวอร์ด้วยรูปแบบ "04/2569"
     try {
-        const response = await apiFetch(`${API_URL}?action=getFinanceDashboard&monthStr=${encodeURIComponent(apiMonthStr)}`);
+        const response = await fetch(`${API_URL}?action=getFinanceDashboard&token=${SYSTEM_API_TOKEN}&monthStr=${encodeURIComponent(apiMonthStr)}`);
         const result = await response.json();
 
         if (result.success) {
@@ -3704,7 +3547,7 @@ function renderFinanceHistory(history) {
                     }
                 };
 
-                const res = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
                 const result = await res.json();
 
                 if(result.success) {
@@ -3846,7 +3689,7 @@ function renderFinanceHistory(history) {
             
             try {
                 // เรียกใช้ GET request ไปที่ Google Apps Script
-                const res = await apiFetch(API_URL + "?action=getExpenses&monthStr=" + encodeURIComponent(monthStr));
+                const res = await fetch(API_URL + "?action=getExpenses&monthStr=" + encodeURIComponent(monthStr));
                 const result = await res.json();
                 
                 if(result.success) {
@@ -3930,7 +3773,7 @@ function renderFinanceHistory(history) {
             if(btn) { btn.disabled = true; btn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> กำลังบันทึก...`; }
 
             try {
-                const response = await apiFetch(API_URL, {
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: "saveExpenseData", expenseData: expenseData })
                 });
@@ -4042,7 +3885,7 @@ function renderFinanceHistory(history) {
             content.innerHTML = `<div class="text-center py-10 flex flex-col items-center justify-center gap-3"><i class="fas fa-circle-notch fa-spin text-3xl text-orange-500"></i><p class="text-slate-500 text-sm font-medium">กำลังคำนวณยอดจัดเก็บ...</p></div>`;
 
             // ยิง API ไปดึงข้อมูลสรุป
-            apiFetch(API_URL + "?action=getCollectorFeeSummary&month=" + m + "&year=" + y)
+            fetch(API_URL + "?action=getCollectorFeeSummary&month=" + m + "&year=" + y)
                 .then(res => res.json())
                 .then(result => {
                     if(!result.success) { 
@@ -4150,7 +3993,7 @@ function renderFinanceHistory(history) {
                 // ❌ ลบคำสั่ง showToast('กำลังบันทึกข้อมูล...') ออกไปแล้วครับ เพื่อไม่ให้เด้งซ้อนกัน
 
                 try {
-                    const response = await apiFetch(API_URL, {
+                    const response = await fetch(API_URL, {
                         method: 'POST',
                         body: JSON.stringify({ action: "saveExpenseData", expenseData: expenseData })
                     });
@@ -4203,7 +4046,7 @@ function renderFinanceHistory(history) {
             }
 
             try {
-                const response = await apiFetch(`${API_URL}?action=getCollectorReport&month=${encodeURIComponent(reqMonth)}&year=${encodeURIComponent(reqYear)}`);
+                const response = await fetch(`${API_URL}?action=getCollectorReport&token=${SYSTEM_API_TOKEN}&month=${encodeURIComponent(reqMonth)}&year=${encodeURIComponent(reqYear)}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -4229,6 +4072,7 @@ function renderFinanceHistory(history) {
     
     // วนลูปวาดกล่องของคนจัดเก็บแต่ละคน
     data.forEach(c => {
+        data.forEach(c => {
     if (!c.houses || c.houses.length === 0) return; // ข้ามถ้าไม่มีบิล
     let housesHtml = c.houses.map(h => {
             // ปรับป้าย "ค้างเก่า" ไม่ให้โดนบีบเมื่อจอแคบ
@@ -4994,7 +4838,7 @@ function renderFinanceHistory(history) {
               document.getElementById('stats-data-area').classList.add('hidden');
 
               // 2. ยิง API ไปขอดึงข้อมูลจาก Google Sheets
-              const response = await apiFetch(API_URL + "?action=getMyCollectorStats&name=" + encodeURIComponent(myName));
+              const response = await fetch(API_URL + "?action=getMyCollectorStats&name=" + encodeURIComponent(myName));
               const result = await response.json();
 
               document.getElementById('stats-loading-area').classList.add('hidden');
@@ -5109,7 +4953,7 @@ function renderFinanceHistory(history) {
             btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> กำลังบันทึก...`;
             
             try {
-                const response = await apiFetch(API_URL, {
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: "saveBrokenMeter", data: cmTempData })
                 });
@@ -5195,7 +5039,7 @@ async function loadMonthlyReport(monthStr = null) {
 
     try {
         // 🚀 เรียก API เส้นเดียว ได้ทั้งรายรับเดือนนี้, ค้างเก่า และรายจ่าย
-        const response = await apiFetch(`${API_URL}?action=getMonthlyReportFull&monthStr=${encodeURIComponent(targetMonthStr)}`)
+        const response = await fetch(`${API_URL}?action=getMonthlyReportFull&token=${SYSTEM_API_TOKEN}&monthStr=${encodeURIComponent(targetMonthStr)}`)
         const res = await response.json();
 
         if (res.success) {
@@ -5545,7 +5389,7 @@ async function loadYearlyReport() {
     });
 
     try {
-        const response = await apiFetch(`${API_URL}?action=getYearlyReport&year=${year}`);
+        const response = await fetch(`${API_URL}?action=getYearlyReport&token=${SYSTEM_API_TOKEN}&year=${year}`);
         const result = await response.json();
         
         if (result.success) {
@@ -6171,7 +6015,7 @@ function closeCustomAlert() {
         const listBody = document.getElementById('accounts-list-body');
         listBody.innerHTML = `<div class="text-center py-10 text-slate-400"><i class="fas fa-circle-notch fa-spin text-3xl mb-3 text-blue-500"></i><br>ดึงข้อมูลจากระบบ...</div>`;
         try {
-            const res = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getAccounts" }) });
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getAccounts" }) });
             const result = await res.json();
             if (result.success) {
                 globalAccounts = result.accounts;
@@ -6272,7 +6116,7 @@ function closeCustomAlert() {
         btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> กำลังบันทึก...`;
 
         try {
-            const res = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
             const result = await res.json();
             if (result.success) {
                 showToast(result.message, "success");
@@ -6287,7 +6131,7 @@ function closeCustomAlert() {
         // ใช้ Custom Confirm ของคุณที่มีอยู่แล้ว
         openConfirmModal("ลบบัญชี", "ยืนยันการลบบัญชีนี้ออกจากระบบถาวร?", "ลบข้อมูล", async () => {
             try {
-                const res = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "deleteAccount", row }) });
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "deleteAccount", row }) });
                 const result = await res.json();
                 if (result.success) {
                     showToast("ลบบัญชีสำเร็จ", "success");
@@ -6312,7 +6156,7 @@ function closeCustomAlert() {
         const listBody = document.getElementById('directors-list-body');
         listBody.innerHTML = `<div class="text-center py-10 text-slate-400"><i class="fas fa-circle-notch fa-spin text-3xl mb-3 text-indigo-500"></i><br>ดึงข้อมูลกรรมการ...</div>`;
         try {
-            const res = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getDirectors" }) });
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getDirectors" }) });
             const result = await res.json();
             if (result.success) {
                 globalDirectors = result.directors;
@@ -6390,7 +6234,7 @@ function closeCustomAlert() {
         btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> กำลังบันทึก...`;
 
         try {
-            const res = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
             const result = await res.json();
             if (result.success) {
                 showToast(result.message, "success");
@@ -6404,7 +6248,7 @@ function closeCustomAlert() {
     function deleteDirectorRow(row) {
         openConfirmModal("ลบข้อมูลกรรมการ", "ยืนยันการลบข้อมูลกรรมการท่านนี้ออกจากระบบถาวร?", "ลบข้อมูล", async () => {
             try {
-                const res = await apiFetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "deleteDirector", row }) });
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "deleteDirector", row }) });
                 const result = await res.json();
                 if (result.success) {
                     showToast(result.message, "success");
@@ -6627,7 +6471,7 @@ function printSelectedNotices() {
                 const parts = apiMonthStr.split('-');
                 const targetMonthStr = `${parts[1]}/${parseInt(parts[0]) + 543}`;
                 
-                const response = await apiFetch(`${API_URL}?action=getFinanceDashboard&monthStr=${encodeURIComponent(targetMonthStr)}`);
+                const response = await fetch(`${API_URL}?action=getFinanceDashboard&token=${SYSTEM_API_TOKEN}&monthStr=${encodeURIComponent(targetMonthStr)}`);
                 const finResult = await response.json();
                 
                 let bankBal = 0, cashBal = 0;
