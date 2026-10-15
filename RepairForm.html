@@ -94,7 +94,6 @@
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbzq88OZCsNZqxdmfe4otNoypsepDeVj-baYlTwEYIFlTtU9wqiUNKbPh76XJYy4Ys6uTw/exec"; 
-        let lineAccessToken = "";
 
         // ==========================================
         // 🌟 ฟังก์ชันแจ้งเตือนตรงกลางจอ สีเด่นชัด และค่อยๆ จางหาย
@@ -156,7 +155,6 @@
         window.onload = () => {
             liff.init({ liffId: "2009984616-PQGvzBFq" }).then(() => {
                 if (liff.isLoggedIn()) {
-                    lineAccessToken = liff.getAccessToken() || "";
                     liff.getProfile().then(profile => {
                         document.getElementById('uid').value = profile.userId;
                         document.getElementById('lineName').value = profile.displayName; 
@@ -275,7 +273,6 @@
                     body: JSON.stringify({
                         action: 'submitRepair',
                         lineId: lineId, 
-                        lineAccessToken: lineAccessToken,
                         lineName: lineName, 
                         detail: detail,
                         lat: lat,
