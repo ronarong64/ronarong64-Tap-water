@@ -3794,7 +3794,7 @@ function renderFinanceHistory(history) {
                               ${item.detail.replace(' (', '<br>(')}
                           </div>
                           <div class="text-[10px] text-slate-400 mt-[2px]">
-                              <i class="far fa-calendar-alt opacity-70"></i> ${item.date} | 👤 ${item.recorder}
+                              <i class="far fa-calendar-alt opacity-70"></i> ${item.date || '-'} | 👤 ${item.recorder || 'ไม่ระบุชื่อ'}
                           </div>
                       </div>
                     </div>
