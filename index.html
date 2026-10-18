@@ -533,7 +533,7 @@
           </div>
 
           <div class="pt-4 border-t border-slate-100">
-            <button id="btn-save-settings" onclick="saveSettingsData()" class="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 active:scale-[0.98] transition-all flex justify-center items-center gap-2">
+            <button id="btn-save-settings" onclick="saveSettingsData()" class="hidden w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 active:scale-[0.98] transition-all flex justify-center items-center gap-2">
               <i class="fas fa-save text-lg"></i> บันทึกการตั้งค่าทั้งหมด
             </button>
           </div>
@@ -2428,6 +2428,35 @@ function toggleOption(elementId, isChecked) {
         // ==========================================
         // ฟังก์ชันอัปเดตหน้าจอการตั้งค่า (แยกออกมาให้ทำงานเร็วขึ้น)
         // ==========================================
+        const SETTINGS_CONTROL_IDS = [
+            'set-price', 'set-collection-rate', 'set-max-overdue', 'set-start-day', 'set-end-day',
+            'set-auto-report', 'set-report-day', 'set-report-time',
+            'set-auto-bill', 'set-bill-day', 'set-bill-time', 'set-free-enabled', 'set-free-limit'
+        ];
+        let originalSettingsSnapshot = null;
+        let settingsLoadedSuccessfully = false;
+
+        function getSettingsFormSnapshot() {
+            return JSON.stringify(SETTINGS_CONTROL_IDS.map(id => {
+                const field = document.getElementById(id);
+                return field.type === 'checkbox' ? field.checked : field.value;
+            }));
+        }
+
+        function updateSettingsSaveVisibility() {
+            const btn = document.getElementById('btn-save-settings');
+            if (!btn) return;
+            const hasChanges = settingsLoadedSuccessfully && originalSettingsSnapshot !== getSettingsFormSnapshot();
+            btn.classList.toggle('hidden', !hasChanges);
+        }
+
+        SETTINGS_CONTROL_IDS.forEach(id => {
+            const field = document.getElementById(id);
+            if (!field) return;
+            field.addEventListener('input', updateSettingsSaveVisibility);
+            field.addEventListener('change', updateSettingsSaveVisibility);
+        });
+
         function applySettingsToUI(d) {
             if(document.getElementById('set-price')) document.getElementById('set-price').value = d.PRICE || "";
             if(document.getElementById('set-collection-rate')) document.getElementById('set-collection-rate').value = d.COLLECTION_RATE || "";
@@ -2465,7 +2494,10 @@ function toggleOption(elementId, isChecked) {
 
         async function loadSettingsData() {
             const btn = document.getElementById('btn-save-settings');
-            if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> กำลังโหลด...`; }
+            settingsLoadedSuccessfully = false;
+            originalSettingsSnapshot = null;
+            updateSettingsSaveVisibility();
+            if (btn) btn.disabled = true;
 
             try {
                 const response = await fetch(API_URL + "?action=getSettings");
@@ -2473,20 +2505,34 @@ function toggleOption(elementId, isChecked) {
                 
                 if (result.success && result.data) {
                     applySettingsToUI(result.data);
+                    originalSettingsSnapshot = getSettingsFormSnapshot();
+                    settingsLoadedSuccessfully = true;
+                    updateSettingsSaveVisibility();
                     // ถ้าดึงตั้งค่าเสร็จแล้ว ให้วาดรายชื่อบ้านใหม่ (เพื่อให้สีแดงแจ้งเตือนตัดหนี้ค้างทำงาน)
                     if (window.globalUsersList && window.globalUsersList.length > 0) {
                         renderRealData(window.globalUsersList);
                     }
+                } else {
+                    showToast(result.message || "ไม่สามารถโหลดข้อมูลตั้งค่าได้", "error");
                 }
             } catch (err) {
                 showToast("ไม่สามารถโหลดข้อมูลตั้งค่าได้", "error");
             } finally {
-                if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fas fa-save"></i> บันทึกการตั้งค่า`; }
+                if (btn) btn.disabled = false;
+                updateSettingsSaveVisibility();
             }
         }
 
         async function saveSettingsData() {
             const btn = document.getElementById('btn-save-settings');
+            if (!settingsLoadedSuccessfully || !originalSettingsSnapshot) {
+                showToast("กรุณารอให้โหลดการตั้งค่าปัจจุบันก่อน", "warning");
+                return;
+            }
+            if (originalSettingsSnapshot === getSettingsFormSnapshot()) {
+                updateSettingsSaveVisibility();
+                return;
+            }
             btn.disabled = true;
             btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
 
@@ -2518,7 +2564,9 @@ function toggleOption(elementId, isChecked) {
                 const result = await response.json();
                 
                 if (result.success) {
+                    originalSettingsSnapshot = getSettingsFormSnapshot();
                     showToast("บันทึกการตั้งค่าเรียบร้อยแล้ว", "success");
+                    updateSettingsSaveVisibility();
                 } else {
                     showToast("เกิดข้อผิดพลาดในการบันทึก", "error");
                 }
@@ -2526,7 +2574,7 @@ function toggleOption(elementId, isChecked) {
                 showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", "error");
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = `<i class="fas fa-save"></i> บันทึกการตั้งค่า`;
+                updateSettingsSaveVisibility();
             }
         }
 
