@@ -299,26 +299,26 @@
     </aside>
 
     <header
-      class="bg-gradient-to-r from-purple-700 via-indigo-600 to-blue-600 z-50 px-5 py-4 shrink-0 flex items-center justify-between shadow-lg shadow-indigo-500/20 sticky top-0 rounded-b-xl relative overflow-hidden">
+      class="bg-gradient-to-r from-slate-900 via-blue-900 to-cyan-800 z-50 px-4 sm:px-5 py-3.5 shrink-0 flex items-center justify-between shadow-lg shadow-blue-950/20 sticky top-0 rounded-b-2xl relative overflow-hidden">
       <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mt-10 -mr-10"></div>
       <div class="absolute bottom-0 left-0 w-24 h-24 bg-blue-400/20 rounded-full blur-xl -mb-10 -ml-10"></div>
 
-      <div class="flex items-center gap-3.5 relative z-10">
-        <button onclick="toggleMenu()" class="w-10 h-10 bg-white/20 backdrop-blur-md border border-white/30 text-white hover:bg-white/30 rounded-xl flex items-center justify-center active:scale-95 transition-all shadow-sm">
+      <div class="flex items-center gap-3 relative z-10 min-w-0">
+        <button onclick="toggleMenu()" aria-label="เปิดเมนู" class="w-10 h-10 shrink-0 bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 rounded-xl flex items-center justify-center active:scale-95 transition-all shadow-sm">
             <i class="fas fa-bars text-lg"></i>
         </button>
-        <div>
-          <h2 class="font-bold text-white text-[18px] leading-tight drop-shadow-sm">ระบบประปา</h2>
-          <p class="text-[11px] text-blue-100 font-medium tracking-wide flex items-center gap-1">
+        <div class="min-w-0">
+          <h2 class="font-bold text-white text-[17px] leading-tight drop-shadow-sm truncate">ระบบบริหารจัดการน้ำ</h2>
+          <p class="text-[10px] text-cyan-100 font-medium tracking-wide flex items-center gap-1 truncate">
             <i class="fas fa-map-marker-alt text-[9px]"></i> ม.5 บ้านทับพรุ
           </p>
         </div>
       </div>
 
-      <div class="flex items-center gap-2.5 relative z-10">
-        <div class="flex flex-col items-end text-right">
-          <span id="display-username" class="text-sm font-bold text-white drop-shadow-sm">...</span>
-          <span id="display-role" class="text-[9px] bg-white/20 text-white px-2 py-0.5 rounded-md font-bold uppercase mt-0.5 backdrop-blur-sm border border-white/20 shadow-sm">...</span>
+      <div class="flex items-center gap-2 relative z-10 shrink-0">
+        <div class="flex flex-col items-end text-right max-w-[90px]">
+          <span id="display-username" class="text-xs font-bold text-white drop-shadow-sm truncate max-w-full">...</span>
+          <span id="display-role" class="text-[9px] bg-white/15 text-white px-2 py-0.5 rounded-md font-bold uppercase mt-0.5 backdrop-blur-sm border border-white/15 shadow-sm">...</span>
         </div>
 
         <div class="relative shrink-0 cursor-pointer hover:scale-105 transition-transform active:scale-95"
@@ -372,26 +372,32 @@
         </div>
 
         <div
-          class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 shadow-lg shadow-blue-500/20 text-white flex items-center justify-between">
-          <div>
-            <div class="flex items-center gap-1.5 mb-1 opacity-90">
-              <i class="far fa-calendar-alt text-xs"></i>
-              <span class="text-[12px] font-light tracking-wider uppercase">รอบบิลเก็บเดือน</span>
+          class="relative overflow-hidden bg-gradient-to-br from-cyan-600 via-blue-700 to-indigo-800 rounded-3xl p-4 sm:p-5 shadow-lg shadow-blue-900/15 text-white flex items-center justify-between gap-3">
+          <div class="absolute -right-6 -top-8 w-28 h-28 rounded-full border border-white/10"></div>
+          <div class="absolute -right-1 -top-3 w-16 h-16 rounded-full border border-white/10"></div>
+          <div class="relative z-10 min-w-0">
+            <div class="flex items-center gap-2 mb-1.5 text-cyan-100">
+              <span class="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center"><i class="far fa-calendar-alt text-xs"></i></span>
+              <span class="text-[11px] font-medium tracking-wide">รอบบิลเก็บค่าน้ำ</span>
             </div>
-            <div id="home-display-month" class="text-xl font-bold tracking-tight leading-none">
+            <div id="home-display-month" class="text-xl sm:text-2xl font-bold tracking-tight leading-tight">
               <div class="h-6 w-24 bg-white/20 rounded animate-pulse"></div>
             </div>
           </div>
 
-          <button id="btn-add-member" onclick="openAddMemberModal()" class="admin-only w-12 h-12 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/20 rounded-xl flex items-center justify-center text-white text-xl transition-all shadow-sm backdrop-blur-md">
-        <i class="fas fa-user-plus"></i>
-    </button>
+          <button id="btn-add-member" onclick="openAddMemberModal()" aria-label="เพิ่มสมาชิก" class="admin-only relative z-10 shrink-0 h-11 px-3 bg-white text-blue-800 hover:bg-cyan-50 active:scale-95 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all shadow-md">
+            <i class="fas fa-user-plus"></i><span>เพิ่มสมาชิก</span>
+          </button>
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
+        <div class="flex items-center gap-2 px-1 pt-1">
+          <span class="w-7 h-7 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center"><i class="fas fa-chart-pie text-xs"></i></span>
+          <h3 class="font-bold text-slate-700 text-sm">สรุปสถานะรอบบิล</h3>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
 
           <div id="card-none" onclick="filterByStatus('none')"
-            class="bg-white rounded-2xl p-3 shadow-sm border border-slate-100 flex items-center gap-3 cursor-pointer transition-all duration-300 hover:bg-slate-50">
+            class="bg-white rounded-2xl p-3 shadow-sm border border-slate-100 flex items-center gap-3 cursor-pointer transition-all duration-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.98]">
             <div
               class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center flex-shrink-0">
               <i class="fas fa-clipboard-list"></i>
@@ -403,7 +409,7 @@
           </div>
 
           <div id="card-waiting" onclick="filterByStatus('waiting')"
-            class="bg-white rounded-2xl p-3 shadow-sm border border-orange-100 flex items-center gap-3 cursor-pointer transition-all duration-300 hover:bg-orange-50">
+            class="bg-white rounded-2xl p-3 shadow-sm border border-orange-100 flex items-center gap-3 cursor-pointer transition-all duration-300 hover:bg-orange-50 hover:shadow-md active:scale-[0.98]">
             <div
               class="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center flex-shrink-0">
               <i class="fas fa-clock"></i>
@@ -415,7 +421,7 @@
           </div>
 
           <div id="card-paid" onclick="filterByStatus('paid')"
-            class="bg-white rounded-2xl p-3 shadow-sm border border-green-100 flex items-center gap-3 cursor-pointer transition-all duration-300 hover:bg-green-50">
+            class="bg-white rounded-2xl p-3 shadow-sm border border-green-100 flex items-center gap-3 cursor-pointer transition-all duration-300 hover:bg-green-50 hover:shadow-md active:scale-[0.98]">
             <div class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
               <i class="fas fa-check-circle"></i>
             </div>
@@ -426,7 +432,7 @@
           </div>
 
           <div id="card-overdue" onclick="filterByStatus('overdue')"
-            class="bg-white rounded-2xl p-3 shadow-sm border border-red-100 flex items-center gap-3 cursor-pointer transition-all duration-300 hover:bg-red-50">
+            class="bg-white rounded-2xl p-3 shadow-sm border border-red-100 flex items-center gap-3 cursor-pointer transition-all duration-300 hover:bg-red-50 hover:shadow-md active:scale-[0.98]">
             <div class="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0">
               <i class="fas fa-exclamation-circle"></i>
             </div>
@@ -437,8 +443,8 @@
           </div>
 
         </div>
-        <div class="flex justify-between items-end mt-4 px-1">
-          <h3 class="font-bold text-slate-700 text-sm">รายชื่อบ้านทั้งหมด</h3>
+        <div class="flex justify-between items-center mt-5 px-1 pb-1">
+          <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2"><span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center"><i class="fas fa-house-user text-xs"></i></span>รายชื่อบ้านทั้งหมด</h3>
         </div>
         <div id="user-list" class="flex flex-col gap-2"></div>
       </div>
