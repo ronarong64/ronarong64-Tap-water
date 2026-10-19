@@ -2287,7 +2287,22 @@ function toggleOption(elementId, isChecked) {
                 printWindow.document.open();
                 printWindow.document.write(printHtml);
                 printWindow.document.close();
-                setTimeout(() => { printWindow.print(); }, 800);
+                const waitForImages = Promise.all(Array.from(printWindow.document.images, img => {
+                    const loaded = img.complete
+                        ? Promise.resolve()
+                        : new Promise(resolve => {
+                            img.addEventListener('load', resolve, { once: true });
+                            img.addEventListener('error', resolve, { once: true });
+                            setTimeout(resolve, 10000);
+                        });
+                    return loaded.then(() => img.decode ? img.decode().catch(() => {}) : undefined);
+                }));
+                const waitForFonts = printWindow.document.fonts
+                    ? printWindow.document.fonts.ready
+                    : Promise.resolve();
+                Promise.all([waitForImages, waitForFonts]).then(() => {
+                    if (!printWindow.closed) printWindow.print();
+                });
             }
         }
 
