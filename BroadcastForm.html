@@ -53,8 +53,9 @@
             <input type="hidden" id="uid" value="">
             
             <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center gap-3 shadow-inner mb-4">
-                <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-400">
-                    <i class="fas fa-user-tie"></i>
+                <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 overflow-hidden shrink-0">
+                    <img id="profile-avatar" class="hidden w-full h-full object-cover" alt="รูปโปรไฟล์ LINE">
+                    <span id="profile-avatar-fallback"><i class="fas fa-user-tie"></i></span>
                 </div>
                 <div>
                     <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">คณะกรรมการ</div>
@@ -192,6 +193,12 @@
                                 if (data.success && data.isDirector) {
                                     // ถ้าเป็นกรรมการ ให้แสดงฟอร์ม
                                     document.getElementById('profile-name').innerText = data.name || profile.displayName;
+                                    if (profile.pictureUrl) {
+                                        const avatar = document.getElementById('profile-avatar');
+                                        avatar.src = profile.pictureUrl;
+                                        avatar.classList.remove('hidden');
+                                        document.getElementById('profile-avatar-fallback').classList.add('hidden');
+                                    }
                                     document.getElementById('form-container').classList.remove('hidden');
                                 } else {
                                     // 🌟 ถ้าไม่ใช่กรรมการ เรียกหน้าต่างแจ้งเตือนขึ้นมาแทนการเด้งปิดทันที
