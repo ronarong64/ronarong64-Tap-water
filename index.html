@@ -973,6 +973,11 @@
           </div>
         </div>
 
+        <div class="col-span-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
+          <div class="text-sm font-bold text-slate-600"><i class="fas fa-coins text-amber-500 mr-1.5"></i>ยอดเงินรวมทั้งหมด</div>
+          <div class="text-lg font-black text-slate-800"><span id="fin-total-balance">0</span> <span class="text-xs font-bold text-slate-500">บาท</span></div>
+        </div>
+
         <div class="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100">
           <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
             <h3 class="font-bold text-slate-700 flex items-center gap-2 text-base">
@@ -3454,12 +3459,17 @@ async function loadFinance(monthStr = null) {
 
         if (result.success) {
             currentFinanceData = result.data;
+            const bankBalance = Number(result.data.bankBalance) || 0;
+            const cashBalance = Number(result.data.cashBalance) || 0;
             // 🌟 อัปเดตยอดเงินคงเหลือ (ปัดเศษเป็นจำนวนเต็มและใส่ลูกน้ำ)
             if(document.getElementById('fin-bank-balance')) 
-                document.getElementById('fin-bank-balance').innerText = Math.round(Number(result.data.bankBalance || 0)).toLocaleString();
+                document.getElementById('fin-bank-balance').innerText = Math.round(bankBalance).toLocaleString();
             
             if(document.getElementById('fin-cash-balance'))
-                document.getElementById('fin-cash-balance').innerText = Math.round(Number(result.data.cashBalance || 0)).toLocaleString();
+                document.getElementById('fin-cash-balance').innerText = Math.round(cashBalance).toLocaleString();
+
+            if(document.getElementById('fin-total-balance'))
+                document.getElementById('fin-total-balance').innerText = Math.round(bankBalance + cashBalance).toLocaleString();
             
             // วาดรายการประวัติใหม่
             renderFinanceHistory(result.data.history || []);
