@@ -3376,6 +3376,10 @@ function openBillingModal(houseNo) {
             const targetPage = document.getElementById('page-' + pageId);
             if (targetPage) targetPage.classList.remove('hidden');
 
+            // ทุกเมนูใช้พื้นที่เลื่อนหลักร่วมกัน จึงเริ่มหน้าใหม่จากด้านบนเสมอ
+            const mainContent = document.querySelector('#main-screen main');
+            if (mainContent) mainContent.scrollTop = 0;
+
             // ปิดเมนูด้านข้าง
             if (typeof toggleMenu === "function") toggleMenu();
 
