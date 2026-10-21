@@ -325,8 +325,9 @@
           onclick="openCollectorStats()">
           <div
             class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-md p-0.5 border border-white/40">
-            <div class="w-full h-full bg-white rounded-full flex items-center justify-center text-indigo-600">
-              <i class="fas fa-user-circle text-2xl drop-shadow-sm"></i>
+            <div class="w-full h-full bg-white rounded-full flex items-center justify-center text-indigo-600 overflow-hidden">
+              <img id="display-user-image" class="hidden w-full h-full object-cover" alt="รูปผู้ใช้งาน">
+              <i id="display-user-placeholder" class="fas fa-user-circle text-2xl drop-shadow-sm"></i>
             </div>
           </div>
           <div
@@ -1156,6 +1157,7 @@
         
         // 2. แสดงชื่อผู้ใช้และจัดการป้ายสถานะ (Role)
         document.getElementById('display-username').innerText = data.username;
+        setUserPhoto(data.image);
         const roleEl = document.getElementById('display-role');
         const role = String(data.role).toLowerCase(); // แปลงเป็นตัวพิมพ์เล็กเพื่อให้เช็คง่าย
         roleEl.innerText = data.role;
@@ -1211,6 +1213,22 @@ function applyPermissions(role) {
         // และซ่อนปุ่มเพิ่มสมาชิกด้วย
         adminElements.forEach(el => el.classList.add('hidden'));
         if (btnAddMember) btnAddMember.classList.add('hidden');
+    }
+}
+
+function setUserPhoto(url) {
+    const image = document.getElementById('display-user-image');
+    const placeholder = document.getElementById('display-user-placeholder');
+    if (!image || !placeholder) return;
+    if (url) {
+        image.onerror = () => { image.classList.add('hidden'); placeholder.classList.remove('hidden'); };
+        image.src = url;
+        image.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+    } else {
+        image.removeAttribute('src');
+        image.classList.add('hidden');
+        placeholder.classList.remove('hidden');
     }
 }
 
@@ -4691,7 +4709,8 @@ function renderFinanceHistory(history) {
         <button onclick="closeCollectorStats()" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-white/40 rounded-full transition active:scale-90"><i class="fas fa-times"></i></button>
         <div
           class="w-16 h-16 mx-auto bg-white/20 rounded-full flex items-center justify-center text-2xl mb-2 border border-white/30 backdrop-blur-md shadow-sm">
-          <i class="fas fa-user-tie"></i>
+          <img id="stats-collector-image" class="hidden w-full h-full object-cover rounded-full" alt="รูปผู้ใช้งาน">
+          <i id="stats-collector-placeholder" class="fas fa-user-tie"></i>
         </div>
         <h2 class="text-xl font-bold" id="stats-collector-name">ชื่อกรรมการ</h2>
         <p class="text-blue-100 text-sm opacity-90 font-light mt-1">สรุปยอดเงินสดในมือ (เดือนปัจจุบัน)</p>
@@ -4888,6 +4907,19 @@ function renderFinanceHistory(history) {
               
               // เปิดหน้าต่างพร้อมแอนิเมชัน
               document.getElementById('stats-collector-name').innerText = myName;
+              const session = JSON.parse(sessionStorage.getItem('water_app_session') || '{}');
+              const statsImage = document.getElementById('stats-collector-image');
+              const statsPlaceholder = document.getElementById('stats-collector-placeholder');
+              if (session.image) {
+                  statsImage.onerror = () => { statsImage.classList.add('hidden'); statsPlaceholder.classList.remove('hidden'); };
+                  statsImage.src = session.image;
+                  statsImage.classList.remove('hidden');
+                  statsPlaceholder.classList.add('hidden');
+              } else {
+                  statsImage.removeAttribute('src');
+                  statsImage.classList.add('hidden');
+                  statsPlaceholder.classList.remove('hidden');
+              }
               modal.classList.remove('hidden');
               setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
 
@@ -5919,6 +5951,20 @@ function closeCustomAlert() {
             <option value="store">store(จัดเก็บค่าน้ำ)</option>
           </select>
         </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">LineID</label>
+          <input type="text" id="acc-lineid" placeholder="LineID" class="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 mt-1 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 font-medium">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">เบอร์โทรศัพท์</label>
+          <input type="tel" id="acc-phone" placeholder="0625090448" class="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 mt-1 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 font-medium">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">รูปภาพผู้ใช้งาน</label>
+          <input type="file" id="acc-image-file" accept="image/*" class="w-full mt-1 text-xs text-slate-500">
+          <input type="url" id="acc-image" placeholder="https://..." class="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 mt-1 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 font-medium">
+          <img id="acc-image-preview" class="hidden w-14 h-14 rounded-full object-cover mt-2 border border-slate-200" alt="ตัวอย่างรูปผู้ใช้งาน">
+        </div>
       </div>
       <div class="p-5 pt-0">
         <button id="btn-save-account" onclick="saveAccountData()" class="w-full py-3.5 bg-gradient-to-r from-cyan-600 to-blue-700 text-white font-bold rounded-xl shadow-lg transition active:scale-95">
@@ -6149,7 +6195,9 @@ function closeCustomAlert() {
 
             html += `
             <div class="flex items-center justify-between p-3.5 bg-white border border-slate-100 shadow-sm rounded-2xl mb-2">
-                <div>
+                <div class="flex items-center gap-3 min-w-0">
+                    ${acc.image ? `<img src="${escapeHtml(acc.image)}" alt="รูป ${escapeHtml(acc.username)}" class="w-12 h-12 rounded-full object-cover shrink-0" onerror="this.style.display='none'">` : `<div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center shrink-0"><i class="fas fa-user"></i></div>`}
+                    <div class="min-w-0">
                     <div class="font-bold text-slate-800 text-[15px] mb-1.5">${acc.username}</div>
                     
                     <div class="flex flex-col gap-1.5">
@@ -6165,6 +6213,8 @@ function closeCustomAlert() {
                         <div class="text-[11px] text-slate-500 flex items-center gap-1.5">
                             <i class="fas fa-info-circle text-slate-400"></i> ${roleDesc}
                         </div>
+                        <div class="text-[11px] text-slate-500">${acc.phone || ""}</div>
+                    </div>
                     </div>
                 </div>
                 
@@ -6184,6 +6234,11 @@ function closeCustomAlert() {
             document.getElementById('acc-username').value = "";
             document.getElementById('acc-pin').value = "";
             document.getElementById('acc-role').value = "user";
+            document.getElementById('acc-lineid').value = "";
+            document.getElementById('acc-phone').value = "";
+            document.getElementById('acc-image').value = "";
+            document.getElementById('acc-image-file').value = "";
+            document.getElementById('acc-image-preview').classList.add('hidden');
         } else {
             document.getElementById('acc-modal-title').innerText = "แก้ไขบัญชี";
             const acc = globalAccounts.find(a => a.row === row);
@@ -6191,6 +6246,11 @@ function closeCustomAlert() {
                 document.getElementById('acc-username').value = acc.username;
                 document.getElementById('acc-pin').value = acc.pin;
                 document.getElementById('acc-role').value = acc.role;
+                document.getElementById('acc-lineid').value = acc.lineId || "";
+                document.getElementById('acc-phone').value = acc.phone || "";
+                document.getElementById('acc-image').value = acc.image || "";
+                document.getElementById('acc-image-file').value = "";
+                updateAccountImagePreview();
             }
         }
         const modal = document.getElementById('account-modal');
@@ -6198,6 +6258,28 @@ function closeCustomAlert() {
         modal.classList.remove('hidden');
         setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
     }
+
+    function escapeHtml(value) {
+        return String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+
+    function updateAccountImagePreview() {
+        const image = document.getElementById('acc-image-preview');
+        const url = document.getElementById('acc-image').value.trim();
+        image.onerror = () => image.classList.add('hidden');
+        if (url) { image.src = url; image.classList.remove('hidden'); }
+        else { image.removeAttribute('src'); image.classList.add('hidden'); }
+    }
+    document.getElementById('acc-image').addEventListener('input', updateAccountImagePreview);
+    document.getElementById('acc-image-file').addEventListener('change', async function() {
+        const file = this.files && this.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { showToast('กรุณาเลือกไฟล์รูปภาพ', 'warning'); this.value = ''; return; }
+        if (file.size > 5 * 1024 * 1024) { showToast('รูปภาพต้องมีขนาดไม่เกิน 5 MB', 'warning'); this.value = ''; return; }
+        const reader = new FileReader();
+        reader.onload = () => { document.getElementById('acc-image').value = reader.result; updateAccountImagePreview(); };
+        reader.readAsDataURL(file);
+    });
 
     function closeAccountModal() {
         const modal = document.getElementById('account-modal');
@@ -6215,11 +6297,21 @@ function closeCustomAlert() {
 
         if (!username || !pin || !role) return showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "warning");
 
-        const payload = { action: row ? "updateAccount" : "addAccount", row, username, pin, role };
+        const lineId = document.getElementById('acc-lineid').value.trim();
+        const phone = document.getElementById('acc-phone').value.trim();
+        let image = document.getElementById('acc-image').value.trim();
+        const payload = { action: row ? "updateAccount" : "addAccount", row, username, pin, role, lineId, phone, image };
         btn.disabled = true;
         btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> กำลังบันทึก...`;
 
         try {
+            if (image.startsWith('data:image/')) {
+                const uploadRes = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'uploadAccountImage', dataUrl: image }) });
+                const uploadResult = await uploadRes.json();
+                if (!uploadResult.success) throw new Error(uploadResult.message || 'อัปโหลดรูปไม่สำเร็จ');
+                image = uploadResult.image;
+                payload.image = image;
+            }
             const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
             const result = await res.json();
             if (result.success) {
