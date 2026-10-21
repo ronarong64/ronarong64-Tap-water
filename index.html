@@ -3453,6 +3453,7 @@ async function loadFinance(monthStr = null) {
         const result = await response.json();
 
         if (result.success) {
+            currentFinanceData = result.data;
             // 🌟 อัปเดตยอดเงินคงเหลือ (ปัดเศษเป็นจำนวนเต็มและใส่ลูกน้ำ)
             if(document.getElementById('fin-bank-balance')) 
                 document.getElementById('fin-bank-balance').innerText = Math.round(Number(result.data.bankBalance || 0)).toLocaleString();
@@ -3463,9 +3464,11 @@ async function loadFinance(monthStr = null) {
             // วาดรายการประวัติใหม่
             renderFinanceHistory(result.data.history || []);
         } else {
+            currentFinanceData = null;
             showToast(result.message, 'error');
         }
     } catch (e) {
+        currentFinanceData = null;
         showToast('ไม่สามารถเชื่อมต่อข้อมูลได้', 'error');
     }
 }
@@ -3649,10 +3652,9 @@ function renderFinanceHistory(history) {
         // 🖨️ ฟังก์ชันพิมพ์รายงานการเงิน
         // ==========================================
         function printFinanceReport() {
-            if(!currentFinanceData) return; {
-              const currentSelectedMonth = document.getElementById('fin-picker-display').innerText;
+            if (!currentFinanceData) {
                 showToast('ข้อมูลรายงานยังไม่พร้อม', 'warning');
-                return; 
+                return;
             }
             const d = currentFinanceData;
             
