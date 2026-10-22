@@ -978,6 +978,7 @@
                 <div class="flex justify-between gap-2"><span>รับชำระค่าน้ำ (เงินสด)</span><span id="fin-cash-water-detail">0</span></div>
                 <div class="flex justify-between gap-2"><span>ถอนจากธนาคาร</span><span id="fin-cash-withdraw-detail">0</span></div>
                 <div class="flex justify-between gap-2"><span>นำฝากธนาคาร (หัก)</span><span id="fin-cash-deposit-detail">0</span></div>
+                <div class="flex justify-between gap-2"><span>ค่าใช้จ่ายเดือนนี้ (หัก)</span><span id="fin-cash-expense-detail">0</span></div>
               </div>
             </div>
           </div>
@@ -3475,7 +3476,8 @@ async function loadFinance(monthStr = null) {
             const cashWaterPayments = Number(cashBreakdown.waterPayments) || 0;
             const cashBankWithdrawals = Number(cashBreakdown.bankWithdrawals) || 0;
             const cashBankDeposits = Number(cashBreakdown.bankDeposits) || 0;
-            const cashBalance = cashWaterPayments + cashBankWithdrawals - cashBankDeposits;
+            const currentMonthCashExpenses = Number(cashBreakdown.currentMonthExpenses) || 0;
+            const cashBalance = cashWaterPayments + cashBankWithdrawals - cashBankDeposits - currentMonthCashExpenses;
             const formatBankDetail = value => Math.round(Number(value) || 0).toLocaleString();
             // 🌟 อัปเดตยอดเงินคงเหลือ (ปัดเศษเป็นจำนวนเต็มและใส่ลูกน้ำ)
             if(document.getElementById('fin-bank-balance')) 
@@ -3495,6 +3497,8 @@ async function loadFinance(monthStr = null) {
                 document.getElementById('fin-cash-withdraw-detail').innerText = formatBankDetail(cashBreakdown.bankWithdrawals);
             if(document.getElementById('fin-cash-deposit-detail'))
                 document.getElementById('fin-cash-deposit-detail').innerText = '-' + formatBankDetail(cashBankDeposits);
+            if(document.getElementById('fin-cash-expense-detail'))
+                document.getElementById('fin-cash-expense-detail').innerText = '-' + formatBankDetail(currentMonthCashExpenses);
 
             if(document.getElementById('fin-total-balance'))
                 document.getElementById('fin-total-balance').innerText = Math.round(bankBalance + cashBalance).toLocaleString();
