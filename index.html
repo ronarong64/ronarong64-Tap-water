@@ -2784,7 +2784,6 @@ function openBillingModal(houseNo) {
 
     currentBillState = {
         billingId: user.statusCode === 'waiting' ? (user.billingId || "") : "",
-        statusCode: user.statusCode || "none",
         houseNo: user.houseNo,
         prevUnit: user.statusCode === 'waiting' ? (parseInt(user.oldUnit) || 0) : (parseInt(user.prevUnit) || 0),
         overdueDetails: actualOverdueList,
@@ -3010,8 +3009,7 @@ function openBillingModal(houseNo) {
                     if (btnWaiting) {
                         btnWaiting.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
                         btnWaiting.disabled = false;
-                        const waitingLabel = currentBillState.statusCode === 'waiting' ? 'แจ้งเตือน' : 'รอชำระ';
-                        btnWaiting.innerHTML = `<i class="fas fa-clock text-amber-500"></i> ${waitingLabel}`;
+                        btnWaiting.innerHTML = `<i class="fas fa-clock text-amber-500"></i> รอชำระ`;
                         btnWaiting.setAttribute('onclick', "saveBillingData('Waiting')");
                     }
                     if (btnPaid) {
