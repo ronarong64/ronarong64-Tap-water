@@ -975,10 +975,6 @@
               </div>
               <div class="text-lg font-black tracking-tighter mt-1 leading-none" id="fin-cash-balance">0</div>
               <div class="mt-2 space-y-0.5 text-[10px] leading-tight text-emerald-50">
-                <div class="flex justify-between gap-2"><span>รับชำระค่าน้ำ (เงินสด)</span><span id="fin-cash-water-detail">0</span></div>
-                <div class="flex justify-between gap-2"><span>ถอนจากธนาคาร</span><span id="fin-cash-withdraw-detail">0</span></div>
-                <div class="flex justify-between gap-2"><span>นำฝากธนาคาร (หัก)</span><span id="fin-cash-deposit-detail">0</span></div>
-                <div class="flex justify-between gap-2"><span>ค่าใช้จ่ายเดือนนี้ (หัก)</span><span id="fin-cash-expense-detail">0</span></div>
               </div>
             </div>
           </div>
@@ -1054,12 +1050,14 @@
       </div>
 
       <div id="finance-modal"
-        class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        onclick="if (event.target === this) closeFinanceModal()"
+        class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 opacity-0"
+        aria-hidden="true">
         <div id="finance-modal-box"
           class="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl relative transform scale-95 transition-transform duration-300 border border-white/20">
 
           <div id="fin-header-bg" class="p-6 text-center relative overflow-hidden bg-gradient-to-r from-cyan-600 to-blue-700">
-            <button onclick="closeFinanceModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition active:scale-90 z-10"><i class="fas fa-times"></i></button>
+            <button type="button" onclick="closeFinanceModal()" aria-label="ปิดฟอร์ม" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition active:scale-90 z-10"><i class="fas fa-times"></i></button>
             <h3 class="text-lg font-bold text-white relative z-10" id="fin-modal-title">หัวข้อ</h3>
             <p class="text-white/80 text-xs mt-1 relative z-10" id="fin-date-display"></p>
           </div>
@@ -3607,9 +3605,15 @@ function renderFinanceHistory(history) {
     b.innerHTML = fullHtml;
 }
 
+        let financeModalCloseTimer = null;
+
         function openFinanceModal(action) {
             const modal = document.getElementById('finance-modal');
             const box = document.getElementById('finance-modal-box');
+            if (financeModalCloseTimer) {
+                clearTimeout(financeModalCloseTimer);
+                financeModalCloseTimer = null;
+            }
             
             const now = new Date();
             const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
@@ -3636,15 +3640,26 @@ function renderFinanceHistory(history) {
             } 
 
             modal.classList.remove('hidden');
+            modal.setAttribute('aria-hidden', 'false');
             setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
         }
 
         function closeFinanceModal() {
             const modal = document.getElementById('finance-modal');
             const box = document.getElementById('finance-modal-box');
+            if (!modal || modal.classList.contains('hidden')) return;
+            if (financeModalCloseTimer) clearTimeout(financeModalCloseTimer);
             modal.classList.add('opacity-0'); box.classList.add('scale-95');
-            setTimeout(() => modal.classList.add('hidden'), 300);
+            modal.setAttribute('aria-hidden', 'true');
+            financeModalCloseTimer = setTimeout(() => {
+                modal.classList.add('hidden');
+                financeModalCloseTimer = null;
+            }, 300);
         }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') closeFinanceModal();
+        });
 
         async function submitFinance() {
             const amount = document.getElementById('fin-input-amount').value;
