@@ -1119,6 +1119,15 @@
 
     // 1. จัดการตอนเปิดเว็บ (เช็คว่าเคยล๊อกอินไว้ไหม)
         document.addEventListener('DOMContentLoaded', () => {
+            // pagehide ใช้กับการปิดหน้าและรีเฟรชด้วย จึงเริ่มหน้าใหม่เป็นสถานะออกจากระบบ
+            if (sessionStorage.getItem('water_app_leaving') === '1') {
+                sessionStorage.removeItem('water_app_leaving');
+                sessionStorage.removeItem('water_app_session');
+                localStorage.removeItem('username');
+                localStorage.removeItem('role');
+                focusLoginPin();
+                return;
+            }
             const savedUser = sessionStorage.getItem('water_app_session');
             if (savedUser) {
                 try {
@@ -1174,6 +1183,39 @@
             alert(message || 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
             window.location.reload();
         }
+
+        // ปลดเซสชันเมื่อปิดแท็บ/เว็บวิว หรือออกจากหน้าแอป
+        // sendBeacon ช่วยส่งคำขอได้ระหว่างที่เบราว์เซอร์กำลังปิดหน้า
+        window.addEventListener('pagehide', () => {
+            const saved = sessionStorage.getItem('water_app_session');
+            if (!saved) return;
+            sessionStorage.setItem('water_app_leaving', '1');
+            try {
+                const session = JSON.parse(saved);
+                if (!session.sessionKey || !session.sessionToken) return;
+                const body = JSON.stringify({
+                    action: 'logout',
+                    sessionKey: session.sessionKey,
+                    sessionToken: session.sessionToken
+                });
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon(API_URL, new Blob([body], { type: 'text/plain;charset=UTF-8' }));
+                } else {
+                    fetch(API_URL, { method: 'POST', body, keepalive: true });
+                }
+            } catch (_) {}
+        });
+
+        // กรณีหน้าแอปถูกพักไว้ใน back-forward cache แล้วผู้ใช้ย้อนกลับมา
+        window.addEventListener('pageshow', event => {
+            if (!event.persisted) return;
+            const saved = sessionStorage.getItem('water_app_session');
+            if (!saved) return;
+            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'verifySession' }) })
+              .then(r => r.json())
+              .then(result => { if (!result.success) handleSessionExpired(result.message); })
+              .catch(() => {});
+        });
 
         // 2. ฟังก์ชันตรวจสอบการล๊อกอิน
         async function submitLogin() {
