@@ -1089,21 +1089,91 @@
   </div>
 
   <script>
+    // แนบข้อมูลเซสชันกับทุกคำขอไปยัง Apps Script เพื่อให้เซิร์ฟเวอร์ตรวจสิทธิ์ทุกครั้ง
+    (() => {
+      const originalFetch = window.fetch.bind(window);
+      window.fetch = (input, init = {}) => {
+        const url = typeof input === 'string' ? input : input.url;
+        if (!url || !url.startsWith(API_URL)) return originalFetch(input, init);
+        const saved = sessionStorage.getItem('water_app_session');
+        if (!saved) return originalFetch(input, init);
+        let session;
+        try { session = JSON.parse(saved); } catch (_) { return originalFetch(input, init); }
+        const options = { ...init };
+        if (typeof options.body === 'string') {
+          try {
+            const body = JSON.parse(options.body);
+            if (body.action !== 'login') {
+              body.sessionKey = session.sessionKey;
+              body.sessionToken = session.sessionToken;
+              options.body = JSON.stringify(body);
+            }
+          } catch (_) {}
+        } else if (!options.body && url.includes('?')) {
+          const separator = url.includes('?') ? '&' : '?';
+          input = url + separator + 'sessionKey=' + encodeURIComponent(session.sessionKey || '') + '&sessionToken=' + encodeURIComponent(session.sessionToken || '');
+        }
+        return originalFetch(input, options);
+      };
+    })();
+
     // 1. จัดการตอนเปิดเว็บ (เช็คว่าเคยล๊อกอินไว้ไหม)
         document.addEventListener('DOMContentLoaded', () => {
             const savedUser = sessionStorage.getItem('water_app_session');
             if (savedUser) {
-                // ถ้าเคยล๊อกอินแล้ว ข้ามไปหน้าหลักเลย
-                const userData = JSON.parse(savedUser);
-                showMainScreen(userData);
+                try {
+                    const userData = JSON.parse(savedUser);
+                    if (!userData.sessionToken || !userData.sessionKey) throw new Error('เซสชันเก่า');
+                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'verifySession' }) })
+                      .then(r => r.json()).then(result => {
+                        if (result.success) {
+                          showMainScreen(userData);
+                          startSessionHeartbeat();
+                        } else handleSessionExpired(result.message);
+                      }).catch(() => { showMainScreen(userData); startSessionHeartbeat(); });
+                } catch (_) {
+                    sessionStorage.removeItem('water_app_session');
+                    focusLoginPin();
+                }
             } else {
-                // ถ้ายังไม่ล๊อกอิน บังคับคีย์บอร์ดเด้งขึ้นมา
-                setTimeout(() => {
-                    const pinInput = document.getElementById('pin-input');
-                    if(pinInput) pinInput.focus();
-                }, 300);
+                focusLoginPin();
             }
         });
+
+        function focusLoginPin() {
+            setTimeout(() => { const input = document.getElementById('pin-input'); if (input) input.focus(); }, 300);
+        }
+
+        function getDeviceId() {
+            let id = localStorage.getItem('water_app_device_id');
+            if (!id) {
+                id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('device-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+                localStorage.setItem('water_app_device_id', id);
+            }
+            return id;
+        }
+
+        let sessionHeartbeatTimer = null;
+        function startSessionHeartbeat() {
+            if (sessionHeartbeatTimer) clearInterval(sessionHeartbeatTimer);
+            sessionHeartbeatTimer = setInterval(async () => {
+                try {
+                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'verifySession' }) });
+                    const result = await response.json();
+                    if (!result.success) handleSessionExpired(result.message);
+                } catch (_) {}
+            }, 5 * 60 * 1000);
+        }
+
+        function handleSessionExpired(message) {
+            if (sessionHeartbeatTimer) clearInterval(sessionHeartbeatTimer);
+            sessionHeartbeatTimer = null;
+            sessionStorage.removeItem('water_app_session');
+            localStorage.removeItem('username');
+            localStorage.removeItem('role');
+            alert(message || 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+            window.location.reload();
+        }
 
         // 2. ฟังก์ชันตรวจสอบการล๊อกอิน
         async function submitLogin() {
@@ -1131,12 +1201,13 @@
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "login", pin: pin })
+                    body: JSON.stringify({ action: "login", pin: pin, deviceId: getDeviceId() })
                 });
                 const result = await response.json();
 
                 if (result.success) {
                     sessionStorage.setItem('water_app_session', JSON.stringify(result));
+                    startSessionHeartbeat();
                     localStorage.setItem("username", result.username);
                     localStorage.setItem("role", result.role); // เก็บสิทธิ์ไว้ใช้กับระบบอื่นด้วย
 
@@ -1247,19 +1318,15 @@ function setUserPhoto(url) {
 }
 
         // 4. ฟังก์ชันออกจากระบบ
-        function logout() {
-            // ล้างข้อมูลทั้งหมดในเครื่อง
+        async function logout() {
+            try {
+                await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'logout' }) });
+            } catch (_) {}
+            if (sessionHeartbeatTimer) clearInterval(sessionHeartbeatTimer);
             sessionStorage.clear();
-            localStorage.removeItem("username"); // ลบชื่อผู้บันทึกที่จำไว้ด้วย
-
-            // 🎯 พยายามสั่งปิดหน้าต่าง
-            window.close(); 
-
-            // กรณีที่ window.close() ไม่ทำงาน (เพราะเบราว์เซอร์บล็อกไว้)
-            // ให้ส่งผู้ใช้ไปยังหน้าว่าง หรือหน้าที่บอกว่าออกจากระบบแล้วแทน
-            setTimeout(() => {
-                window.location.href = "about:blank"; // ไปที่หน้าขาวว่างๆ
-            }, 100);
+            localStorage.removeItem("username");
+            localStorage.removeItem("role");
+            window.location.reload();
         }
 
         // ✨ ฟังก์ชันจัดการสิทธิ์ตาม Role (Admin, User, Store)
