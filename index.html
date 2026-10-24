@@ -4202,9 +4202,9 @@ function renderFinanceHistory(history) {
                                 </div>
                             </div>
 
-                            <button onclick="saveCollectorFeeExpense('${item.name}', ${item.fee}, '${monthYearStr}')" class="ml-2 w-[calc(100%-0.5rem)] bg-white border-2 border-orange-500 hover:bg-orange-50 text-orange-600 font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2 active:scale-95 shadow-sm text-sm">
-                                <i class="fas fa-check-circle text-lg"></i> บันทึกจ่ายค่าจัดเก็บ
-                            </button>
+                            ${item.paid
+                                ? `<button type="button" disabled class="ml-2 w-[calc(100%-0.5rem)] bg-emerald-50 border-2 border-emerald-300 text-emerald-700 font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-sm text-sm cursor-not-allowed"><i class="fas fa-check-circle text-lg"></i> จ่ายค่าจัดเก็บเรียบร้อยแล้ว</button>`
+                                : `<button onclick="saveCollectorFeeExpense('${item.name}', ${item.fee}, '${monthYearStr}')" class="ml-2 w-[calc(100%-0.5rem)] bg-white border-2 border-orange-500 hover:bg-orange-50 text-orange-600 font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2 active:scale-95 shadow-sm text-sm"><i class="fas fa-check-circle text-lg"></i> บันทึกจ่ายค่าจัดเก็บ</button>`}
                         </div>`;
                     });
                     content.innerHTML = html;
