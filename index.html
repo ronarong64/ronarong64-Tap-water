@@ -4410,8 +4410,11 @@ function renderFinanceHistory(history) {
 
         let isTransfer = c.name.includes("โอน");
         let headerBg = isTransfer ? "bg-gradient-to-br from-blue-500 to-indigo-600" : "bg-gradient-to-br from-teal-500 to-emerald-600";
-        let iconClass = isTransfer ? "fa-university" : "fa-wallet";
+        let iconClass = isTransfer ? "fa-university" : "fa-user";
         let shadowClass = isTransfer ? "shadow-indigo-500/20" : "shadow-teal-500/20";
+        let avatarImage = !isTransfer && c.image
+            ? `<img src="${escapeHtml(c.image)}" alt="รูป ${escapeHtml(c.name)}" class="absolute inset-0 w-full h-full object-cover rounded-[1rem]" onerror="this.style.display='none'">`
+            : "";
         
         fullHtml += `
         <div class="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden mb-5">
@@ -4420,8 +4423,9 @@ function renderFinanceHistory(history) {
                 <div class="absolute -bottom-4 -left-4 w-16 h-16 bg-white opacity-10 rounded-full blur-lg"></div>
                 
                 <div class="flex gap-3 relative z-10 items-center">
-                    <div class="w-12 h-12 rounded-[1rem] bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-inner border border-white/30">
+                    <div class="w-12 h-12 rounded-[1rem] bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-inner border border-white/30 relative overflow-hidden">
                         <i class="fas ${iconClass}"></i>
+                        ${avatarImage}
                     </div>
                     <div>
                         <div class="font-bold text-[17px] leading-tight drop-shadow-sm">${c.name}</div>
