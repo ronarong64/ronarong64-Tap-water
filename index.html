@@ -4177,14 +4177,18 @@ function renderFinanceHistory(history) {
                     
                     result.data.forEach(item => {
                         const monthYearStr = String(m).padStart(2, '0') + "/" + y;
+                        const collectorImage = item.image
+                            ? `<img src="${escapeHTML(item.image)}" alt="รูป ${escapeHTML(item.name)}" class="absolute inset-0 w-full h-full object-cover rounded-full" onerror="this.style.display='none'">`
+                            : "";
 
                         html += `
                         <div class="bg-white border border-slate-200 rounded-2xl p-5 mb-4 shadow-sm relative overflow-hidden">
                             <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-orange-500"></div>
                             
                             <div class="flex items-center gap-3 mb-4 pl-2">
-                                <div class="w-11 h-11 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center shadow-inner text-lg">
+                                <div class="w-11 h-11 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center shadow-inner text-lg relative overflow-hidden">
                                     <i class="fas fa-user-check"></i>
+                                    ${collectorImage}
                                 </div>
                                 <div>
                                     <h4 class="font-bold text-slate-800 text-lg leading-tight">${item.name}</h4>
