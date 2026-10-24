@@ -875,9 +875,9 @@
               <div class="w-12 h-12 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center text-xl shadow-sm"><i class="fas fa-tools"></i></div>
               <span class="text-[13px] font-bold text-slate-600">ค่าซ่อมแซม</span>
             </button>
-            <button onclick="openExpModal('elec')" class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center gap-2 hover:bg-yellow-50 hover:border-yellow-100 transition active:scale-95">
+            <button id="btn-electricity-expense" onclick="openExpModal('elec')" class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center gap-2 hover:bg-yellow-50 hover:border-yellow-100 transition active:scale-95">
               <div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-500 flex items-center justify-center text-xl shadow-sm"><i class="fas fa-bolt"></i></div>
-              <span class="text-[13px] font-bold text-slate-600">ค่าไฟฟ้า</span>
+              <span id="btn-electricity-expense-label" class="text-[13px] font-bold text-slate-600">ค่าไฟฟ้า</span>
             </button>
             <button onclick="openExpModal('other')" class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center gap-2 hover:bg-pink-50 hover:border-pink-100 transition active:scale-95">
               <div class="w-12 h-12 rounded-full bg-pink-100 text-pink-500 flex items-center justify-center text-xl shadow-sm"><i class="fas fa-ellipsis-h"></i></div>
@@ -3942,12 +3942,35 @@ function renderFinanceHistory(history) {
                 
                 if(result.success) {
                     renderExpenseList(result.data);
+                    updateElectricityExpenseButton(monthStr, result.data);
                 } else {
                     container.innerHTML = `<div class="text-center text-slate-400 py-6 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">ไม่พบข้อมูล</div>`;
                 }
             } catch(e) {
                 container.innerHTML = `<div class="text-center text-red-500 py-4 text-sm">ข้อผิดพลาดในการเชื่อมต่อ</div>`;
             }
+        }
+
+        function updateElectricityExpenseButton(monthStr, expenses) {
+            const now = new Date();
+            const currentMonth = String(now.getMonth() + 1).padStart(2, '0') + '/' + (now.getFullYear() + 543);
+            if (monthStr !== currentMonth) return;
+
+            const button = document.getElementById('btn-electricity-expense');
+            const label = document.getElementById('btn-electricity-expense-label');
+            if (!button || !label) return;
+
+            const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+            const monthYearLabel = `${thaiMonths[now.getMonth()]} ${now.getFullYear() + 543}`;
+            const isPaid = (expenses || []).some(item => item.type === 'ค่าไฟฟ้า' && String(item.detail || '').includes(monthYearLabel));
+
+            button.disabled = isPaid;
+            label.textContent = isPaid ? 'ชำระไฟฟ้าแล้ว' : 'ค่าไฟฟ้า';
+            button.classList.toggle('cursor-not-allowed', isPaid);
+            button.classList.toggle('opacity-60', isPaid);
+            button.classList.toggle('hover:bg-yellow-50', !isPaid);
+            button.classList.toggle('hover:border-yellow-100', !isPaid);
+            button.classList.toggle('active:scale-95', !isPaid);
         }
 
         // 🎨 ฟังก์ชันวาดรายการลงหน้าจอ (อัปเดต: เพิ่มการคำนวณยอดรวม)
