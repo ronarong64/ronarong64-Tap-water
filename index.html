@@ -486,14 +486,17 @@
             </h3>
             <div class="grid grid-cols-2 gap-3">
               <div class="bg-white border border-slate-200 px-4 py-3 rounded-2xl flex items-center justify-between shadow-sm">
-                <label class="text-[12px] font-bold text-slate-500">วันเริ่มจด</label>
-                <input type="number" id="set-start-day" class="text-center font-bold text-blue-600 w-12 outline-none bg-blue-50 rounded-lg py-1 text-sm" placeholder="1">
+                <label for="set-start-day" class="text-[12px] font-bold text-slate-500">วันเริ่มจด</label>
+                <input type="number" id="set-start-day" min="1" max="31" step="1" class="text-center font-bold text-blue-600 w-12 outline-none bg-blue-50 rounded-lg py-1 text-sm" placeholder="1">
               </div>
               <div class="bg-white border border-slate-200 px-4 py-3 rounded-2xl flex items-center justify-between shadow-sm">
-                <label class="text-[12px] font-bold text-slate-500">วันสิ้นสุด</label>
-                <input type="number" id="set-end-day" class="text-center font-bold text-red-500 w-12 outline-none bg-red-50 rounded-lg py-1 text-sm" placeholder="31">
+                <label for="set-end-day" class="text-[12px] font-bold text-slate-500">วันสิ้นสุด</label>
+                <input type="number" id="set-end-day" min="1" max="31" step="1" class="text-center font-bold text-red-500 w-12 outline-none bg-red-50 rounded-lg py-1 text-sm" placeholder="31">
               </div>
             </div>
+            <p class="text-[11px] leading-relaxed text-slate-500 bg-blue-50 rounded-xl px-3 py-2">
+              กำหนดวันได้ตั้งแต่ 1–31 หากวันสิ้นสุดน้อยกว่าวันเริ่มจด ระบบจะนับต่อไปยังเดือนถัดไป เช่น เริ่มวันที่ 20 และสิ้นสุดวันที่ 5 คือวันที่ 20 ต.ค. ถึง 5 พ.ย.
+            </p>
           </div>
 
           <div class="space-y-3">
@@ -2674,6 +2677,17 @@ function toggleOption(elementId, isChecked) {
                 updateSettingsSaveVisibility();
                 return;
             }
+
+            for (const id of ['set-start-day', 'set-end-day']) {
+                const field = document.getElementById(id);
+                const value = field.value.trim();
+                if (value !== "" && (!Number.isInteger(Number(value)) || Number(value) < 1 || Number(value) > 31)) {
+                    field.focus();
+                    showToast("กรุณากำหนดวันเริ่มจดและวันสิ้นสุดเป็นเลข 1–31", "warning");
+                    return;
+                }
+            }
+
             btn.disabled = true;
             btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
 
@@ -2834,6 +2848,9 @@ function openBillingModal(houseNo) {
     } else {
         isWithinPeriod = (currentDay >= startDay || currentDay <= endDay);
     }
+    const periodDescription = startDay <= endDay
+        ? `วันที่ ${startDay} ถึงวันที่ ${endDay} ของเดือนเดียวกัน`
+        : `วันที่ ${startDay} ของเดือนนี้ ถึงวันที่ ${endDay} ของเดือนถัดไป`;
 
     // 🌟 ถ้ายอดของเดือนปัจจุบันถูกจ่ายแล้ว ให้เปิดหน้าใบเสร็จ
     if (user.statusCode === 'paid' || user.statusCode === 'free') {
@@ -2883,10 +2900,10 @@ function openBillingModal(houseNo) {
     if (!isWithinPeriod) {
         if (actualOverdueAmount > 0) {
             // กรณี 1: นอกเวลา แต่มีหนี้ค้าง -> แจ้งเตือนแล้วให้เปิดฟอร์มไว้
-            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์\n(กำหนดจดวันที่ ${startDay} ถึง ${endDay} ของเดือน)\n\nแต่บ้านนี้มียอดค้างชำระ ท่านสามารถกดที่ "ดูยอดค้างชำระ" เพื่อรับชำระเงินได้ตามปกติครับ`);
+            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์\n(กำหนดจด${periodDescription})\n\nแต่บ้านนี้มียอดค้างชำระ ท่านสามารถกดที่ "ดูยอดค้างชำระ" เพื่อรับชำระเงินได้ตามปกติครับ`);
         } else {
             // กรณี 2: นอกเวลา และไม่มีหนี้ค้าง -> แจ้งเตือนแล้วสั่งจบการทำงานทันที (ไม่เปิดฟอร์มจดมิเตอร์เลย)
-            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์/จัดเก็บค่าน้ำ\n(ระบบเปิดให้ทำรายการวันที่ ${startDay} ถึง ${endDay} ของเดือน)\n\nระบบปิดรับการบันทึกข้อมูลชั่วคราวครับ`);
+            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์/จัดเก็บค่าน้ำ\n(ระบบเปิดให้ทำรายการ${periodDescription})\n\nระบบปิดรับการบันทึกข้อมูลชั่วคราวครับ`);
             return; // ⛔ ตัดจบการทำงานตรงนี้เลย ไม่เปิดฟอร์ม
         }
     }
@@ -2906,7 +2923,7 @@ function openBillingModal(houseNo) {
     if (periodWarningBox) {
         if (!isWithinPeriod) {
             periodWarningBox.classList.remove('hidden');
-            document.getElementById('period-warning-text').innerText = `${startDay} ถึง ${endDay}`;
+            document.getElementById('period-warning-text').innerText = periodDescription;
         } else {
             periodWarningBox.classList.add('hidden');
         }
