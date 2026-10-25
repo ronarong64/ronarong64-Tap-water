@@ -2964,6 +2964,7 @@ function openBillingModal(houseNo) {
     }
 
     document.getElementById('bill-house-display').innerText = `บ้านเลขที่ ${user.houseNo}`;
+    setHousePhoto(user.profilePic, 'bill-house-photo', 'bill-house-photo-placeholder');
     const houseNameDisplay = document.getElementById('bill-house-name-display');
     if (houseNameDisplay) {
         houseNameDisplay.querySelector('span').innerText = user.name || "ไม่ระบุชื่อ";
@@ -4713,11 +4714,17 @@ function renderFinanceHistory(history) {
         <h3 class="text-xl font-bold text-white">จดมิเตอร์</h3>
 
         <div
-          class="mt-2.5 inline-flex flex-col items-center justify-center bg-white/20 border border-white/30 px-5 py-1.5 rounded-xl shadow-sm backdrop-blur-sm">
-          <span class="text-white font-bold text-[14px] tracking-wide leading-tight" id="bill-house-display">...</span>
-          <span class="text-cyan-50 text-[11.5px] font-medium flex items-center gap-1.5 mt-0.5" id="bill-house-name-display">
-            <i class="fas fa-user-circle opacity-80 text-[10px]"></i> <span>...</span>
-          </span>
+          class="mt-2.5 inline-flex items-center justify-center gap-3 bg-white/20 border border-white/30 px-4 py-2 rounded-xl shadow-sm backdrop-blur-sm">
+          <div class="w-12 h-12 rounded-full bg-white/20 border border-white/40 flex items-center justify-center flex-shrink-0 overflow-hidden text-cyan-50">
+            <img id="bill-house-photo" class="hidden w-full h-full object-cover" alt="รูปเจ้าบ้าน">
+            <i id="bill-house-photo-placeholder" class="fas fa-user text-lg"></i>
+          </div>
+          <div class="min-w-0 text-left">
+            <span class="block text-white font-bold text-[14px] tracking-wide leading-tight" id="bill-house-display">...</span>
+            <span class="text-cyan-50 text-[11.5px] font-medium flex items-center gap-1.5 mt-0.5" id="bill-house-name-display">
+              <i class="fas fa-user-circle opacity-80 text-[10px]"></i> <span>...</span>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -5192,9 +5199,9 @@ function renderFinanceHistory(history) {
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        function setCMHousePhoto(profilePic) {
-            const image = document.getElementById('cm-house-photo');
-            const placeholder = document.getElementById('cm-house-photo-placeholder');
+        function setHousePhoto(profilePic, imageId, placeholderId) {
+            const image = document.getElementById(imageId);
+            const placeholder = document.getElementById(placeholderId);
             const pic = String(profilePic || '').trim();
             image.onerror = null;
             image.removeAttribute('src');
@@ -5227,6 +5234,10 @@ function renderFinanceHistory(history) {
 
             image.classList.remove('hidden');
             placeholder.classList.add('hidden');
+        }
+
+        function setCMHousePhoto(profilePic) {
+            setHousePhoto(profilePic, 'cm-house-photo', 'cm-house-photo-placeholder');
         }
 
         function searchCMHouse() {
