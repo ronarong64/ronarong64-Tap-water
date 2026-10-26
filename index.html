@@ -4444,7 +4444,7 @@ function renderFinanceHistory(history) {
         
         fullHtml += `
         <div class="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden mb-5">
-            <div class="${headerBg} p-5 text-white relative overflow-hidden shadow-lg ${shadowClass}">
+            <div class="${headerBg} p-4 text-white relative overflow-hidden shadow-lg ${shadowClass}">
                 <div class="absolute -top-4 -right-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
                 <div class="absolute -bottom-4 -left-4 w-16 h-16 bg-white opacity-10 rounded-full blur-lg"></div>
                 
@@ -4466,16 +4466,14 @@ function renderFinanceHistory(history) {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2 mt-4 relative z-10">
-                    <div class="bg-white/10 border border-white/10 rounded-xl px-3 py-2">
-                        <div class="text-[11px] font-medium opacity-80">ยอดค้าง</div>
-                        <div class="font-bold text-[13px] mt-0.5">${overdueHouses.length} รายการ</div>
-                        <div class="text-[12px] font-semibold mt-0.5">${overdueTotal.toLocaleString()} บาท</div>
+                <div class="grid grid-cols-2 gap-2 mt-2 relative z-10">
+                    <div class="bg-white/10 rounded-lg px-2 py-1.5 min-w-0">
+                        <div class="text-[10px] font-medium opacity-80">ยอดค้าง</div>
+                        <div class="text-[11px] font-semibold whitespace-nowrap">${overdueHouses.length} รายการ · ${overdueTotal.toLocaleString()} บาท</div>
                     </div>
-                    <div class="bg-white/10 border border-white/10 rounded-xl px-3 py-2">
-                        <div class="text-[11px] font-medium opacity-80">ยอดเดือนปัจจุบัน</div>
-                        <div class="font-bold text-[13px] mt-0.5">${currentMonthHouses.length} รายการ</div>
-                        <div class="text-[12px] font-semibold mt-0.5">${currentMonthTotal.toLocaleString()} บาท</div>
+                    <div class="bg-white/10 rounded-lg px-2 py-1.5 min-w-0">
+                        <div class="text-[10px] font-medium opacity-80">ยอดเดือนปัจจุบัน</div>
+                        <div class="text-[11px] font-semibold whitespace-nowrap">${currentMonthHouses.length} รายการ · ${currentMonthTotal.toLocaleString()} บาท</div>
                     </div>
                 </div>
             </div>
