@@ -16,9 +16,10 @@
 
     <!-- ⏳ หน้าจอ Loading เช็คสิทธิ์ -->
     <div id="loading-screen" class="w-full max-w-md flex flex-col items-center justify-center py-20">
-        <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-        <h3 class="text-lg font-bold text-slate-700">กำลังตรวจสอบสิทธิ์...</h3>
-        <p class="text-sm text-slate-500">กรุณารอสักครู่</p>
+        <div id="loading-spinner" class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+        <h3 id="loading-title" class="text-lg font-bold text-slate-700">กำลังตรวจสอบสิทธิ์...</h3>
+        <p id="loading-message" class="text-sm text-slate-500">กรุณารอสักครู่</p>
+        <button id="retry-button" onclick="window.location.reload()" class="hidden mt-4 px-5 py-2 bg-blue-600 text-white font-bold rounded-xl">ลองอีกครั้ง</button>
     </div>
 
     <!-- ⛔ หน้าต่างป๊อปอัป ไม่มีสิทธิ์เข้าถึง (เพิ่มใหม่ ค้างไว้จนกว่าจะกดปิด) -->
@@ -50,8 +51,6 @@
         </div>
 
         <div class="p-6 space-y-4">
-            <input type="hidden" id="uid" value="">
-            
             <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center gap-3 shadow-inner mb-4">
                 <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 overflow-hidden shrink-0">
                     <img id="profile-avatar" class="hidden w-full h-full object-cover" alt="รูปโปรไฟล์ LINE">
@@ -65,12 +64,12 @@
 
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">หัวข้อประกาศ <span class="text-red-500">*</span></label>
-                <input type="text" id="title" placeholder="เช่น แจ้งท่อประปาชำรุด" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all">
+                <input type="text" id="title" maxlength="100" placeholder="เช่น แจ้งท่อประปาชำรุด" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all">
             </div>
 
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">รายละเอียด <span class="text-red-500">*</span></label>
-                <textarea id="detail" rows="3" placeholder="พิมพ์เนื้อหาที่ต้องการแจ้งให้สมาชิกทราบ..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"></textarea>
+                <textarea id="detail" rows="3" maxlength="2000" placeholder="พิมพ์เนื้อหาที่ต้องการแจ้งให้สมาชิกทราบ..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"></textarea>
             </div>
 
             <div>
@@ -122,15 +121,14 @@
                     </button>
                     
                     <i class="fas ${icon} text-5xl drop-shadow-md mb-1"></i>
-                    <div class="font-bold text-[16px] leading-relaxed drop-shadow-sm w-full">
-                        ${message}
-                    </div>
+                    <div class="toast-message font-bold text-[16px] leading-relaxed drop-shadow-sm w-full"></div>
                 </div>
                 <!-- 🌟 แถบเวลาสีขาววิ่งด้านล่าง -->
                 <div class="w-full h-1.5 bg-black/20">
                     <div class="h-full bg-white transition-all duration-[2500ms] ease-linear rounded-r-full" style="width: 100%;"></div>
                 </div>
             `;
+            toast.querySelector('.toast-message').textContent = String(message);
             
             container.appendChild(toast);
 
@@ -172,60 +170,111 @@
             if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
                 liff.closeWindow();
             } else {
-                window.close(); // สำหรับเปิดในเบราว์เซอร์ปกติ
+                showToast('ส่งประกาศเสร็จแล้ว สามารถปิดแท็บนี้ได้', 'info');
             }
         }
 
-        window.onload = () => {
-            // ⚠️ รหัส LIFF ID ของฟอร์มแจ้งข่าว
-            liff.init({ liffId: "2009984616-PQGvzBFq" }).then(() => {
-                if (liff.isLoggedIn()) {
-                    liff.getProfile().then(profile => {
-                        const lineId = profile.userId;
-                        document.getElementById('uid').value = lineId;
-                        
-                        // 🌟 ยิง API ไปเช็คสิทธิ์ที่ Google Apps Script
-                        fetch(API_URL + "?action=checkDirector&lineId=" + lineId)
-                            .then(res => res.json())
-                            .then(data => {
-                                document.getElementById('loading-screen').classList.add('hidden'); // ปิดหน้าโหลด
-                                
-                                if (data.success && data.isDirector) {
-                                    // ถ้าเป็นกรรมการ ให้แสดงฟอร์ม
-                                    document.getElementById('profile-name').innerText = data.name || profile.displayName;
-                                    if (profile.pictureUrl) {
-                                        const avatar = document.getElementById('profile-avatar');
-                                        avatar.src = profile.pictureUrl;
-                                        avatar.classList.remove('hidden');
-                                        document.getElementById('profile-avatar-fallback').classList.add('hidden');
-                                    }
-                                    document.getElementById('form-container').classList.remove('hidden');
-                                } else {
-                                    // 🌟 ถ้าไม่ใช่กรรมการ เรียกหน้าต่างแจ้งเตือนขึ้นมาแทนการเด้งปิดทันที
-                                    showUnauthorizedModal();
-                                }
-                            })
-                            .catch(err => {
-                                document.getElementById('loading-screen').classList.add('hidden');
-                                showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ", "error");
-                            });
+        function showInitializationError(message) {
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('loading-spinner').classList.add('hidden');
+            document.getElementById('loading-title').textContent = 'เชื่อมต่อไม่สำเร็จ';
+            document.getElementById('loading-message').textContent = message;
+            document.getElementById('retry-button').classList.remove('hidden');
+        }
 
-                    });
-                } else { liff.login(); }
+        async function postApi(payload) {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload)
             });
-        };
+            if (!response.ok) throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด');
+            return response.json();
+        }
+
+        async function initializeBroadcastForm() {
+            try {
+                await liff.init({ liffId: "2009984616-PQGvzBFq" });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+
+                const profile = await liff.getProfile();
+                const idToken = liff.getIDToken();
+                if (!idToken) throw new Error('ไม่พบข้อมูลยืนยันตัวตนจาก LINE');
+
+                const data = await postApi({ action: 'checkDirector', idToken: idToken });
+                document.getElementById('loading-screen').classList.add('hidden');
+
+                if (!data.success) throw new Error(data.message || 'ตรวจสอบสิทธิ์ไม่สำเร็จ');
+                if (!data.isDirector) {
+                    showUnauthorizedModal();
+                    return;
+                }
+
+                document.getElementById('profile-name').textContent = data.name || profile.displayName;
+                if (profile.pictureUrl) {
+                    const avatar = document.getElementById('profile-avatar');
+                    avatar.src = profile.pictureUrl;
+                    avatar.classList.remove('hidden');
+                    document.getElementById('profile-avatar-fallback').classList.add('hidden');
+                }
+                document.getElementById('form-container').classList.remove('hidden');
+            } catch (error) {
+                showInitializationError(error.message || 'กรุณาตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง');
+            }
+        }
+
+        window.onload = initializeBroadcastForm;
 
         function previewImage(input) {
             if (input.files && input.files[0]) {
                 const preview = document.getElementById('preview');
-                preview.src = URL.createObjectURL(input.files[0]);
+                if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
+                preview.dataset.objectUrl = URL.createObjectURL(input.files[0]);
+                preview.src = preview.dataset.objectUrl;
                 preview.classList.remove('hidden');
                 document.getElementById('placeholder').classList.add('hidden');
             }
         }
 
-        function submitBroadcast() {
-            const lineId = document.getElementById('uid').value; 
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                if (file.size > 15 * 1024 * 1024) {
+                    reject(new Error('รูปภาพต้นฉบับต้องมีขนาดไม่เกิน 15 MB'));
+                    return;
+                }
+
+                const objectUrl = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    try {
+                        const scale = Math.min(1, 800 / Math.max(img.width, img.height));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, Math.round(img.width * scale));
+                        canvas.height = Math.max(1, Math.round(img.height * scale));
+                        const context = canvas.getContext('2d');
+                        if (!context) throw new Error('ไม่สามารถประมวลผลรูปภาพได้');
+                        context.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        const imageData = canvas.toDataURL('image/jpeg', 0.6);
+                        if (imageData.length > 7 * 1024 * 1024) {
+                            throw new Error('รูปภาพหลังบีบอัดมีขนาดใหญ่เกินกำหนด');
+                        }
+                        resolve(imageData);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                img.onerror = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(new Error('อ่านรูปภาพไม่สำเร็จ กรุณาเลือกรูปอื่น'));
+                };
+                img.src = objectUrl;
+            });
+        }
+
+        async function submitBroadcast() {
             const title = document.getElementById('title').value.trim();
             const detail = document.getElementById('detail').value.trim();
             const fileInput = document.getElementById('imageFile');
@@ -233,53 +282,36 @@
 
             if (!title) return showToast('กรุณาระบุหัวข้อประกาศ', 'warning');
             if (!detail) return showToast('กรุณาระบุรายละเอียดข้อความ', 'warning');
+            if (title.length > 100) return showToast('หัวข้อประกาศต้องไม่เกิน 100 ตัวอักษร', 'warning');
+            if (detail.length > 2000) return showToast('รายละเอียดต้องไม่เกิน 2,000 ตัวอักษร', 'warning');
+            if (!liff.isLoggedIn()) return showToast('กรุณาเข้าสู่ระบบ LINE ใหม่', 'error');
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังส่งข้อมูล...';
 
-            const sendData = (base64Img) => {
-                fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: 'sendBroadcast',
-                        lineId: lineId, 
-                        title: title,
-                        detail: detail,
-                        imageBlob: base64Img
-                    })
-                }).then(res => res.json()).then(data => {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งประกาศให้สมาชิกทุกคน';
-
-                    if(data.success) {
-                        showToast(data.message, 'success');
-                        setTimeout(() => { closeAndExit(); }, 2500);
-                    } else {
-                        showToast(data.message, 'error');
-                    }
-                }).catch(err => {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งประกาศให้สมาชิกทุกคน';
-                    showToast('การเชื่อมต่อล้มเหลว', 'error');
+            try {
+                const idToken = liff.getIDToken();
+                if (!idToken) throw new Error('ไม่พบข้อมูลยืนยันตัวตนจาก LINE กรุณาโหลดหน้าใหม่');
+                const imageBlob = fileInput.files[0] ? await compressImage(fileInput.files[0]) : '';
+                const data = await postApi({
+                    action: 'sendBroadcast',
+                    idToken: idToken,
+                    title: title,
+                    detail: detail,
+                    imageBlob: imageBlob
                 });
-            };
 
-            if (fileInput.files[0]) {
-                const img = new Image();
-                const objectUrl = URL.createObjectURL(fileInput.files[0]);
-                img.onload = () => {
-                    URL.revokeObjectURL(objectUrl); 
-                    const canvas = document.createElement('canvas');
-                    let width = img.width; let height = img.height;
-                    if (width > 800) { height *= 800 / width; width = 800; }
-                    canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    sendData(canvas.toDataURL('image/jpeg', 0.6)); 
-                };
-                img.src = objectUrl;
-            } else {
-                sendData(""); 
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(closeAndExit, 2500);
+                } else {
+                    showToast(data.message || 'ส่งประกาศไม่สำเร็จ', 'error');
+                }
+            } catch (error) {
+                showToast(error.message || 'การเชื่อมต่อล้มเหลว', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งประกาศให้สมาชิกทุกคน';
             }
         }
     </script>
