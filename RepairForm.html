@@ -105,14 +105,13 @@
             toast.innerHTML = `
                 <div class="p-6 flex flex-col items-center justify-center gap-3 text-center">
                     <i class="fas ${icon} text-5xl drop-shadow-md mb-1"></i>
-                    <div class="font-bold text-[16px] leading-relaxed drop-shadow-sm w-full">
-                        ${message}
-                    </div>
+                    <div class="toast-message font-bold text-[16px] leading-relaxed drop-shadow-sm w-full"></div>
                 </div>
                 <div class="w-full h-1.5 bg-black/20">
                     <div class="h-full bg-white transition-all duration-[2500ms] ease-linear rounded-r-full" style="width: 100%;"></div>
                 </div>
             `;
+            toast.querySelector('.toast-message').textContent = String(message);
             
             container.appendChild(toast);
 
@@ -253,13 +252,20 @@
                 // ลด Quality ลงเหลือ 0.5 (รูปยังชัดเจนสำหรับงานซ่อม แต่ขนาดไฟล์เล็กลง ส่งขึ้น Server ไวขึ้นมาก)
                 const base64 = canvas.toDataURL('image/jpeg', 0.5); 
 
+                const idToken = liff.getIDToken();
+                if (!idToken) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ทีมช่าง';
+                    showToast('ยืนยันตัวตน LINE ไม่สำเร็จ กรุณาโหลดหน้าใหม่', 'error');
+                    return;
+                }
+
                 fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({
                         action: 'submitRepair',
-                        lineId: lineId, 
-                        lineName: lineName, 
+                        idToken: idToken,
                         detail: detail,
                         lat: lat,
                         lng: lng,
@@ -295,6 +301,13 @@
                     btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ทีมช่าง';
                     showToast('การเชื่อมต่อล้มเหลว โปรดลองอีกครั้ง', 'error');
                 });
+            };
+
+            img.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งข้อมูลให้ทีมช่าง';
+                showToast('อ่านรูปภาพไม่สำเร็จ กรุณาเลือกรูปอื่น', 'error');
             };
             
             // สั่งให้ Image เริ่มโหลดข้อมูลจาก URL ชั่วคราว
