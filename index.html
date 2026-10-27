@@ -3202,7 +3202,11 @@ function openBillingModal(houseNo) {
             }
 
             const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(currentBillState.houseNo).trim());
-            const remainingOverdueAmount = user ? (isPayingOverdue ? (user.overdue - overdueToSave) : user.overdue) : 0;
+            const remainingOverdueAmount = user
+                ? (currentBillState.overdueDetails || [])
+                    .filter(bill => !selectedIds.includes(bill.billingId))
+                    .reduce((sum, bill) => sum + Number(bill.amount || 0), 0)
+                : 0;
 
             const payload = {
                 action: "saveBilling",
