@@ -5307,6 +5307,15 @@ function renderFinanceHistory(history) {
                     showToast(`บ้านนี้บันทึกการเปลี่ยนมิเตอร์ในเดือน ${result.month} แล้ว`, 'warning');
                     return;
                 }
+                if (!result.canChange) {
+                    showToast(
+                        result.status
+                            ? 'เปลี่ยนมิเตอร์ได้เมื่อบิลเดือนปัจจุบันมีสถานะชำระแล้วหรือรอชำระเท่านั้น'
+                            : 'บ้านนี้ยังไม่มีบิลของเดือนปัจจุบัน กรุณาบันทึกบิลก่อนเปลี่ยนมิเตอร์',
+                        'warning'
+                    );
+                    return;
+                }
             } catch (err) {
                 showToast('ตรวจสอบข้อมูลกับเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่', 'error');
                 return;
@@ -5315,11 +5324,6 @@ function renderFinanceHistory(history) {
                 searchButton.innerHTML = oldButtonText;
             }
             
-            if (user.statusCode === 'waiting') {
-                showToast('บ้านนี้มีบิลรอชำระ กรุณาเก็บเงินให้เรียบร้อยก่อนเปลี่ยนมิเตอร์ใหม่', 'warning');
-                return;
-            }
-
             cmTempData = {
                 houseNo: user.houseNo,
                 prevUnit: parseInt(user.prevUnit) || 0,
