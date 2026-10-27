@@ -177,7 +177,7 @@
         </div>
       </div>
     </div>
-    <p class="relative z-10 text-[11px] text-cyan-50/60 mt-4 text-center">บริหารจัดการน้ำประปา เพื่อชุมชนบ้านทับพรุ</p>
+    <p class="relative z-10 text-[10px] text-cyan-50/60 mt-4 text-center">บริการจัดการน้ำประปา เพื่อชุมชนบ้านทับพรุ</p>
   </div>
 
   <div id="main-screen"
@@ -1113,14 +1113,8 @@
             }
           } catch (_) {}
         } else if (!options.body && url.includes('?')) {
-          const requestUrl = new URL(url);
-          const body = Object.fromEntries(requestUrl.searchParams.entries());
-          body.sessionKey = session.sessionKey;
-          body.sessionToken = session.sessionToken;
-          input = API_URL;
-          options.method = 'POST';
-          options.headers = { ...options.headers, 'Content-Type': 'text/plain;charset=UTF-8' };
-          options.body = JSON.stringify(body);
+          const separator = url.includes('?') ? '&' : '?';
+          input = url + separator + 'sessionKey=' + encodeURIComponent(session.sessionKey || '') + '&sessionToken=' + encodeURIComponent(session.sessionToken || '');
         }
         return originalFetch(input, options);
       };
@@ -1421,7 +1415,7 @@ function applyRolePermissions() {
         if(addMemberBtn) addMemberBtn.style.display = 'none';
         
     } else if (role === 'store') {
-        // 🟡 Store: เห็นทุกเมนู แต่เซิร์ฟเวอร์อนุญาตให้บันทึกการชำระบิลเท่านั้น
+        // 🟡 Store: เห็นทุกเมนู แต่ห้ามเพิ่ม/แก้ไข/บันทึก (ดูอย่างเดียว)
         allMenus.forEach(btn => btn.style.display = 'flex');
         
         if(addMemberBtn) addMemberBtn.style.display = 'none';
@@ -2339,10 +2333,8 @@ function toggleOption(elementId, isChecked) {
 
             let html = "";
             data.forEach(dir => {
-                let avatar = dir.image ? `<img src="${escapeHTML(dir.image)}" class="w-full h-full object-cover">` : `<i class="fas fa-user text-slate-300 text-2xl"></i>`;
-                let position = escapeHTML(dir.position || "กรรมการ");
-                const name = escapeHTML(dir.name || "");
-                const phone = escapeHTML(dir.phone || "-");
+                let avatar = dir.image ? `<img src="${dir.image}" class="w-full h-full object-cover">` : `<i class="fas fa-user text-slate-300 text-2xl"></i>`;
+                let position = dir.position ? dir.position : "กรรมการ";
                 
                 html += `
                 <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 flex items-center gap-3 hover:shadow-md transition-shadow">
@@ -2350,12 +2342,12 @@ function toggleOption(elementId, isChecked) {
                         ${avatar}
                     </div>
                     <div class="min-w-0 flex-1">
-                        <div class="font-bold text-slate-800 text-[14px] truncate leading-tight mb-0.5">${name}</div>
+                        <div class="font-bold text-slate-800 text-[14px] truncate leading-tight mb-0.5">${dir.name}</div>
                         <div class="text-[11px] font-bold text-emerald-600 mb-1 flex items-center gap-1">
                             <i class="fas fa-award text-emerald-400"></i> ${position}
                         </div>
                         <div class="text-[10px] text-slate-500 flex items-center gap-1 font-mono">
-                            <i class="fas fa-phone-alt opacity-70"></i>                             ${phone}
+                            <i class="fas fa-phone-alt opacity-70"></i> ${dir.phone || "-"}
                         </div>
                     </div>
                 </div>`;
@@ -2383,18 +2375,16 @@ function toggleOption(elementId, isChecked) {
             // สร้างกริดการ์ดบนกระดาษ
             let gridHtml = '';
             globalCommitteeData.forEach(dir => {
-                let avatarSrc = escapeHTML(dir.image || "https://via.placeholder.com/150?text=No+Image");
-                let position = escapeHTML(dir.position || "กรรมการ");
-                const name = escapeHTML(dir.name || "");
-                const phone = escapeHTML(dir.phone || "-");
+                let avatarSrc = dir.image || "https://via.placeholder.com/150?text=No+Image";
+                let position = dir.position ? dir.position : "กรรมการ";
                 gridHtml += `
                 <div style="width: 31%; margin-bottom: 25px; text-align: center; border: 2px solid #e5e7eb; border-radius: 16px; padding: 20px 10px; box-sizing: border-box; background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
                     <div style="width: 90px; height: 90px; margin: 0 auto 15px auto; border-radius: 50%; overflow: hidden; border: 4px solid #10b981; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                         <img src="${avatarSrc}" style="width: 90px; height: 90px; object-fit: cover; display: block;" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
                     </div>
-                    <div style="font-size: 14pt; font-weight: bold; color: #1e293b; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
+                    <div style="font-size: 14pt; font-weight: bold; color: #1e293b; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${dir.name}</div>
                     <div style="font-size: 12pt; font-weight: bold; color: #059669; margin-bottom: 8px; background: #d1fae5; display: inline-block; padding: 2px 10px; border-radius: 20px; border: 1px solid #a7f3d0;">${position}</div>
-                    <div style="font-size: 11pt; color: #64748b; font-family: monospace;">เบอร์โทร: ${phone}</div>
+                    <div style="font-size: 11pt; color: #64748b; font-family: monospace;">เบอร์โทร: ${dir.phone || "-"}</div>
                 </div>
                 `;
             });
@@ -2474,13 +2464,14 @@ function toggleOption(elementId, isChecked) {
                     </button>
                     
                     <i class="fas ${icon} text-5xl drop-shadow-md mb-1"></i>
-                    <div class="toast-message font-bold text-[16px] leading-relaxed drop-shadow-sm w-full"></div>
+                    <div class="font-bold text-[16px] leading-relaxed drop-shadow-sm w-full">
+                        ${message}
+                    </div>
                 </div>
                 <div class="w-full h-1.5 bg-black/20">
                     <div class="h-full bg-white transition-all duration-[2500ms] ease-linear rounded-r-full" style="width: 100%;"></div>
                 </div>
             `;
-            toast.querySelector('.toast-message').textContent = String(message);
             
             container.appendChild(toast);
 
@@ -6239,7 +6230,7 @@ function closeCustomAlert() {
         </div>
         <div>
           <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">รหัสผ่าน (PIN 4 หลัก)</label>
-          <input type="password" id="acc-pin" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="PIN ตัวเลข 4 หลัก" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 mt-1 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 font-bold tracking-widest text-center text-lg">
+          <input type="number" id="acc-pin" placeholder="เช่น 1234" class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 mt-1 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 font-bold tracking-widest text-center text-lg">
         </div>
         <div>
           <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">ระดับสิทธิ์ (เข้าใช้งาน)</label>
@@ -6492,22 +6483,22 @@ function closeCustomAlert() {
                 <div class="flex items-center gap-3 min-w-0">
                     ${acc.image ? `<img src="${escapeHtml(acc.image)}" alt="รูป ${escapeHtml(acc.username)}" class="w-12 h-12 rounded-full object-cover shrink-0" onerror="this.style.display='none'">` : `<div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center shrink-0"><i class="fas fa-user"></i></div>`}
                     <div class="min-w-0">
-                    <div class="font-bold text-slate-800 text-[15px] mb-1.5">${escapeHtml(acc.username)}</div>
+                    <div class="font-bold text-slate-800 text-[15px] mb-1.5">${acc.username}</div>
                     
                     <div class="flex flex-col gap-1.5">
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded-lg text-slate-500">
-                                <i class="fas fa-key mr-1"></i>PIN ถูกจัดเก็บ
+                                <i class="fas fa-key mr-1"></i>${acc.pin}
                             </span>
                             <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border ${roleClass}">
-                                ${escapeHtml(acc.role)}
+                                ${acc.role}
                             </span>
                         </div>
                         
                         <div class="text-[11px] text-slate-500 flex items-center gap-1.5">
                             <i class="fas fa-info-circle text-slate-400"></i> ${roleDesc}
                         </div>
-                        <div class="text-[11px] text-slate-500">${escapeHtml(acc.phone || "")}</div>
+                        <div class="text-[11px] text-slate-500">${acc.phone || ""}</div>
                     </div>
                     </div>
                 </div>
@@ -6527,7 +6518,6 @@ function closeCustomAlert() {
             document.getElementById('acc-modal-title').innerText = "เพิ่มบัญชี";
             document.getElementById('acc-username').value = "";
             document.getElementById('acc-pin').value = "";
-            document.getElementById('acc-pin').placeholder = "PIN ตัวเลข 4 หลัก";
             document.getElementById('acc-role').value = "user";
             document.getElementById('acc-phone').value = "";
             document.getElementById('acc-image').value = "";
@@ -6538,8 +6528,7 @@ function closeCustomAlert() {
             const acc = globalAccounts.find(a => a.row === row);
             if (acc) {
                 document.getElementById('acc-username').value = acc.username;
-                document.getElementById('acc-pin').value = "";
-                document.getElementById('acc-pin').placeholder = "เว้นว่างหากไม่ต้องการเปลี่ยน PIN";
+                document.getElementById('acc-pin').value = acc.pin;
                 document.getElementById('acc-role').value = acc.role;
                 document.getElementById('acc-phone').value = acc.phone || "";
                 document.getElementById('acc-image').value = acc.image || "";
@@ -6589,9 +6578,7 @@ function closeCustomAlert() {
         const role = document.getElementById('acc-role').value.trim();
         const btn = document.getElementById('btn-save-account');
 
-        if (!username || !role || (!row && !pin) || (pin && !/^\d{4}$/.test(pin))) {
-            return showToast("กรุณาระบุชื่อ, role และ PIN 4 หลัก (กรณีแก้ไขเว้นว่างได้)", "warning");
-        }
+        if (!username || !pin || !role) return showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "warning");
 
         const phone = document.getElementById('acc-phone').value.trim();
         let image = document.getElementById('acc-image').value.trim();
@@ -6738,11 +6725,8 @@ function closeCustomAlert() {
         const listBody = document.getElementById('directors-list-body');
         let html = "";
         globalDirectors.forEach((dir) => {
-            let avatar = dir.image ? `<img src="${escapeHTML(dir.image)}" class="w-full h-full object-cover">` : `<i class="fas fa-user text-slate-400"></i>`;
-            let posBadge = dir.position ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">${escapeHTML(dir.position)}</span>` : `<span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded border border-slate-200">ยังไม่ระบุตำแหน่ง</span>`;
-            const name = escapeHTML(dir.name || "");
-            const code = escapeHTML(dir.code || "");
-            const phone = escapeHTML(dir.phone || "-");
+            let avatar = dir.image ? `<img src="${dir.image}" class="w-full h-full object-cover">` : `<i class="fas fa-user text-slate-400"></i>`;
+            let posBadge = dir.position ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">${dir.position}</span>` : `<span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded border border-slate-200">ยังไม่ระบุตำแหน่ง</span>`;
 
             html += `
             <div class="flex items-center justify-between p-3 bg-white border border-slate-100 shadow-sm rounded-2xl mb-2">
@@ -6751,12 +6735,12 @@ function closeCustomAlert() {
                         ${avatar}
                     </div>
                     <div class="min-w-0">
-                        <div class="font-bold text-slate-800 text-[14px] truncate mb-1">${name}</div>
+                        <div class="font-bold text-slate-800 text-[14px] truncate mb-1">${dir.name}</div>
                         <div class="flex items-center gap-2 text-[10px] font-bold">
-                            <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 font-mono">${code}</span>
+                            <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 font-mono">${dir.code}</span>
                             ${posBadge}
                         </div>
-                        <div class="text-[10px] text-slate-500 mt-1"><i class="fas fa-phone-alt"></i> ${phone}</div>
+                        <div class="text-[10px] text-slate-500 mt-1"><i class="fas fa-phone-alt"></i> ${dir.phone || "-"}</div>
                     </div>
                 </div>
                 
