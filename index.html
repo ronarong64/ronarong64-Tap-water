@@ -5279,12 +5279,41 @@ function renderFinanceHistory(history) {
             setHousePhoto(profilePic, 'cm-house-photo', 'cm-house-photo-placeholder');
         }
 
-        function searchCMHouse() {
+        async function searchCMHouse() {
             const houseNo = document.getElementById('cm-search-input').value.trim();
             if (!houseNo) { showToast('กรุณาระบุบ้านเลขที่', 'warning'); return; }
+            document.getElementById('cm-step2').classList.add('hidden');
             
             const user = window.globalUsersList.find(u => String(u.houseNo).trim() === String(houseNo).trim());
             if (!user) { showToast('ไม่พบข้อมูลบ้านเลขที่นี้', 'error'); return; }
+
+            const searchButton = document.getElementById('cm-search-btn');
+            const oldButtonText = searchButton.innerHTML;
+            searchButton.disabled = true;
+            searchButton.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+
+            try {
+                const response = await fetch(API_URL + "?action=checkBrokenMeter&houseNo=" + encodeURIComponent(houseNo));
+                const result = await response.json();
+                if (result.sessionExpired) {
+                    handleSessionExpired(result.message);
+                    return;
+                }
+                if (!result.success) {
+                    showToast(result.message || 'ตรวจสอบข้อมูลการเปลี่ยนมิเตอร์ไม่สำเร็จ', 'error');
+                    return;
+                }
+                if (result.alreadyChanged) {
+                    showToast(`บ้านนี้บันทึกการเปลี่ยนมิเตอร์ในเดือน ${result.month} แล้ว`, 'warning');
+                    return;
+                }
+            } catch (err) {
+                showToast('ตรวจสอบข้อมูลกับเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่', 'error');
+                return;
+            } finally {
+                searchButton.disabled = false;
+                searchButton.innerHTML = oldButtonText;
+            }
             
             if (user.statusCode === 'waiting') {
                 showToast('บ้านนี้มีบิลรอชำระ กรุณาเก็บเงินให้เรียบร้อยก่อนเปลี่ยนมิเตอร์ใหม่', 'warning');
