@@ -5149,7 +5149,7 @@ function renderFinanceHistory(history) {
           <div>
             <h3 class="font-bold text-[15px] leading-tight">รายการค้างชำระ (ที่เก็บได้)</h3>
             <p class="text-[11px] text-blue-100 mt-0.5 opacity-90 font-medium" id="report-overdue-collected-month">
-              กำลังโหลด...</p>
+              กำลังโหลดข้อมูล...</p>
           </div>
         </div>
         <button onclick="closeReportOverdueCollected()" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition active:scale-90 relative z-10">
@@ -5498,6 +5498,9 @@ async function loadMonthlyReport(monthStr = null) {
     
     const thaiShortMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
     const displayMonth = `${thaiShortMonths[parseInt(monthNum) - 1]} / ${yearBE}`;
+    window.lastOverdueData = null;
+    window.lastOverdueDisplayMonth = displayMonth;
+    window.lastOverdueLoadError = null;
 
     const headerEl = document.getElementById('report-month-header');
     const pickerEl = document.getElementById('report-picker-display');
@@ -5520,6 +5523,11 @@ async function loadMonthlyReport(monthStr = null) {
             const cur = res.current;
             const overdue = res.overdue;
             const exp = res.expenses;
+            window.lastOverdueData = overdue;
+            window.lastOverdueLoadError = null;
+            updateReportOverdueCollectedSummary(overdue, displayMonth);
+            const overdueModal = document.getElementById('report-overdue-collected-modal');
+            if (overdueModal && !overdueModal.classList.contains('hidden')) openReportOverdueCollected();
 
             let incOverdueAmt = 0;
             overdue.forEach(item => incOverdueAmt += item.amount);
@@ -5568,8 +5576,8 @@ async function loadMonthlyReport(monthStr = null) {
                 renderReportListAccordion('list-nc', listNc, 'slate');
                 renderExpenseListAccordion('report-expenses-body', exp);
 
-            // พักข้อมูลค้างเก่าไว้ใช้ใน Modal
-            window.lastOverdueData = overdue;
+        } else {
+            throw new Error(res.message || 'โหลดรายงานไม่สำเร็จ');
         }
 
         if(headerEl) headerEl.innerText = `ประจำเดือน ${displayMonth}`;
@@ -5582,7 +5590,11 @@ async function loadMonthlyReport(monthStr = null) {
             }
         });
 
-    } catch (e) { 
+    } catch (e) {
+        window.lastOverdueLoadError = 'โหลดข้อมูลไม่สำเร็จ';
+        updateReportOverdueCollectedSummary(null, displayMonth);
+        const overdueModal = document.getElementById('report-overdue-collected-modal');
+        if (overdueModal && !overdueModal.classList.contains('hidden')) openReportOverdueCollected();
         if(headerEl) headerEl.innerText = "เกิดข้อผิดพลาดในการโหลด";
     }
 }
@@ -5699,6 +5711,27 @@ function renderExpenseListAccordion(id, list) {
     el.innerHTML = html;
 }
 
+function updateReportOverdueCollectedSummary(dataList, displayMonth) {
+    const summaryEl = document.getElementById('report-overdue-collected-month');
+    if (!summaryEl) return;
+
+    if (!Array.isArray(dataList)) {
+        summaryEl.innerText = window.lastOverdueLoadError || 'กำลังโหลดข้อมูล...';
+        return;
+    }
+
+    const houseCount = new Set(
+        dataList
+            .map(item => item.houseNo)
+            .filter(houseNo => houseNo !== undefined && houseNo !== null && String(houseNo).trim() !== '')
+            .map(houseNo => String(houseNo))
+    ).size;
+    const totalAmount = dataList.reduce((total, item) => total + (Number(item.amount) || 0), 0);
+    const monthLabel = displayMonth ? `${displayMonth} · ` : '';
+
+    summaryEl.innerText = `${monthLabel}${houseCount.toLocaleString()} หลัง · ${totalAmount.toLocaleString()} บาท`;
+}
+
 // 🔍 2. ฟังก์ชันเปิด Modal ค้างเก่า (รับข้อมูลจากหน้าจอโดยตรง)
 // ==========================================
         function openReportOverdueCollected() {
@@ -5707,9 +5740,13 @@ function renderExpenseListAccordion(id, list) {
             const contentArea = document.getElementById('report-overdue-collected-list');
 
             // 🌟 แก้ไขให้เรียกใช้ตัวแปร window.lastOverdueData ให้ถูกต้องตรงกับตอนโหลดข้อมูล
-            const dataList = window.lastOverdueData || [];
+            const dataList = window.lastOverdueData;
+            updateReportOverdueCollectedSummary(dataList, window.lastOverdueDisplayMonth);
 
-            if (dataList.length === 0) {
+            if (!Array.isArray(dataList)) {
+                const message = window.lastOverdueLoadError || 'กำลังโหลดข้อมูล...';
+                contentArea.innerHTML = `<div class="text-center py-10 text-slate-400">${message}</div>`;
+            } else if (dataList.length === 0) {
                 contentArea.innerHTML = '<div class="text-center py-10 text-slate-400 border border-dashed border-slate-200 rounded-3xl m-2 bg-white">ไม่มีรายการเก็บยอดค้างเก่า</div>';
             } else {
                 let html = '<div class="space-y-3">';
