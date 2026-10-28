@@ -1603,6 +1603,10 @@ function applyRolePermissions() {
                     <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-300 hover:text-blue-500 transition-colors p-1">
                         <i class="fas fa-edit"></i>
                     </button>` : "";
+                const receiptHistoryBtn = user.hasReceipts ? `
+                  <button onclick="event.stopPropagation(); openReceiptHistory('${houseNo}')" aria-label="ดูประวัติใบเสร็จบ้าน ${houseNo}" title="ดูประวัติใบเสร็จ" class="text-cyan-700 hover:text-cyan-900 transition-colors p-1">
+                    <i class="fas fa-receipt"></i>
+                  </button>` : "";
 
                 // 🏗️ ประกอบร่าง HTML Card
                     htmlContent += `
@@ -1618,7 +1622,7 @@ function applyRolePermissions() {
                                         ${lineIcon}
                                         ${overdueBadge}
                                     </div>
-                                    ${editBtn}
+                                    <div class="flex items-center gap-2">${receiptHistoryBtn}${editBtn}</div>
                                 </div>
                                 <p class="text-[13px] text-slate-500 truncate mb-2">${safeName}</p>
                                 <div class="flex items-center justify-between pt-2 border-t border-slate-50">
@@ -1785,6 +1789,7 @@ function applyRolePermissions() {
                     // อัปเดตข้อมูลในหน้าจอทันที
                     const u = window.globalUsersList.find(u => u.houseNo === currentBillState.houseNo);
                     if (u) {
+                      u.hasReceipts = true;
                         u.overdueList = u.overdueList.filter(b => !currentBillState.selectedOverdueIds.includes(b.billingId));
                         u.overdue = u.overdueList.reduce((sum, b) => sum + Number(b.amount), 0);
                         renderRealData(window.globalUsersList);
@@ -2898,6 +2903,9 @@ function openBillingModal(houseNo) {
 
         const receiptPayload = { 
             houseNo: user.houseNo, 
+          billingId: user.billingId,
+          status: user.statusCode,
+          paymentMethod: user.payMethod,
             paidDate: user.paidDate, 
             prevUnit: user.oldUnit, 
             currUnit: user.prevUnit, 
@@ -3282,6 +3290,7 @@ function openBillingModal(houseNo) {
                         let u = window.globalUsersList[userIndex];
                         
                         u.statusCode = actualStatus.toLowerCase(); // 'paid', 'free', 'waiting'
+                        if (actualStatus === 'Paid' || actualStatus === 'Free') u.hasReceipts = true;
                         u.oldUnit = u.prevUnit;
                         u.prevUnit = parseInt(currUnit);
                         u.usage = parseInt(currUnit) - currentBillState.prevUnit + (currentBillState.cmUsage || 0);
@@ -3487,6 +3496,9 @@ function openBillingModal(houseNo) {
                 document.getElementById('rcp-usage').innerText = payload.usage || 0;
                 document.getElementById('rcp-price').innerText = payload.pricePerUnit || 0;
                 document.getElementById('rcp-current-amount').innerText = Number(payload.currentAmount || 0).toLocaleString();
+                const freeBenefit = document.getElementById('rcp-free-benefit');
+                const isFreeReceipt = String(payload.status || '').toLowerCase() === 'free' || String(payload.paymentMethod || '').includes('ฟรี');
+                if (freeBenefit) freeBenefit.classList.toggle('hidden', !isFreeReceipt);
 
                 const meterChangeContainer = document.getElementById('rcp-meter-change-container');
                 const meterChangeUsage = Number(payload.cmUsage) || 0;
@@ -3555,6 +3567,64 @@ function openBillingModal(houseNo) {
                 console.error("Receipt Error:", error);
             }
         }
+
+          async function openReceiptHistory(houseNo) {
+            const modal = document.getElementById('receipt-history-modal');
+            const list = document.getElementById('receipt-history-list');
+            modal.classList.remove('hidden');
+            list.innerHTML = '<p class="py-6 text-center text-sm text-slate-500"><i class="fas fa-spinner fa-spin mr-2"></i>กำลังโหลดประวัติ...</p>';
+
+            try {
+              const query = new URLSearchParams({ action: 'getReceiptHistory', houseNo: houseNo });
+              const response = await fetch(`${API_URL}?${query.toString()}`);
+              const result = await response.json();
+              if (!result.success) {
+                list.textContent = result.message || 'ไม่สามารถโหลดประวัติใบเสร็จได้';
+                list.className = 'max-h-[65vh] overflow-y-auto p-4 text-center text-sm text-rose-600';
+                if (result.sessionExpired) handleSessionExpired(result.message);
+                return;
+              }
+
+              list.className = 'max-h-[65vh] space-y-2 overflow-y-auto p-3';
+              list.replaceChildren();
+              if (!result.receipts || result.receipts.length === 0) {
+                list.innerHTML = '<p class="py-6 text-center text-sm text-slate-500">ยังไม่มีใบเสร็จย้อนหลัง</p>';
+                return;
+              }
+
+              result.receipts.forEach(receipt => {
+                const isFree = String(receipt.status || '').toLowerCase() === 'free' || String(receipt.paymentMethod || '').includes('ฟรี');
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between gap-3 border-b border-slate-100 p-2';
+                const summary = document.createElement('div');
+                summary.className = 'min-w-0';
+                const month = document.createElement('p');
+                month.className = 'font-bold text-slate-800';
+                month.textContent = formatThaiMonth(receipt.month);
+                const detail = document.createElement('p');
+                detail.className = `text-xs ${isFree ? 'font-bold text-emerald-700' : 'text-slate-500'}`;
+                detail.textContent = isFree ? 'สิทธิใช้น้ำฟรี · 0 บาท' : `รวม ${Number(receipt.grandTotal || receipt.currentAmount || 0).toLocaleString()} บาท`;
+                summary.append(month, detail);
+                const openButton = document.createElement('button');
+                openButton.type = 'button';
+                openButton.className = 'shrink-0 rounded-lg bg-cyan-700 px-3 py-2 text-xs font-bold text-white hover:bg-cyan-800';
+                openButton.textContent = 'เปิดใบเสร็จ';
+                openButton.onclick = () => {
+                  closeReceiptHistory();
+                  showReceiptModal(receipt);
+                };
+                item.append(summary, openButton);
+                list.append(item);
+              });
+            } catch (error) {
+              list.textContent = 'เกิดข้อผิดพลาดในการโหลดประวัติใบเสร็จ';
+              list.className = 'max-h-[65vh] overflow-y-auto p-4 text-center text-sm text-rose-600';
+            }
+          }
+
+          function closeReceiptHistory() {
+            document.getElementById('receipt-history-modal').classList.add('hidden');
+          }
 
         // ฟังก์ชันสั่งพิมพ์ใบเสร็จ (เรียกใช้หน้าต่างพิมพ์ของเบราว์เซอร์)
         function printReceipt() {
@@ -4979,6 +5049,9 @@ function renderFinanceHistory(history) {
           <span>ค่าน้ำเดือนนี้:</span>
           <span><span id="rcp-current-amount">0</span> บ.</span>
         </div>
+        <div id="rcp-free-benefit" class="hidden mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-left text-xs font-bold text-emerald-700">
+          🎁 ได้รับสิทธิใช้น้ำฟรีตามสวัสดิการ ค่าน้ำรอบนี้ 0 บาท
+        </div>
 
         <div id="rcp-overdue-container" class="w-full text-xs text-red-500 mt-1 space-y-0.5">
         </div>
@@ -5004,6 +5077,16 @@ function renderFinanceHistory(history) {
             <i class="fas fa-print"></i> พิมพ์ใบเสร็จ
         </button>
       </div>
+    </div>
+  </div>
+
+  <div id="receipt-history-modal" class="fixed inset-0 z-[95] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onclick="if(event.target === this) closeReceiptHistory()">
+    <div class="w-full max-w-sm max-h-[80vh] overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <h3 class="font-bold text-slate-800"><i class="fas fa-receipt mr-2 text-cyan-700"></i>ประวัติใบเสร็จ</h3>
+        <button onclick="closeReceiptHistory()" aria-label="ปิดประวัติใบเสร็จ" class="h-9 w-9 rounded-lg text-slate-500 hover:bg-slate-100"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="receipt-history-list" class="max-h-[65vh] space-y-2 overflow-y-auto p-3"></div>
     </div>
   </div>
 
