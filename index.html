@@ -1183,8 +1183,12 @@
             sessionStorage.removeItem('water_app_session');
             localStorage.removeItem('username');
             localStorage.removeItem('role');
-            alert(message || 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
-            window.location.reload();
+            showCustomAlert(
+                message || 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่',
+                () => window.location.reload(),
+                'เซสชันหมดอายุ',
+                'warning'
+            );
         }
 
         // ปลดเซสชันเมื่อปิดแท็บ/เว็บวิว หรือออกจากหน้าแอป
@@ -2274,7 +2278,12 @@ function toggleOption(elementId, isChecked) {
         }
               
         function openAboutModal() {
-            alert("ระบบบริหารจัดการน้ำประปาหมู่บ้าน\nพัฒนาโดย: รณรงค์ อินทร์คง\nเวอร์ชัน: 14.0.0");
+            showCustomAlert(
+                "ระบบบริหารจัดการน้ำประปาหมู่บ้าน\nพัฒนาโดย: รณรงค์ อินทร์คง\nเวอร์ชัน: 14.0.0",
+                null,
+                'เกี่ยวกับระบบ',
+                'info'
+            );
         }
 
         function openChangeMeterMenu() {
@@ -2436,65 +2445,90 @@ function toggleOption(elementId, isChecked) {
         }
 
         // ==========================================
-        // 🌟 ระบบแจ้งเตือนแบบ Modern Minimal (ตรงกลางจอ สีเด่นชัด)
+        // 🌟 ระบบแจ้งเตือนแบบ Toast ตามธีมระบบ
         // ==========================================
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            let icon = 'fa-check-circle';
-            let bgClass = 'bg-emerald-500';
-
-            if (type === 'error') {
-                icon = 'fa-times-circle'; 
-                bgClass = 'bg-rose-600'; 
-            } else if (type === 'warning' || type === 'info') {
-                icon = type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
-                bgClass = type === 'warning' ? 'bg-amber-500' : 'bg-blue-500';
+            if (!container) {
+                console.error('ไม่พบพื้นที่แสดงข้อความแจ้งเตือน');
+                return;
             }
 
-            // ตั้งค่าพื้นหลังสีทึบ ตัวอักษรสีขาวเงาเด่นๆ และจัดให้อยู่กลางจอ
-            toast.className = `${bgClass} text-white rounded-[1.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col transform scale-90 opacity-0 transition-all duration-300 ease-out pointer-events-auto w-full max-w-[280px] overflow-hidden border border-white/20`;
-            
-            toast.innerHTML = `
-                <div class="p-6 flex flex-col items-center justify-center gap-3 text-center relative">
-                    <!-- ปุ่มกากบาทมุมขวาบน สำหรับกดปิดทันที -->
-                    <button onclick="this.closest('.flex-col').remove()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors">
-                        <i class="fas fa-times text-sm"></i>
-                    </button>
-                    
-                    <i class="fas ${icon} text-5xl drop-shadow-md mb-1"></i>
-                    <div class="font-bold text-[16px] leading-relaxed drop-shadow-sm w-full">
-                        ${message}
-                    </div>
-                </div>
-                <div class="w-full h-1.5 bg-black/20">
-                    <div class="h-full bg-white transition-all duration-[2500ms] ease-linear rounded-r-full" style="width: 100%;"></div>
-                </div>
-            `;
-            
+            const styles = {
+                success: { title: 'สำเร็จ', icon: 'fa-circle-check', iconColor: 'text-emerald-600', iconBg: 'bg-emerald-50', border: 'border-emerald-100', progress: 'bg-emerald-500', duration: 3200 },
+                error: { title: 'เกิดข้อผิดพลาด', icon: 'fa-circle-xmark', iconColor: 'text-rose-600', iconBg: 'bg-rose-50', border: 'border-rose-100', progress: 'bg-rose-500', duration: 6000 },
+                warning: { title: 'แจ้งเตือน', icon: 'fa-triangle-exclamation', iconColor: 'text-amber-600', iconBg: 'bg-amber-50', border: 'border-amber-100', progress: 'bg-amber-500', duration: 5000 },
+                info: { title: 'ข้อมูล', icon: 'fa-circle-info', iconColor: 'text-sky-600', iconBg: 'bg-sky-50', border: 'border-sky-100', progress: 'bg-sky-500', duration: 4200 }
+            };
+            const style = styles[type] || styles.success;
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto w-full max-w-sm overflow-hidden rounded-2xl border ${style.border} bg-white shadow-[0_12px_35px_rgba(15,23,42,0.14)] opacity-0 translate-y-2 sm:translate-y-0 sm:translate-x-3 transition-all duration-300`;
+            toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+            toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+
+            const content = document.createElement('div');
+            content.className = 'flex items-start gap-3 p-4';
+
+            const iconBox = document.createElement('div');
+            iconBox.className = `mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${style.iconBg}`;
+            const icon = document.createElement('i');
+            icon.className = `fas ${style.icon} ${style.iconColor} text-lg`;
+            icon.setAttribute('aria-hidden', 'true');
+            iconBox.appendChild(icon);
+
+            const textBox = document.createElement('div');
+            textBox.className = 'min-w-0 flex-1 pt-0.5';
+            const title = document.createElement('div');
+            title.className = 'text-sm font-bold text-slate-800';
+            title.textContent = style.title;
+            const detail = document.createElement('div');
+            detail.className = 'mt-0.5 whitespace-pre-line break-words text-[13px] leading-relaxed text-slate-600';
+            detail.textContent = String(message ?? '');
+            textBox.append(title, detail);
+
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.className = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700';
+            closeButton.setAttribute('aria-label', 'ปิดการแจ้งเตือน');
+            closeButton.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
+
+            content.append(iconBox, textBox, closeButton);
+            const progressTrack = document.createElement('div');
+            progressTrack.className = 'h-1 w-full bg-slate-100';
+            const progress = document.createElement('div');
+            progress.className = `h-full w-full ${style.progress} transition-[width] ease-linear`;
+            progress.style.transitionDuration = `${style.duration}ms`;
+            progressTrack.appendChild(progress);
+            toast.append(content, progressTrack);
             container.appendChild(toast);
 
-            // เด้งและชัดขึ้น (Fade In & Scale Up)
-            setTimeout(() => {
-                toast.classList.remove('scale-90', 'opacity-0');
-                toast.classList.add('scale-100', 'opacity-100');
-                
-                // ให้หลอดเวลาเริ่มหด
-                setTimeout(() => {
-                    const progressBar = toast.querySelector('div.h-full');
-                    if (progressBar) progressBar.style.width = '0%';
-                }, 50);
-            }, 10);
-
-            // ค่อยๆ จางหายไป (Fade Out)
-            setTimeout(() => {
-                toast.classList.remove('scale-100', 'opacity-100');
-                toast.classList.add('scale-95', 'opacity-0'); // ค่อยๆ หดและจาง
-                
-                // ลบทิ้งหลังจากจางเสร็จ
-                setTimeout(() => toast.remove(), 300);
-            }, 2500); // ตั้งเวลาโชว์ 2.5 วินาที
+            let dismissTimer;
+            let removeTimer;
+            const dismiss = () => {
+                if (!toast.isConnected) return;
+                toast.classList.add('opacity-0', 'translate-y-2', 'sm:translate-x-3');
+                removeTimer = setTimeout(() => toast.remove(), 300);
+            };
+            closeButton.addEventListener('click', () => {
+                clearTimeout(dismissTimer);
+                clearTimeout(removeTimer);
+                dismiss();
+            });
+            toast.addEventListener('mouseenter', () => {
+                clearTimeout(dismissTimer);
+                progress.style.transitionDuration = '0ms';
+                progress.style.width = '100%';
+            });
+            toast.addEventListener('mouseleave', () => {
+                progress.style.transitionDuration = '300ms';
+                progress.style.width = '0%';
+                dismissTimer = setTimeout(dismiss, 300);
+            });
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2', 'sm:translate-x-3');
+                progress.style.width = '0%';
+            });
+            dismissTimer = setTimeout(dismiss, style.duration);
         }
 
         // ==========================================
@@ -2831,7 +2865,7 @@ function openBillingModal(houseNo) {
     if (window.currentUserRole === 'user') {
         const status = user.statusCode || 'none';
         if (status === 'waiting' || status === 'none') {
-            showCustomAlert('สิทธิ์ User ไม่สามารถเปิดดูข้อมูลบ้านที่สถานะ "รอชำระ" หรือ "ยังไม่จดมิเตอร์" ได้ครับ');
+            showCustomAlert('สิทธิ์ User ไม่สามารถเปิดดูข้อมูลบ้านที่สถานะ "รอชำระ" หรือ "ยังไม่จดมิเตอร์" ได้ครับ', null, 'ไม่มีสิทธิ์เข้าถึง', 'error');
             return; 
         }
     }
@@ -2901,10 +2935,10 @@ function openBillingModal(houseNo) {
     if (!isWithinPeriod) {
         if (actualOverdueAmount > 0) {
             // กรณี 1: นอกเวลา แต่มีหนี้ค้าง -> แจ้งเตือนแล้วให้เปิดฟอร์มไว้
-            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์\n(กำหนดจด${periodDescription})\n\nแต่บ้านนี้มียอดค้างชำระ ท่านสามารถกดที่ "ดูยอดค้างชำระ" เพื่อรับชำระเงินได้ตามปกติครับ`);
+            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์\n(กำหนดจด${periodDescription})\n\nแต่บ้านนี้มียอดค้างชำระ ท่านสามารถกดที่ "ดูยอดค้างชำระ" เพื่อรับชำระเงินได้ตามปกติครับ`, null, 'อยู่นอกเวลาจดมิเตอร์', 'warning');
         } else {
             // กรณี 2: นอกเวลา และไม่มีหนี้ค้าง -> แจ้งเตือนแล้วสั่งจบการทำงานทันที (ไม่เปิดฟอร์มจดมิเตอร์เลย)
-            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์/จัดเก็บค่าน้ำ\n(ระบบเปิดให้ทำรายการ${periodDescription})\n\nระบบปิดรับการบันทึกข้อมูลชั่วคราวครับ`);
+            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์/จัดเก็บค่าน้ำ\n(ระบบเปิดให้ทำรายการ${periodDescription})\n\nระบบปิดรับการบันทึกข้อมูลชั่วคราวครับ`, null, 'อยู่นอกเวลาทำรายการ', 'warning');
             return; // ⛔ ตัดจบการทำงานตรงนี้เลย ไม่เปิดฟอร์ม
         }
     }
@@ -4555,7 +4589,7 @@ function renderFinanceHistory(history) {
   </div>
 
   <div id="toast-container"
-    class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] flex flex-col items-center gap-3 pointer-events-none w-full px-6">
+    class="fixed top-3 left-3 right-3 z-[9999] flex flex-col items-end gap-3 pointer-events-none sm:top-6 sm:right-6 sm:left-auto">
   </div>
 
   <div id="confirm-modal"
@@ -6155,9 +6189,23 @@ function printYearlyReport() {
 let customAlertCallback = null;
 
 // ✨ ฟังก์ชันเปิดกล่องแจ้งเตือนแบบ Custom
-function showCustomAlert(message, callback = null) {
-    customAlertCallback = callback; // เก็บคำสั่งพิเศษไว้
+function showCustomAlert(message, callback = null, title = 'แจ้งเตือน', type = 'info') {
+    customAlertCallback = callback;
     document.getElementById('custom-alert-message').innerText = message;
+    document.getElementById('custom-alert-title').innerText = title;
+    const styles = {
+        info: { icon: 'fa-circle-info', iconColor: 'text-sky-600', iconBg: 'bg-sky-50', border: 'border-sky-100', button: 'bg-sky-600 hover:bg-sky-700 shadow-sky-500/25' },
+        warning: { icon: 'fa-triangle-exclamation', iconColor: 'text-amber-600', iconBg: 'bg-amber-50', border: 'border-amber-100', button: 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/25' },
+        error: { icon: 'fa-circle-exclamation', iconColor: 'text-rose-600', iconBg: 'bg-rose-50', border: 'border-rose-100', button: 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/25' },
+        success: { icon: 'fa-circle-check', iconColor: 'text-emerald-600', iconBg: 'bg-emerald-50', border: 'border-emerald-100', button: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/25' }
+    };
+    const style = styles[type] || styles.info;
+    const iconBox = document.getElementById('custom-alert-icon-box');
+    const icon = document.getElementById('custom-alert-icon');
+    const button = document.getElementById('custom-alert-close');
+    iconBox.className = `mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border ${style.iconBg} ${style.border} mb-4`;
+    icon.className = `fas ${style.icon} text-2xl ${style.iconColor}`;
+    button.className = `w-full rounded-xl py-3.5 font-bold text-white shadow-md transition-all active:scale-95 ${style.button}`;
     const modal = document.getElementById('custom-alert-modal');
     const box = document.getElementById('custom-alert-box');
     
@@ -6179,11 +6227,9 @@ function closeCustomAlert() {
     
     setTimeout(() => {
         modal.classList.add('hidden');
-        // 🌟 ถ้ามีคำสั่งที่ฝากไว้ ให้รันหลังจากปิดหน้าต่างเสร็จ
-        if (typeof customAlertCallback === 'function') {
-            customAlertCallback();
-            customAlertCallback = null; // เคลียร์ค่าทิ้งเพื่อไม่ให้ค้าง
-        }
+        const callback = customAlertCallback;
+        customAlertCallback = null;
+        if (typeof callback === 'function') callback();
     }, 300);
 }
 
@@ -6225,22 +6271,21 @@ function closeCustomAlert() {
     </div>
   </div>
 
-  <div id="custom-alert-modal" onclick="if(event.target === this) closeCustomAlert()"
-    class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300 opacity-0">
+  <div id="custom-alert-modal" role="alertdialog" aria-modal="true" aria-labelledby="custom-alert-title" aria-describedby="custom-alert-message" onclick="if(event.target === this) closeCustomAlert()"
+    class="fixed inset-0 z-[300] hidden flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm transition-opacity duration-300 opacity-0">
     <div id="custom-alert-box"
-      class="bg-white rounded-[2rem] p-6 shadow-2xl max-w-xs sm:max-w-sm w-full text-center transform scale-95 transition-all duration-300 relative border border-slate-100">
+      class="bg-white rounded-3xl p-6 shadow-[0_24px_70px_rgba(15,23,42,0.22)] max-w-xs sm:max-w-sm w-full text-center transform scale-95 transition-all duration-300 relative border border-white">
 
-      <div
-        class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-rose-50 mb-4 shadow-inner border border-rose-100">
-        <i class="fas fa-lock text-2xl text-rose-500"></i>
+      <div id="custom-alert-icon-box" class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-sky-100 bg-sky-50 mb-4">
+        <i id="custom-alert-icon" class="fas fa-circle-info text-2xl text-sky-600"></i>
       </div>
 
-      <h3 class="text-xl font-bold text-slate-800 mb-2">ไม่มีสิทธิ์เข้าถึง</h3>
-      <p id="custom-alert-message" class="text-[14px] text-slate-500 mb-6 leading-relaxed font-medium">
+      <h3 id="custom-alert-title" class="text-lg font-extrabold tracking-tight text-slate-800 mb-2">แจ้งเตือน</h3>
+      <p id="custom-alert-message" class="whitespace-pre-line text-[14px] text-slate-500 mb-6 leading-relaxed font-medium">
       </p>
 
-      <button onclick="closeCustomAlert()"
-              class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 shadow-md shadow-rose-500/30">
+      <button id="custom-alert-close" onclick="closeCustomAlert()"
+              class="w-full rounded-xl bg-sky-600 hover:bg-sky-700 py-3.5 font-bold text-white shadow-md shadow-sky-500/25 transition-all active:scale-95">
         รับทราบ
       </button>
     </div>
