@@ -534,6 +534,16 @@
               </div>
               <i class="fas fa-chevron-right text-slate-300"></i>
             </button>
+            <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center justify-between gap-4">
+              <div>
+                <h4 class="font-bold text-slate-700 text-sm">รับชำระผ่านบัญชีธนาคาร</h4>
+                <p class="text-[11px] text-slate-500">ปิดเพื่อรับชำระเงินสดเท่านั้น และซ่อนข้อมูลโอนเงินในใบแจ้งหนี้</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                <input type="checkbox" id="set-bank-transfer-enabled" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
           </div>
 
           <div class="pt-4 border-t border-slate-100">
@@ -1183,7 +1193,7 @@
             sessionStorage.removeItem('water_app_session');
             localStorage.removeItem('username');
             localStorage.removeItem('role');
-            showCustomAlert(
+            showMessageToast(
                 message || 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่',
                 () => window.location.reload(),
                 'เซสชันหมดอายุ',
@@ -2283,7 +2293,7 @@ function toggleOption(elementId, isChecked) {
         }
               
         function openAboutModal() {
-            showCustomAlert(
+            showMessageToast(
                 "ระบบบริหารจัดการน้ำประปาหมู่บ้าน\nพัฒนาโดย: รณรงค์ อินทร์คง\nเวอร์ชัน: 14.0.0",
                 null,
                 'เกี่ยวกับระบบ',
@@ -2452,7 +2462,7 @@ function toggleOption(elementId, isChecked) {
         // ==========================================
         // 🌟 ระบบแจ้งเตือนแบบ Toast ตามธีมระบบ
         // ==========================================
-        function showToast(message, type = 'success') {
+        function showToast(message, type = 'success', options = {}) {
             const container = document.getElementById('toast-container');
             if (!container) {
                 console.error('ไม่พบพื้นที่แสดงข้อความแจ้งเตือน');
@@ -2466,6 +2476,7 @@ function toggleOption(elementId, isChecked) {
                 info: { title: 'ข้อมูล', icon: 'fa-circle-info', iconColor: 'text-sky-600', iconBg: 'bg-sky-50', border: 'border-sky-100', progress: 'bg-sky-500', duration: 4200 }
             };
             const style = styles[type] || styles.success;
+            const duration = options.persistent ? 0 : (options.duration || style.duration);
             const toast = document.createElement('div');
             toast.className = `pointer-events-auto w-full max-w-sm overflow-hidden rounded-2xl border ${style.border} bg-white shadow-[0_12px_35px_rgba(15,23,42,0.14)] opacity-0 translate-y-2 sm:translate-y-0 sm:translate-x-3 transition-all duration-300`;
             toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
@@ -2485,7 +2496,7 @@ function toggleOption(elementId, isChecked) {
             textBox.className = 'min-w-0 flex-1 pt-0.5';
             const title = document.createElement('div');
             title.className = 'text-sm font-bold text-slate-800';
-            title.textContent = style.title;
+            title.textContent = options.title || style.title;
             const detail = document.createElement('div');
             detail.className = 'mt-0.5 whitespace-pre-line break-words text-[13px] leading-relaxed text-slate-600';
             detail.textContent = String(message ?? '');
@@ -2494,106 +2505,92 @@ function toggleOption(elementId, isChecked) {
             const closeButton = document.createElement('button');
             closeButton.type = 'button';
             closeButton.className = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700';
-            closeButton.setAttribute('aria-label', 'ปิดการแจ้งเตือน');
+            closeButton.setAttribute('aria-label', options.confirmText ? 'ยกเลิกการทำรายการ' : 'ปิดการแจ้งเตือน');
             closeButton.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
 
             content.append(iconBox, textBox, closeButton);
-            const progressTrack = document.createElement('div');
-            progressTrack.className = 'h-1 w-full bg-slate-100';
-            const progress = document.createElement('div');
-            progress.className = `h-full w-full ${style.progress} transition-[width] ease-linear`;
-            progress.style.transitionDuration = `${style.duration}ms`;
-            progressTrack.appendChild(progress);
-            toast.append(content, progressTrack);
+            toast.appendChild(content);
+
+            if (options.confirmText) {
+                const actions = document.createElement('div');
+                actions.className = 'flex justify-end gap-2 px-4 pb-4';
+                const cancelButton = document.createElement('button');
+                cancelButton.type = 'button';
+                cancelButton.className = 'rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-200';
+                cancelButton.textContent = options.cancelText || 'ยกเลิก';
+                const confirmButton = document.createElement('button');
+                confirmButton.type = 'button';
+                confirmButton.className = `rounded-lg px-3 py-2 text-xs font-bold text-white transition ${options.isDanger === false ? 'bg-blue-600 hover:bg-blue-700' : 'bg-rose-600 hover:bg-rose-700'}`;
+                confirmButton.textContent = options.confirmText;
+                actions.append(cancelButton, confirmButton);
+                toast.appendChild(actions);
+                cancelButton.addEventListener('click', () => dismiss(false));
+                confirmButton.addEventListener('click', () => {
+                    dismiss(false);
+                    if (typeof options.onConfirm === 'function') options.onConfirm();
+                });
+            }
+
+            const progressTrack = duration > 0 ? document.createElement('div') : null;
+            const progress = duration > 0 ? document.createElement('div') : null;
+            if (progressTrack && progress) {
+                progressTrack.className = 'h-1 w-full bg-slate-100';
+                progress.className = `h-full w-full ${style.progress} transition-[width] ease-linear`;
+                progress.style.transitionDuration = `${duration}ms`;
+                progressTrack.appendChild(progress);
+                toast.appendChild(progressTrack);
+            }
             container.appendChild(toast);
 
             let dismissTimer;
             let removeTimer;
-            const dismiss = () => {
-                if (!toast.isConnected) return;
+            let dismissed = false;
+            const dismiss = (notify = true) => {
+                if (dismissed || !toast.isConnected) return;
+                dismissed = true;
+                clearTimeout(dismissTimer);
                 toast.classList.add('opacity-0', 'translate-y-2', 'sm:translate-x-3');
-                removeTimer = setTimeout(() => toast.remove(), 300);
+                removeTimer = setTimeout(() => {
+                    toast.remove();
+                    if (notify && typeof options.onDismiss === 'function') options.onDismiss();
+                }, 300);
             };
             closeButton.addEventListener('click', () => {
-                clearTimeout(dismissTimer);
                 clearTimeout(removeTimer);
                 dismiss();
             });
-            toast.addEventListener('mouseenter', () => {
-                clearTimeout(dismissTimer);
-                progress.style.transitionDuration = '0ms';
-                progress.style.width = '100%';
-            });
-            toast.addEventListener('mouseleave', () => {
-                progress.style.transitionDuration = '300ms';
-                progress.style.width = '0%';
-                dismissTimer = setTimeout(dismiss, 300);
-            });
+            if (duration > 0 && progress) {
+                toast.addEventListener('mouseenter', () => {
+                    clearTimeout(dismissTimer);
+                    progress.style.transitionDuration = '0ms';
+                    progress.style.width = '100%';
+                });
+                toast.addEventListener('mouseleave', () => {
+                    if (dismissed) return;
+                    progress.style.transitionDuration = `${duration}ms`;
+                    progress.style.width = '0%';
+                    dismissTimer = setTimeout(dismiss, duration);
+                });
+            }
             requestAnimationFrame(() => {
                 toast.classList.remove('opacity-0', 'translate-y-2', 'sm:translate-x-3');
-                progress.style.width = '0%';
+                if (progress) progress.style.width = '0%';
             });
-            dismissTimer = setTimeout(dismiss, style.duration);
+            if (duration > 0) dismissTimer = setTimeout(dismiss, duration);
         }
 
         // ==========================================
-        // 🌟 ระบบยืนยันการทำงานแบบ Modern & Clean
+        // 🌟 ระบบยืนยันแบบ Toast พร้อมปุ่มดำเนินการ
         // ==========================================
-        let currentConfirmCallback = null;
-        
-        function openConfirmModal(title, message, confirmText, callback, isDanger = true) {
-            document.getElementById('confirm-title').innerText = title;
-            document.getElementById('confirm-message').innerText = message;
-            
-            const actionBtn = document.getElementById('confirm-btn-action');
-            actionBtn.innerText = confirmText;
-            
-            const iconBox = document.getElementById('confirm-icon-box');
-            const iconRing = document.getElementById('confirm-icon-ring');
-            const iconElement = document.getElementById('confirm-icon');
-            
-            // 🎨 เปลี่ยนลูกเล่นสีตามประเภทการยืนยัน
-            if(isDanger) {
-                // สีแดง (สำหรับการลบ/อันตราย)
-                iconBox.className = "w-24 h-24 rounded-full flex items-center justify-center mb-6 relative bg-rose-50";
-                iconRing.className = "absolute inset-0 border-[3px] rounded-full border-rose-500 animate-ping opacity-20";
-                iconElement.className = "fas fa-trash-alt text-4xl text-rose-500 drop-shadow-sm";
-                actionBtn.className = "flex-1 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-500/30 transition-all active:scale-95 text-sm";
-            } else {
-                // สีน้ำเงิน (สำหรับการยืนยันทั่วไป/บันทึก)
-                iconBox.className = "w-24 h-24 rounded-full flex items-center justify-center mb-6 relative bg-blue-50";
-                iconRing.className = "absolute inset-0 border-[3px] rounded-full border-blue-500 animate-pulse opacity-30";
-                iconElement.className = "fas fa-question-circle text-4xl text-blue-500 drop-shadow-sm";
-                actionBtn.className = "flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 text-sm";
-            }
-
-            currentConfirmCallback = callback;
-            
-            const modal = document.getElementById('confirm-modal');
-            const box = document.getElementById('confirm-modal-box');
-            
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                box.classList.remove('scale-95', 'translate-y-4');
-            }, 10);
-        }
-
-        function closeConfirmModal() {
-            const modal = document.getElementById('confirm-modal');
-            const box = document.getElementById('confirm-modal-box');
-            modal.classList.add('opacity-0');
-            box.classList.add('scale-95', 'translate-y-4');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
-        }
-
-        function executeConfirmAction() {
-            closeConfirmModal();
-            if (typeof currentConfirmCallback === 'function') {
-                currentConfirmCallback(); 
-            }
+        function showConfirmToast(title, message, confirmText, callback, isDanger = true) {
+            showToast(message, isDanger ? 'warning' : 'info', {
+                title,
+                confirmText,
+                cancelText: 'ยกเลิก',
+                isDanger,
+                persistent: true,
+                onConfirm: callback
+            });
         }
 
         // สร้างตัวเลือกวันที่ 1-31 อัตโนมัติ
@@ -2614,7 +2611,8 @@ function toggleOption(elementId, isChecked) {
         const SETTINGS_CONTROL_IDS = [
             'set-price', 'set-collection-rate', 'set-max-overdue', 'set-start-day', 'set-end-day',
             'set-auto-report', 'set-report-day', 'set-report-time',
-            'set-auto-bill', 'set-bill-day', 'set-bill-time', 'set-free-enabled', 'set-free-limit'
+            'set-auto-bill', 'set-bill-day', 'set-bill-time', 'set-free-enabled', 'set-free-limit',
+            'set-bank-transfer-enabled'
         ];
         let originalSettingsSnapshot = null;
         let settingsLoadedSuccessfully = false;
@@ -2650,6 +2648,12 @@ function toggleOption(elementId, isChecked) {
             if(document.getElementById('bank-name')) document.getElementById('bank-name').value = d.BANK_NAME || "";
             if(document.getElementById('bank-acc-name')) document.getElementById('bank-acc-name').value = d.ACC_NAME || "";
             if(document.getElementById('bank-acc-number')) document.getElementById('bank-acc-number').value = d.ACC_NUMBER || "";
+            const bankTransferEnabled = document.getElementById('set-bank-transfer-enabled');
+            if(bankTransferEnabled) {
+                bankTransferEnabled.checked = d.BANK_TRANSFER_ENABLED === undefined || d.BANK_TRANSFER_ENABLED === ""
+                    ? Boolean(String(d.ACC_NUMBER || "").trim())
+                    : d.BANK_TRANSFER_ENABLED === "true";
+            }
 
             const autoReport = document.getElementById('set-auto-report');
             if(autoReport) {
@@ -2727,6 +2731,12 @@ function toggleOption(elementId, isChecked) {
                 }
             }
 
+            if (document.getElementById('set-bank-transfer-enabled').checked &&
+                !document.getElementById('bank-acc-number').value.trim()) {
+                showToast("กรุณาบันทึกข้อมูลบัญชีธนาคารก่อนเปิดรับชำระผ่านการโอน", "warning");
+                return;
+            }
+
             btn.disabled = true;
             btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> กำลังบันทึก...`;
 
@@ -2746,7 +2756,8 @@ function toggleOption(elementId, isChecked) {
                     BILL_DAY: document.getElementById('set-bill-day').value,
                     BILL_TIME: document.getElementById('set-bill-time').value,
                     FREE_ENABLED: document.getElementById('set-free-enabled').checked,
-                    FREE_LIMIT: document.getElementById('set-free-limit').value
+                    FREE_LIMIT: document.getElementById('set-free-limit').value,
+                    BANK_TRANSFER_ENABLED: document.getElementById('set-bank-transfer-enabled').checked
                 }
             };
 
@@ -2870,7 +2881,7 @@ function openBillingModal(houseNo) {
     if (window.currentUserRole === 'user') {
         const status = user.statusCode || 'none';
         if (status === 'waiting' || status === 'none') {
-            showCustomAlert('สิทธิ์ User ไม่สามารถเปิดดูข้อมูลบ้านที่สถานะ "รอชำระ" หรือ "ยังไม่จดมิเตอร์" ได้ครับ', null, 'ไม่มีสิทธิ์เข้าถึง', 'error');
+            showMessageToast('สิทธิ์ User ไม่สามารถเปิดดูข้อมูลบ้านที่สถานะ "รอชำระ" หรือ "ยังไม่จดมิเตอร์" ได้ครับ', null, 'ไม่มีสิทธิ์เข้าถึง', 'error');
             return; 
         }
     }
@@ -2943,10 +2954,10 @@ function openBillingModal(houseNo) {
     if (!isWithinPeriod) {
         if (actualOverdueAmount > 0) {
             // กรณี 1: นอกเวลา แต่มีหนี้ค้าง -> แจ้งเตือนแล้วให้เปิดฟอร์มไว้
-            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์\n(กำหนดจด${periodDescription})\n\nแต่บ้านนี้มียอดค้างชำระ ท่านสามารถกดที่ "ดูยอดค้างชำระ" เพื่อรับชำระเงินได้ตามปกติครับ`, null, 'อยู่นอกเวลาจดมิเตอร์', 'warning');
+            showMessageToast(`อยู่นอกเวลาจดมิเตอร์\n(กำหนดจด${periodDescription})\n\nแต่บ้านนี้มียอดค้างชำระ ท่านสามารถกดที่ "ดูยอดค้างชำระ" เพื่อรับชำระเงินได้ตามปกติครับ`, null, 'อยู่นอกเวลาจดมิเตอร์', 'warning');
         } else {
             // กรณี 2: นอกเวลา และไม่มีหนี้ค้าง -> แจ้งเตือนแล้วสั่งจบการทำงานทันที (ไม่เปิดฟอร์มจดมิเตอร์เลย)
-            showCustomAlert(`อยู่นอกเวลาจดมิเตอร์/จัดเก็บค่าน้ำ\n(ระบบเปิดให้ทำรายการ${periodDescription})\n\nระบบปิดรับการบันทึกข้อมูลชั่วคราวครับ`, null, 'อยู่นอกเวลาทำรายการ', 'warning');
+            showMessageToast(`อยู่นอกเวลาจดมิเตอร์/จัดเก็บค่าน้ำ\n(ระบบเปิดให้ทำรายการ${periodDescription})\n\nระบบปิดรับการบันทึกข้อมูลชั่วคราวครับ`, null, 'อยู่นอกเวลาทำรายการ', 'warning');
             return; // ⛔ ตัดจบการทำงานตรงนี้เลย ไม่เปิดฟอร์ม
         }
     }
@@ -4401,7 +4412,7 @@ function renderFinanceHistory(history) {
         function saveCollectorFeeExpense(name, amount, monthYearStr) {
             const msg = `คุณต้องการบันทึกรายจ่ายค่าตอบแทนให้แก่:\nคุณ ${name}\nยอดเงิน: ${Number(amount).toLocaleString()} บาท ใช่หรือไม่?`;
             
-            openConfirmModal("ยืนยันจ่ายค่าจัดเก็บ", msg, "ยืนยันบันทึก", async function() {
+            showConfirmToast("ยืนยันจ่ายค่าจัดเก็บ", msg, "ยืนยันบันทึก", async function() {
                 const loggedInName = localStorage.getItem("username") || "Admin";
                 
                 // แปลงรูปแบบเดือน
@@ -4660,35 +4671,6 @@ function renderFinanceHistory(history) {
 
   <div id="toast-container"
     class="fixed top-3 left-3 right-3 z-[9999] flex flex-col items-end gap-3 pointer-events-none sm:top-6 sm:right-6 sm:left-auto">
-  </div>
-
-  <div id="confirm-modal"
-    class="fixed inset-0 z-[250] bg-slate-900/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
-    <div
-      class="bg-white/95 backdrop-blur-xl rounded-[2rem] p-8 w-full max-w-sm shadow-[0_20px_50px_rgba(0,0,0,0.15)] transform scale-95 translate-y-4 transition-all duration-300 border border-white"
-      id="confirm-modal-box">
-      <div class="flex flex-col items-center text-center">
-
-        <div id="confirm-icon-box" class="w-24 h-24 rounded-full flex items-center justify-center mb-6 relative">
-          <div id="confirm-icon-ring" class="absolute inset-0 border-[3px] rounded-full opacity-30"></div>
-          <i id="confirm-icon" class="text-4xl drop-shadow-sm transition-transform hover:scale-110 duration-300"></i>
-        </div>
-
-        <h3 id="confirm-title" class="text-xl font-extrabold text-slate-800 mb-2 tracking-tight">ยืนยันการทำรายการ?</h3>
-        <p id="confirm-message" class="text-sm text-slate-500 mb-8 font-medium leading-relaxed">
-          คุณแน่ใจหรือไม่ว่าต้องการดำเนินการนี้?</p>
-
-        <div class="flex items-center gap-3 w-full">
-          <button onclick="closeConfirmModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-xl transition-all active:scale-95 text-sm">
-            ยกเลิก
-          </button>
-          <button id="confirm-btn-action" onclick="executeConfirmAction()" class="flex-1 font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm text-white">
-            ยืนยัน
-          </button>
-        </div>
-
-      </div>
-    </div>
   </div>
 
   <div id="user-modal"
@@ -5050,7 +5032,7 @@ function renderFinanceHistory(history) {
           <span><span id="rcp-current-amount">0</span> บ.</span>
         </div>
         <div id="rcp-free-benefit" class="hidden mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-left text-xs font-bold text-emerald-700">
-          🎁 ได้รับสิทธิใช้น้ำฟรี ค่าน้ำรอบนี้ 0 บาท
+          🎁 ได้รับสิทธิใช้น้ำฟรีตามสวัสดิการ ค่าน้ำรอบนี้ 0 บาท
         </div>
 
         <div id="rcp-overdue-container" class="w-full text-xs text-red-500 mt-1 space-y-0.5">
@@ -6305,52 +6287,14 @@ function printYearlyReport() {
     }
 }
 
-// 🌟 ตัวแปรเก็บฟังก์ชันที่จะให้ทำหลังจากปิด Pop-up
-let customAlertCallback = null;
-
-// ✨ ฟังก์ชันเปิดกล่องแจ้งเตือนแบบ Custom
-function showCustomAlert(message, callback = null, title = 'แจ้งเตือน', type = 'info') {
-    customAlertCallback = callback;
-    document.getElementById('custom-alert-message').innerText = message;
-    document.getElementById('custom-alert-title').innerText = title;
-    const styles = {
-        info: { icon: 'fa-circle-info', iconColor: 'text-sky-600', iconBg: 'bg-sky-50', border: 'border-sky-100', button: 'bg-sky-600 hover:bg-sky-700 shadow-sky-500/25' },
-        warning: { icon: 'fa-triangle-exclamation', iconColor: 'text-amber-600', iconBg: 'bg-amber-50', border: 'border-amber-100', button: 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/25' },
-        error: { icon: 'fa-circle-exclamation', iconColor: 'text-rose-600', iconBg: 'bg-rose-50', border: 'border-rose-100', button: 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/25' },
-        success: { icon: 'fa-circle-check', iconColor: 'text-emerald-600', iconBg: 'bg-emerald-50', border: 'border-emerald-100', button: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/25' }
-    };
-    const style = styles[type] || styles.info;
-    const iconBox = document.getElementById('custom-alert-icon-box');
-    const icon = document.getElementById('custom-alert-icon');
-    const button = document.getElementById('custom-alert-close');
-    iconBox.className = `mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border ${style.iconBg} ${style.border} mb-4`;
-    icon.className = `fas ${style.icon} text-2xl ${style.iconColor}`;
-    button.className = `w-full rounded-xl py-3.5 font-bold text-white shadow-md transition-all active:scale-95 ${style.button}`;
-    const modal = document.getElementById('custom-alert-modal');
-    const box = document.getElementById('custom-alert-box');
-    
-    modal.classList.remove('hidden');
-    // หน่วงเวลาเล็กน้อยเพื่อให้ Animation ทำงาน
-    setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        box.classList.remove('scale-95');
-    }, 10);
-}
-
-// ✨ ฟังก์ชันปิดกล่องแจ้งเตือน
-function closeCustomAlert() {
-    const modal = document.getElementById('custom-alert-modal');
-    const box = document.getElementById('custom-alert-box');
-    
-    modal.classList.add('opacity-0');
-    box.classList.add('scale-95');
-    
-    setTimeout(() => {
-        modal.classList.add('hidden');
-        const callback = customAlertCallback;
-        customAlertCallback = null;
-        if (typeof callback === 'function') callback();
-    }, 300);
+// ✨ แสดงการแจ้งเตือนแบบ Toast
+function showMessageToast(message, callback = null, title = 'แจ้งเตือน', type = 'info') {
+    showToast(message, type, {
+        title,
+        duration: callback ? 0 : undefined,
+        persistent: Boolean(callback),
+        onDismiss: callback
+    });
 }
 
   </script>
@@ -6388,26 +6332,6 @@ function closeCustomAlert() {
           <button onclick="selectPickerMonth(12)" class="py-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-600 font-medium transition shadow-sm">ธ.ค.</button>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div id="custom-alert-modal" role="alertdialog" aria-modal="true" aria-labelledby="custom-alert-title" aria-describedby="custom-alert-message" onclick="if(event.target === this) closeCustomAlert()"
-    class="fixed inset-0 z-[300] hidden flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm transition-opacity duration-300 opacity-0">
-    <div id="custom-alert-box"
-      class="bg-white rounded-3xl p-6 shadow-[0_24px_70px_rgba(15,23,42,0.22)] max-w-xs sm:max-w-sm w-full text-center transform scale-95 transition-all duration-300 relative border border-white">
-
-      <div id="custom-alert-icon-box" class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-sky-100 bg-sky-50 mb-4">
-        <i id="custom-alert-icon" class="fas fa-circle-info text-2xl text-sky-600"></i>
-      </div>
-
-      <h3 id="custom-alert-title" class="text-lg font-extrabold tracking-tight text-slate-800 mb-2">แจ้งเตือน</h3>
-      <p id="custom-alert-message" class="whitespace-pre-line text-[14px] text-slate-500 mb-6 leading-relaxed font-medium">
-      </p>
-
-      <button id="custom-alert-close" onclick="closeCustomAlert()"
-              class="w-full rounded-xl bg-sky-600 hover:bg-sky-700 py-3.5 font-bold text-white shadow-md shadow-sky-500/25 transition-all active:scale-95">
-        รับทราบ
-      </button>
     </div>
   </div>
 
@@ -6834,7 +6758,7 @@ function closeCustomAlert() {
 
     function deleteAccountRow(row) {
         // ใช้ Custom Confirm ของคุณที่มีอยู่แล้ว
-        openConfirmModal("ลบบัญชี", "ยืนยันการลบบัญชีนี้ออกจากระบบถาวร?", "ลบข้อมูล", async () => {
+        showConfirmToast("ลบบัญชี", "ยืนยันการลบบัญชีนี้ออกจากระบบถาวร?", "ลบข้อมูล", async () => {
             try {
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "deleteAccount", row }) });
                 const result = await res.json();
@@ -7027,7 +6951,7 @@ function closeCustomAlert() {
     }
 
     function deleteDirectorRow(row) {
-        openConfirmModal("ลบข้อมูลกรรมการ", "ยืนยันการลบข้อมูลกรรมการท่านนี้ออกจากระบบถาวร?", "ลบข้อมูล", async () => {
+        showConfirmToast("ลบข้อมูลกรรมการ", "ยืนยันการลบข้อมูลกรรมการท่านนี้ออกจากระบบถาวร?", "ลบข้อมูล", async () => {
             try {
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "deleteDirector", row }) });
                 const result = await res.json();
