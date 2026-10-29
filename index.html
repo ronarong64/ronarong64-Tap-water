@@ -6531,31 +6531,31 @@ function showMessageToast(message, callback = null, title = 'แจ้งเต�
     class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300">
     <div class="bg-white rounded-[2rem] w-full max-w-3xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col border border-white/60">
 
-      <div class="relative overflow-hidden bg-gradient-to-br from-rose-600 via-rose-500 to-orange-400 px-5 py-5 sm:px-7 sm:py-6 text-white shrink-0">
-        <div class="absolute -right-8 -top-12 w-40 h-40 rounded-full bg-white/10"></div>
-        <div class="absolute right-20 -bottom-16 w-36 h-36 rounded-full bg-white/10"></div>
-        <div class="relative flex justify-between items-start gap-4">
-          <div class="flex items-center gap-3 sm:gap-4 min-w-0">
-            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 ring-1 ring-white/30 flex items-center justify-center shadow-lg shrink-0">
-              <i class="fas fa-file-invoice-dollar text-xl sm:text-2xl"></i>
+      <div class="relative overflow-hidden bg-gradient-to-br from-rose-600 via-rose-500 to-orange-400 px-4 py-3 sm:px-6 sm:py-4 text-white shrink-0">
+        <div class="absolute -right-8 -top-12 w-32 h-32 rounded-full bg-white/10"></div>
+        <div class="absolute right-20 -bottom-16 w-28 h-28 rounded-full bg-white/10"></div>
+        <div class="relative flex justify-between items-center gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/20 ring-1 ring-white/30 flex items-center justify-center shadow-lg shrink-0">
+              <i class="fas fa-file-invoice-dollar text-base sm:text-lg"></i>
             </div>
             <div class="min-w-0">
-              <h3 class="font-extrabold text-lg sm:text-xl leading-tight">รายชื่อสมาชิกค้างชำระ</h3>
-              <p class="text-xs sm:text-sm text-rose-50 mt-1">ตรวจสอบยอดค้าง แล้วเลือกบ้านที่ต้องการพิมพ์ใบแจ้งเตือน</p>
+              <h3 class="font-extrabold text-base sm:text-lg leading-tight">รายชื่อสมาชิกค้างชำระ</h3>
+              <p class="text-[10px] sm:text-xs text-rose-50 mt-0.5">ตรวจสอบยอดค้าง แล้วเลือกบ้านที่ต้องการพิมพ์ใบแจ้งเตือน</p>
             </div>
           </div>
-          <button onclick="closeSuspensionModal()" aria-label="ปิดหน้าต่าง" class="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 ring-1 ring-white/20 flex items-center justify-center transition-colors shrink-0">
-            <i class="fas fa-times"></i>
+          <button onclick="closeSuspensionModal()" aria-label="ปิดหน้าต่าง" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 ring-1 ring-white/20 flex items-center justify-center transition-colors shrink-0">
+            <i class="fas fa-times text-xs"></i>
           </button>
         </div>
-        <div class="relative grid grid-cols-2 gap-2 sm:gap-3 mt-5">
-          <div class="rounded-xl bg-white/15 border border-white/20 px-3 py-2.5">
-            <p class="text-[10px] sm:text-xs text-rose-50">บ้านที่ค้างชำระ</p>
-            <p class="font-extrabold text-lg leading-tight mt-0.5"><span id="suspension-house-count">0</span> <span class="text-xs font-medium">หลัง</span></p>
+        <div class="relative grid grid-cols-2 gap-2 mt-3">
+          <div class="rounded-lg bg-white/15 border border-white/20 px-2.5 py-1.5">
+            <p class="text-[9px] sm:text-[10px] text-rose-50">บ้านที่ค้างชำระ</p>
+            <p class="font-extrabold text-base leading-tight"><span id="suspension-house-count">0</span> <span class="text-[10px] font-medium">หลัง</span></p>
           </div>
-          <div class="rounded-xl bg-white/15 border border-white/20 px-3 py-2.5">
-            <p class="text-[10px] sm:text-xs text-rose-50">ยอดค้างรวม</p>
-            <p class="font-extrabold text-lg leading-tight mt-0.5"><span id="suspension-total-debt">0</span> <span class="text-xs font-medium">บาท</span></p>
+          <div class="rounded-lg bg-white/15 border border-white/20 px-2.5 py-1.5">
+            <p class="text-[9px] sm:text-[10px] text-rose-50">ยอดค้างรวม</p>
+            <p class="font-extrabold text-base leading-tight"><span id="suspension-total-debt">0</span> <span class="text-[10px] font-medium">บาท</span></p>
           </div>
         </div>
       </div>
