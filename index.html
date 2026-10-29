@@ -529,7 +529,7 @@
                 </div>
                 <div class="text-left">
                   <h4 class="font-bold text-slate-700 text-sm">ตั้งค่าบัญชีธนาคาร</h4>
-                  <p class="text-[11px] text-slate-500">จัดการข้อมูลบัญชีรับโอนเงินธนาคาร</p>
+                  <p class="text-[11px] text-slate-500">จัดการข้อมูลบัญชีรับโอนเงินค่าน้ำ</p>
                 </div>
               </div>
               <i class="fas fa-chevron-right text-slate-300"></i>
@@ -537,7 +537,7 @@
             <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center justify-between gap-4">
               <div>
                 <h4 class="font-bold text-slate-700 text-sm">รับชำระผ่านบัญชีธนาคาร</h4>
-                <p class="text-[11px] text-slate-500">ปิด-เปิด เพื่อรับชำระเงินผ่าบัญชีธนาคาร</p>
+                <p class="text-[11px] text-slate-500">ปิดเพื่อรับชำระเงินสดเท่านั้น และซ่อนข้อมูลโอนเงินในใบแจ้งหนี้</p>
               </div>
               <label class="relative inline-flex items-center cursor-pointer shrink-0">
                 <input type="checkbox" id="set-bank-transfer-enabled" class="sr-only peer">
@@ -7032,6 +7032,14 @@ function openSuspensionModal() {
     } else {
         targetUsers.forEach(u => {
             let breakdownHtml = '<div class="mt-2.5 space-y-1.5 border-t border-slate-100 pt-3">';
+            const profilePic = String(u.profilePic || "").trim();
+            const driveFileIdMatch = profilePic.match(/[?&]id=([^&]+)/) || profilePic.match(/\/d\/([^/]+)/);
+            const profilePicUrl = driveFileIdMatch
+                ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(driveFileIdMatch[1])}&sz=w200`
+                : (/^https?:\/\//i.test(profilePic) ? profilePic : "");
+            const memberAvatarHtml = profilePicUrl
+                ? `<span class="relative w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0"><i class="fas fa-user-circle text-slate-400"></i><img src="${escapeHTML(profilePicUrl)}" alt="รูปเจ้าบ้าน ${escapeHTML(u.name || "")}" class="absolute inset-0 w-full h-full object-cover rounded-full" onerror="this.style.display='none'"></span>`
+                : `<i class="fas fa-user-circle text-slate-400"></i>`;
             
             u.actualOverdueBills.forEach(bill => {
                 let displayMonth = typeof formatThaiMonth === 'function' ? formatThaiMonth(bill.month) : bill.month;
@@ -7075,7 +7083,7 @@ function openSuspensionModal() {
                             </span>
                         </div>
                         <p class="text-xs text-slate-500 mb-2 font-medium flex items-center gap-1.5">
-                            <i class="fas fa-user-circle text-slate-400"></i> ${u.name || "ไม่ระบุชื่อ"}
+                            ${memberAvatarHtml} ${escapeHTML(u.name || "ไม่ระบุชื่อ")}
                         </p>
                         
                         <div class="flex justify-between items-end bg-white p-2 rounded-xl border border-slate-100 shadow-sm mt-2 mb-1">
