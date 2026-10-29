@@ -17,7 +17,8 @@
 </head>
 <body class="p-4 flex flex-col items-center justify-center min-h-screen relative overflow-x-hidden">
 
-    <div id="toast-container" class="fixed top-3 left-3 right-3 z-[9999] flex flex-col items-end gap-3 pointer-events-none sm:top-6 sm:right-6 sm:left-auto"></div>
+    <!-- 🌟 คอนเทนเนอร์สำหรับใส่ป๊อปอัปแจ้งเตือน (ย้ายมาไว้ตรงกลางจอ) -->
+    <div id="toast-container" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] flex flex-col items-center gap-3 pointer-events-none w-full px-6"></div>
 
     <div class="bg-white w-full max-w-md rounded-[2rem] shadow-xl overflow-hidden border border-slate-100">
         
@@ -80,85 +81,61 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbzq88OZCsNZqxdmfe4otNoypsepDeVj-baYlTwEYIFlTtU9wqiUNKbPh76XJYy4Ys6uTw/exec"; 
 
+        // ==========================================
+        // 🌟 ฟังก์ชันแจ้งเตือนตรงกลางจอ สีเด่นชัด และค่อยๆ จางหาย
+        // ==========================================
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
-            if (!container) {
-                console.error('ไม่พบพื้นที่แสดงข้อความแจ้งเตือน');
-                return;
+            const toast = document.createElement('div');
+            
+            let icon = 'fa-check-circle';
+            let bgClass = 'bg-emerald-500';
+
+            if (type === 'error') {
+                icon = 'fa-times-circle'; 
+                bgClass = 'bg-rose-600'; 
+            } else if (type === 'warning') {
+                icon = 'fa-exclamation-triangle'; 
+                bgClass = 'bg-amber-500'; 
             }
 
-            const styles = {
-                success: { title: 'สำเร็จ', icon: 'fa-circle-check', iconColor: 'text-emerald-600', iconBg: 'bg-emerald-50', border: 'border-emerald-100', progress: 'bg-emerald-500', duration: 2500 },
-                error: { title: 'เกิดข้อผิดพลาด', icon: 'fa-circle-xmark', iconColor: 'text-rose-600', iconBg: 'bg-rose-50', border: 'border-rose-100', progress: 'bg-rose-500', duration: 6000 },
-                warning: { title: 'แจ้งเตือน', icon: 'fa-triangle-exclamation', iconColor: 'text-amber-600', iconBg: 'bg-amber-50', border: 'border-amber-100', progress: 'bg-amber-500', duration: 5000 },
-                info: { title: 'ข้อมูล', icon: 'fa-circle-info', iconColor: 'text-sky-600', iconBg: 'bg-sky-50', border: 'border-sky-100', progress: 'bg-sky-500', duration: 4200 }
-            };
-            const style = styles[type] || styles.success;
-            const toast = document.createElement('div');
-            toast.className = `pointer-events-auto w-full overflow-hidden rounded-2xl border ${style.border} bg-white shadow-[0_12px_35px_rgba(15,23,42,0.14)] opacity-0 translate-y-2 sm:translate-y-0 sm:translate-x-3 transition-all duration-300`;
-            toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
-            toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
-
-            const content = document.createElement('div');
-            content.className = 'flex items-start gap-3 p-4';
-            const iconBox = document.createElement('div');
-            iconBox.className = `mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${style.iconBg}`;
-            const icon = document.createElement('i');
-            icon.className = `fas ${style.icon} ${style.iconColor} text-lg`;
-            icon.setAttribute('aria-hidden', 'true');
-            iconBox.appendChild(icon);
-
-            const textBox = document.createElement('div');
-            textBox.className = 'min-w-0 flex-1 pt-0.5';
-            const title = document.createElement('div');
-            title.className = 'text-sm font-bold text-slate-800';
-            title.textContent = style.title;
-            const detail = document.createElement('div');
-            detail.className = 'mt-0.5 whitespace-pre-line break-words text-[13px] leading-relaxed text-slate-600';
-            detail.textContent = String(message ?? '');
-            textBox.append(title, detail);
-
-            const closeButton = document.createElement('button');
-            closeButton.type = 'button';
-            closeButton.className = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700';
-            closeButton.setAttribute('aria-label', 'ปิดการแจ้งเตือน');
-            closeButton.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
-            content.append(iconBox, textBox, closeButton);
-
-            const progressTrack = document.createElement('div');
-            progressTrack.className = 'h-1 w-full bg-slate-100';
-            const progress = document.createElement('div');
-            progress.className = `h-full w-full ${style.progress} transition-[width] ease-linear`;
-            progress.style.transitionDuration = `${style.duration}ms`;
-            progressTrack.appendChild(progress);
-            toast.append(content, progressTrack);
+            // ตั้งค่าพื้นหลังสีทึบ ตัวอักษรสีขาวเงาเด่นๆ
+            toast.className = `${bgClass} text-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col transform scale-90 opacity-0 transition-all duration-300 ease-out pointer-events-auto w-full max-w-[280px] overflow-hidden`;
+            
+            toast.innerHTML = `
+                <div class="p-6 flex flex-col items-center justify-center gap-3 text-center">
+                    <i class="fas ${icon} text-5xl drop-shadow-md mb-1"></i>
+                    <div class="font-bold text-[16px] leading-relaxed drop-shadow-sm w-full">
+                        ${message}
+                    </div>
+                </div>
+                <div class="w-full h-1.5 bg-black/20">
+                    <div class="h-full bg-white transition-all duration-[2500ms] ease-linear rounded-r-full" style="width: 100%;"></div>
+                </div>
+            `;
+            
             container.appendChild(toast);
 
-            let dismissTimer;
-            const dismiss = () => {
-                if (!toast.isConnected) return;
-                toast.classList.add('opacity-0', 'translate-y-2', 'sm:translate-x-3');
+            // เด้งและชัดขึ้น (Fade In & Scale Up)
+            setTimeout(() => {
+                toast.classList.remove('scale-90', 'opacity-0');
+                toast.classList.add('scale-100', 'opacity-100');
+                
+                // ให้หลอดเวลาวิ่ง
+                setTimeout(() => {
+                    const progressBar = toast.querySelector('div.h-full');
+                    if (progressBar) progressBar.style.width = '0%';
+                }, 50);
+            }, 10);
+
+            // ค่อยๆ จางหายไป (Fade Out)
+            setTimeout(() => {
+                toast.classList.remove('scale-100', 'opacity-100');
+                toast.classList.add('scale-95', 'opacity-0'); // ค่อยๆ หดและจาง
+                
+                // ลบทิ้งหลังจากจางเสร็จ
                 setTimeout(() => toast.remove(), 300);
-            };
-            closeButton.addEventListener('click', () => {
-                clearTimeout(dismissTimer);
-                dismiss();
-            });
-            toast.addEventListener('mouseenter', () => {
-                clearTimeout(dismissTimer);
-                progress.style.transitionDuration = '0ms';
-                progress.style.width = '100%';
-            });
-            toast.addEventListener('mouseleave', () => {
-                progress.style.transitionDuration = `${style.duration}ms`;
-                progress.style.width = '0%';
-                dismissTimer = setTimeout(dismiss, style.duration);
-            });
-            requestAnimationFrame(() => {
-                toast.classList.remove('opacity-0', 'translate-y-2', 'sm:translate-x-3');
-                progress.style.width = '0%';
-            });
-            dismissTimer = setTimeout(dismiss, style.duration);
+            }, 2500); // แสดงผลค้างไว้ 2.5 วินาที
         }
 
         window.onload = () => {
