@@ -522,7 +522,7 @@
           </div>
 
           <div class="space-y-3 pt-2">
-            <button onclick="openBankModal()" class="w-full bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between transition-all active:scale-[0.98] shadow-sm">
+            <button id="bank-settings-button" onclick="openBankModal()" disabled aria-disabled="true" class="w-full bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between transition-all active:scale-[0.98] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:active:scale-100">
               <div class="flex items-center gap-4">
                 <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
                   <i class="fas fa-university text-lg"></i>
@@ -2631,11 +2631,21 @@ function toggleOption(elementId, isChecked) {
             btn.classList.toggle('hidden', !hasChanges);
         }
 
+        function updateBankSettingsButtonState(enabled) {
+            const btn = document.getElementById('bank-settings-button');
+            if (!btn) return;
+            btn.disabled = !enabled;
+            btn.setAttribute('aria-disabled', String(!enabled));
+        }
+
         SETTINGS_CONTROL_IDS.forEach(id => {
             const field = document.getElementById(id);
             if (!field) return;
             field.addEventListener('input', updateSettingsSaveVisibility);
             field.addEventListener('change', updateSettingsSaveVisibility);
+            if (id === 'set-bank-transfer-enabled') {
+                field.addEventListener('change', event => updateBankSettingsButtonState(event.target.checked));
+            }
         });
 
         function applySettingsToUI(d) {
@@ -2653,6 +2663,7 @@ function toggleOption(elementId, isChecked) {
                 bankTransferEnabled.checked = d.BANK_TRANSFER_ENABLED === undefined || d.BANK_TRANSFER_ENABLED === ""
                     ? Boolean(String(d.ACC_NUMBER || "").trim())
                     : d.BANK_TRANSFER_ENABLED === "true";
+                updateBankSettingsButtonState(bankTransferEnabled.checked);
             }
 
             const autoReport = document.getElementById('set-auto-report');
