@@ -7137,6 +7137,15 @@ function openSuspensionModal() {
                             <span class="text-xs font-semibold text-slate-600"><i class="fas fa-wallet text-rose-400 mr-1.5"></i>ยอดค้างชำระรวม</span>
                             <span class="font-black text-rose-700 text-lg leading-none">${u.computedTotalDebt.toLocaleString()} <span class="font-semibold text-xs">บาท</span></span>
                           </div>
+                          ${window.currentUserRole === 'admin' ? `
+                          <button type="button" class="suspension-send-notice mt-3 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            data-house-no="${escapeHTML(u.houseNo)}"
+                            data-has-line="${u.lineId ? 'true' : 'false'}"
+                            onclick="sendSuspensionNotice(this)"
+                            disabled>
+                            <i class="fas ${u.lineId ? 'fa-circle-notch fa-spin' : 'fa-link'}"></i>
+                            ${u.lineId ? 'กำลังตรวจสอบสถานะการส่ง...' : 'บ้านนี้ยังไม่ได้ผูก LINE'}
+                          </button>` : ''}
                           <div class="mt-4">
                             <div class="flex items-center justify-between mb-2">
                               <p class="text-[11px] font-bold text-slate-500">รายละเอียดบิลค้างชำระ</p>
@@ -7162,6 +7171,93 @@ function openSuspensionModal() {
     }, 10);
     
     updatePrintCount();
+    loadSuspensionNoticeStatuses(targetUsers);
+}
+
+async function loadSuspensionNoticeStatuses(users) {
+    if (window.currentUserRole !== 'admin' || !users.length) return;
+    const requestId = (window.suspensionNoticeStatusRequestId || 0) + 1;
+    window.suspensionNoticeStatusRequestId = requestId;
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'getSuspensionNoticeStatuses',
+                houseNos: users.map(user => user.houseNo)
+            })
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message || "โหลดสถานะการส่งไม่สำเร็จ");
+        if (window.suspensionNoticeStatusRequestId !== requestId) return;
+
+        const statusByHouse = new Map((result.statuses || []).map(item => [String(item.houseNo), item]));
+        document.querySelectorAll('.suspension-send-notice').forEach(button => {
+            const houseNo = button.dataset.houseNo;
+            const status = statusByHouse.get(houseNo);
+            if (!button.dataset.hasLine || button.dataset.hasLine !== 'true') {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-link"></i> บ้านนี้ยังไม่ได้ผูก LINE';
+            } else if (status && status.status === 'SENT') {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-check-circle"></i> ส่งหนังสือแจ้งเตือนแล้ว';
+                if (status.sentAt) button.title = 'ส่งเมื่อ ' + status.sentAt;
+            } else if (status && status.status === 'SENDING') {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังส่งหนังสือแจ้งเตือน...';
+            } else {
+                button.disabled = false;
+                button.innerHTML = status && status.status === 'FAILED'
+                    ? '<i class="fas fa-redo-alt"></i> ส่งไม่สำเร็จ - กดเพื่อลองอีกครั้ง'
+                    : '<i class="fab fa-line"></i> ส่งหนังสือแจ้งเตือนทาง LINE';
+            }
+        });
+    } catch (error) {
+        if (window.suspensionNoticeStatusRequestId === requestId) {
+            document.querySelectorAll('.suspension-send-notice').forEach(button => {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-exclamation-circle"></i> ตรวจสอบสถานะไม่สำเร็จ';
+            });
+            showToast(error.message || "โหลดสถานะการส่งไม่สำเร็จ", "error");
+        }
+    }
+}
+
+async function sendSuspensionNotice(button) {
+    if (!button || button.disabled) return;
+    const houseNo = button.dataset.houseNo;
+    if (!houseNo) {
+        showToast("ไม่พบข้อมูลบ้านที่ต้องการส่งหนังสือ", "error");
+        return;
+    }
+
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังส่งหนังสือ...';
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'sendSuspensionNotice', houseNo: houseNo })
+        });
+        const result = await response.json();
+        if (result.success) {
+            button.innerHTML = '<i class="fas fa-check-circle"></i> ส่งหนังสือแจ้งเตือนแล้ว';
+            button.title = result.sentAt ? 'ส่งเมื่อ ' + result.sentAt : '';
+            showToast(result.message || "ส่งหนังสือแจ้งเตือนทาง LINE แล้ว", "success");
+        } else if (result.alreadySent) {
+            button.innerHTML = result.pending
+                ? '<i class="fas fa-circle-notch fa-spin"></i> กำลังส่งหนังสือแจ้งเตือน...'
+                : '<i class="fas fa-check-circle"></i> ส่งหนังสือแจ้งเตือนแล้ว';
+            showToast(result.message || "หนังสือแจ้งเตือนชุดนี้ส่งไปแล้ว", "warning");
+        } else {
+            button.disabled = false;
+            button.innerHTML = '<i class="fab fa-line"></i> ส่งหนังสือแจ้งเตือนทาง LINE';
+            showToast(result.message || "ส่งหนังสือแจ้งเตือนไม่สำเร็จ", "error");
+        }
+    } catch (error) {
+        button.disabled = false;
+        button.innerHTML = '<i class="fab fa-line"></i> ส่งหนังสือแจ้งเตือนทาง LINE';
+        showToast(error.message || "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้", "error");
+    }
 }
 
 function closeSuspensionModal() {
