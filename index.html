@@ -3593,7 +3593,20 @@ function openBillingModal(houseNo) {
           async function openReceiptHistory(houseNo) {
             const modal = document.getElementById('receipt-history-modal');
             const list = document.getElementById('receipt-history-list');
+            const user = (window.globalUsersList || []).find(item =>
+              String(item.houseNo).trim() === String(houseNo).trim()
+            );
+            document.getElementById('receipt-history-name').textContent = user && user.name
+              ? user.name
+              : 'ไม่ระบุชื่อเจ้าบ้าน';
+            document.getElementById('receipt-history-house').textContent = `บ้านเลขที่ ${houseNo || '-'}`;
+            setHousePhoto(
+              user && user.profilePic,
+              'receipt-history-owner-photo',
+              'receipt-history-owner-placeholder'
+            );
             modal.classList.remove('hidden');
+            list.className = 'flex-1 min-h-0 space-y-2 overflow-y-auto p-3 bg-slate-50';
             list.innerHTML = '<p class="py-6 text-center text-sm text-slate-500"><i class="fas fa-spinner fa-spin mr-2"></i>กำลังโหลดประวัติ...</p>';
 
             try {
@@ -3602,12 +3615,12 @@ function openBillingModal(houseNo) {
               const result = await response.json();
               if (!result.success) {
                 list.textContent = result.message || 'ไม่สามารถโหลดประวัติใบเสร็จได้';
-                list.className = 'max-h-[65vh] overflow-y-auto p-4 text-center text-sm text-rose-600';
+                list.className = 'flex-1 min-h-0 overflow-y-auto p-4 text-center text-sm text-rose-600';
                 if (result.sessionExpired) handleSessionExpired(result.message);
                 return;
               }
 
-              list.className = 'max-h-[65vh] space-y-2 overflow-y-auto p-3';
+              list.className = 'flex-1 min-h-0 space-y-2 overflow-y-auto p-3 bg-slate-50';
               list.replaceChildren();
               if (!result.receipts || result.receipts.length === 0) {
                 list.innerHTML = '<p class="py-6 text-center text-sm text-slate-500">ยังไม่มีใบเสร็จย้อนหลัง</p>';
@@ -3617,7 +3630,7 @@ function openBillingModal(houseNo) {
               result.receipts.forEach(receipt => {
                 const isFree = String(receipt.status || '').toLowerCase() === 'free' || String(receipt.paymentMethod || '').includes('ฟรี');
                 const item = document.createElement('div');
-                item.className = 'flex items-center justify-between gap-3 border-b border-slate-100 p-2';
+                item.className = 'flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white p-3 shadow-sm';
                 const summary = document.createElement('div');
                 summary.className = 'min-w-0';
                 const month = document.createElement('p');
@@ -3632,7 +3645,6 @@ function openBillingModal(houseNo) {
                 openButton.className = 'shrink-0 rounded-lg bg-cyan-700 px-3 py-2 text-xs font-bold text-white hover:bg-cyan-800';
                 openButton.textContent = 'เปิดใบเสร็จ';
                 openButton.onclick = () => {
-                  closeReceiptHistory();
                   showReceiptModal(receipt);
                 };
                 item.append(summary, openButton);
@@ -3640,7 +3652,7 @@ function openBillingModal(houseNo) {
               });
             } catch (error) {
               list.textContent = 'เกิดข้อผิดพลาดในการโหลดประวัติใบเสร็จ';
-              list.className = 'max-h-[65vh] overflow-y-auto p-4 text-center text-sm text-rose-600';
+              list.className = 'flex-1 min-h-0 overflow-y-auto p-4 text-center text-sm text-rose-600';
             }
           }
 
@@ -4993,7 +5005,7 @@ function renderFinanceHistory(history) {
 
   <div id="receipt-modal"
     onclick="if(event.target === this) document.getElementById('receipt-modal').classList.add('hidden')"
-    class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300">
+    class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300">
     <div class="w-full max-w-[320px] p-0 overflow-hidden bg-white rounded-2xl shadow-2xl relative">
 
       <div class="receipt-paper bg-white text-slate-800 p-6 text-center font-mono text-[13px] leading-relaxed">
@@ -5073,13 +5085,28 @@ function renderFinanceHistory(history) {
     </div>
   </div>
 
-  <div id="receipt-history-modal" class="fixed inset-0 z-[95] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onclick="if(event.target === this) closeReceiptHistory()">
-    <div class="w-full max-w-sm max-h-[80vh] overflow-hidden rounded-2xl bg-white shadow-2xl">
-      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-        <h3 class="font-bold text-slate-800"><i class="fas fa-receipt mr-2 text-cyan-700"></i>ประวัติใบเสร็จ</h3>
-        <button onclick="closeReceiptHistory()" aria-label="ปิดประวัติใบเสร็จ" class="h-9 w-9 rounded-lg text-slate-500 hover:bg-slate-100"><i class="fas fa-times"></i></button>
+  <div id="receipt-history-modal" class="fixed inset-0 z-[95] hidden flex items-center justify-center p-3 bg-slate-950/60 backdrop-blur-sm" onclick="if(event.target === this) closeReceiptHistory()">
+    <div class="flex max-h-[85vh] w-full max-w-sm flex-col overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl">
+      <div class="shrink-0 bg-gradient-to-br from-cyan-700 via-blue-700 to-indigo-800 p-4 text-white">
+        <div class="mb-3 flex items-center justify-between">
+          <div class="flex items-center gap-2 text-sm font-bold">
+            <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15"><i class="fas fa-receipt"></i></span>
+            ประวัติใบเสร็จ
+          </div>
+          <button onclick="closeReceiptHistory()" aria-label="ปิดประวัติใบเสร็จ" class="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/90 transition hover:bg-white/20"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3">
+          <div class="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-white/70 bg-white/20">
+            <img id="receipt-history-owner-photo" class="hidden h-full w-full object-cover" alt="รูปเจ้าของบ้าน">
+            <i id="receipt-history-owner-placeholder" class="fas fa-user absolute inset-0 flex items-center justify-center text-lg text-white/80"></i>
+          </div>
+          <div class="min-w-0">
+            <p id="receipt-history-name" class="truncate text-sm font-bold">เจ้าของบ้าน</p>
+            <p id="receipt-history-house" class="mt-0.5 text-xs text-cyan-100">บ้านเลขที่ -</p>
+          </div>
+        </div>
       </div>
-      <div id="receipt-history-list" class="max-h-[65vh] space-y-2 overflow-y-auto p-3"></div>
+      <div id="receipt-history-list" class="flex-1 min-h-0 space-y-2 overflow-y-auto bg-slate-50 p-3"></div>
     </div>
   </div>
 
