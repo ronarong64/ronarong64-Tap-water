@@ -7088,12 +7088,17 @@ function openSuspensionModal() {
             let breakdownHtml = '';
             const profilePic = String(u.profilePic || "").trim();
             const driveFileIdMatch = profilePic.match(/[?&]id=([^&]+)/) || profilePic.match(/\/d\/([^/]+)/);
-            const profilePicUrl = driveFileIdMatch
-                ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(driveFileIdMatch[1])}&sz=w200`
-                : (/^https?:\/\//i.test(profilePic) ? profilePic : "");
-            const memberAvatarHtml = profilePicUrl
-                ? `<span class="relative w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 ring-2 ring-white shadow-sm"><i class="fas fa-user text-slate-400"></i><img src="${escapeHTML(profilePicUrl)}" alt="รูปเจ้าบ้าน ${escapeHTML(u.name || "")}" class="absolute inset-0 w-full h-full object-cover rounded-full" onerror="this.style.display='none'"></span>`
-                : `<span class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center shrink-0 ring-2 ring-white shadow-sm"><i class="fas fa-user"></i></span>`;
+            const driveFileId = driveFileIdMatch ? driveFileIdMatch[1] : "";
+            const profilePicUrl = driveFileId
+                ? `https://lh3.googleusercontent.com/d/${encodeURIComponent(driveFileId)}=s200`
+                : (/^https?:\/\//i.test(profilePic) || /^data:image\//i.test(profilePic) ? profilePic : "");
+            const profilePicFallbackUrl = driveFileId
+                ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(driveFileId)}&sz=w200`
+                : "";
+            const profilePicErrorHandler = profilePicFallbackUrl
+                ? `this.onerror=function(){this.style.display='none'};this.src='${escapeHTML(profilePicFallbackUrl)}'`
+                : "this.style.display='none'";
+            const memberAvatarHtml = `<span class="relative w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 ring-2 ring-white shadow-sm"><i class="fas fa-user text-slate-400"></i>${profilePicUrl ? `<img src="${escapeHTML(profilePicUrl)}" alt="รูปเจ้าบ้าน ${escapeHTML(u.name || "")}" class="absolute inset-0 w-full h-full object-cover rounded-full" onerror="${profilePicErrorHandler}">` : ""}</span>`;
             
             u.actualOverdueBills.forEach(bill => {
                 const month = typeof formatThaiMonth === 'function' ? formatThaiMonth(bill.month) : bill.month;
