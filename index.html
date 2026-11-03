@@ -602,18 +602,26 @@
                 class="flex justify-between items-center bg-blue-50 p-1.5 -mx-1.5 rounded-lg cursor-pointer hover:bg-blue-100 active:scale-95 transition"
                 onclick="openReportOverdueCollected()">
                 <span class="text-blue-600 flex items-center gap-1.5 font-bold">
-                <i class="fas fa-history"></i> บิลเก่าที่รับชำระ
+                <i class="fas fa-history"></i> บิลที่ชำระเกินกำหนด
                 </span>
                 <span id="report-income-overdue" class="text-blue-700 font-bold text-sm">0</span>
               </div>
+              <div
+                class="flex justify-between items-center bg-emerald-50 p-1.5 -mx-1.5 rounded-lg cursor-pointer hover:bg-emerald-100 active:scale-95 transition"
+                onclick="openReportOverdueCollected(false)">
+                <span class="text-emerald-700 flex items-center gap-1.5 font-bold">
+                  <i class="fas fa-calendar-check"></i> บิลรับชำระไม่เกินกำหนด
+                </span>
+                <span id="report-income-within-due" class="text-emerald-700 font-bold text-sm">0</span>
+              </div>
               <div class="flex justify-between px-1.5 mt-1 text-slate-600">
-                <span>บิลเดือนที่เลือก</span><span id="report-income-current" class="font-bold text-sm">0</span>
+                <span>รอบบิลเดือนที่เลือก</span><span id="report-income-current" class="font-bold text-sm">0</span>
               </div>
               <div class="flex justify-between pl-4 pr-1.5 text-[11px] text-slate-400">
-                <span>- รับเงินสด (รวมบิลเก่า)</span><span id="report-income-current-cash">0</span>
+                <span>- รับเงินสด (รวมทุกบิล)</span><span id="report-income-current-cash">0</span>
               </div>
               <div class="flex justify-between pl-4 pr-1.5 text-[11px] text-slate-400">
-                <span>- รับโอน (รวมบิลเก่า)</span><span id="report-income-current-transfer">0</span>
+                <span>- รับโอน (รวมทุกบิล)</span><span id="report-income-current-transfer">0</span>
               </div>
             </div>
           </div>
@@ -4397,7 +4405,7 @@ function renderFinanceHistory(history) {
                             <div class="space-y-2 mb-4 pl-2">
                                 <div class="flex justify-between items-center text-sm">
                                     <div class="text-slate-500 flex items-center gap-2">
-                                        <i class="fas fa-file-invoice text-slate-300 w-4"></i> บิลปัจจุบัน 
+                                        <i class="fas fa-file-invoice text-slate-300 w-4"></i> รับชำระไม่เกินกำหนด
                                         <span class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">${item.currentCount} บ้าน</span>
                                     </div>
                                     <div class="font-medium text-slate-700">${Number(item.currentAmt).toLocaleString()} บ.</div>
@@ -4405,7 +4413,7 @@ function renderFinanceHistory(history) {
                                 
                                 <div class="flex justify-between items-center text-sm">
                                     <div class="text-slate-500 flex items-center gap-2">
-                                        <i class="fas fa-exclamation-circle text-rose-300 w-4"></i> บิลค้างเก่า 
+                                        <i class="fas fa-exclamation-circle text-rose-300 w-4"></i> รับชำระเกินกำหนด
                                         <span class="text-[10px] bg-rose-50 text-rose-500 px-1.5 py-0.5 rounded">${item.overdueCount} บ้าน</span>
                                     </div>
                                     <div class="font-medium text-slate-700">${Number(item.overdueAmt).toLocaleString()} บ.</div>
@@ -4552,7 +4560,7 @@ function renderFinanceHistory(history) {
 
         let housesHtml = c.houses.map(h => {
             // ปรับป้าย "ค้างเก่า" ไม่ให้โดนบีบเมื่อจอแคบ
-            let isOverdueTag = h.isOverdue ? `<span class="shrink-0 ml-1.5 text-[10px] bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded border border-rose-200 font-bold leading-none shadow-sm">ค้างเก่า</span>` : '';
+            let isOverdueTag = h.isOverdue ? `<span class="shrink-0 ml-1.5 text-[10px] bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded border border-rose-200 font-bold leading-none shadow-sm">เกินกำหนด</span>` : '';
             
             // แปลงวันที่
             let pDateStr = h.paidDate ? h.paidDate : '-';
@@ -5265,7 +5273,7 @@ function renderFinanceHistory(history) {
             <i class="fas fa-history text-white drop-shadow-sm"></i>
           </div>
           <div>
-            <h3 class="font-bold text-[15px] leading-tight">รายการค้างชำระ (ที่เก็บได้)</h3>
+            <h3 class="font-bold text-[15px] leading-tight" id="report-collected-modal-title">รายการค้างชำระ (ที่เก็บได้)</h3>
             <p class="text-[11px] text-blue-100 mt-0.5 opacity-90 font-medium" id="report-overdue-collected-month">
               กำลังโหลดข้อมูล...</p>
           </div>
@@ -5617,6 +5625,7 @@ async function loadMonthlyReport(monthStr = null) {
     const thaiShortMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
     const displayMonth = `${thaiShortMonths[parseInt(monthNum) - 1]} / ${yearBE}`;
     window.lastOverdueData = null;
+    window.lastWithinDueData = null;
     window.lastOverdueDisplayMonth = displayMonth;
     window.lastOverdueLoadError = null;
 
@@ -5640,8 +5649,10 @@ async function loadMonthlyReport(monthStr = null) {
         if (res.success) {
             const cur = res.current;
             const overdue = res.overdue;
+            const withinDue = res.withinDue || [];
             const exp = res.expenses;
             window.lastOverdueData = overdue;
+            window.lastWithinDueData = withinDue;
             window.lastOverdueLoadError = null;
             updateReportOverdueCollectedSummary(overdue, displayMonth);
             const overdueModal = document.getElementById('report-overdue-collected-modal');
@@ -5651,11 +5662,12 @@ async function loadMonthlyReport(monthStr = null) {
             overdue.forEach(item => incOverdueAmt += item.amount);
 
             // ✅ อัปเดตตัวเลขรายรับ
-            document.getElementById('report-income').innerText = (cur.total + incOverdueAmt).toLocaleString();
+            document.getElementById('report-income').innerText = (cur.total + (cur.withinDueTotal || 0) + incOverdueAmt).toLocaleString();
             document.getElementById('report-income-overdue').innerText = incOverdueAmt.toLocaleString();
+            document.getElementById('report-income-within-due').innerText = (cur.withinDueTotal || 0).toLocaleString();
             document.getElementById('report-income-current').innerText = cur.total.toLocaleString();
-            document.getElementById('report-income-current-cash').innerText = (cur.cash + (overdue.filter(i=>!i.isTransfer).reduce((a,b)=>a+b.amount,0))).toLocaleString();
-            document.getElementById('report-income-current-transfer').innerText = (cur.transfer + (overdue.filter(i=>i.isTransfer).reduce((a,b)=>a+b.amount,0))).toLocaleString();
+            document.getElementById('report-income-current-cash').innerText = (cur.cash + (cur.withinDueCash || 0) + (overdue.filter(i=>!i.isTransfer).reduce((a,b)=>a+b.amount,0))).toLocaleString();
+            document.getElementById('report-income-current-transfer').innerText = (cur.transfer + (cur.withinDueTransfer || 0) + (overdue.filter(i=>i.isTransfer).reduce((a,b)=>a+b.amount,0))).toLocaleString();
             
             document.getElementById('report-usage').innerText = cur.usage.toLocaleString();
 
@@ -5674,7 +5686,7 @@ async function loadMonthlyReport(monthStr = null) {
             document.getElementById('report-exp-elec').innerText = expSummary.elec.toLocaleString();
             document.getElementById('report-exp-fee').innerText = expSummary.fee.toLocaleString();
             document.getElementById('report-exp-other').innerText = expSummary.other.toLocaleString();
-            document.getElementById('report-net').innerText = (cur.total + incOverdueAmt - expSummary.total).toLocaleString();
+            document.getElementById('report-net').innerText = (cur.total + (cur.withinDueTotal || 0) + incOverdueAmt - expSummary.total).toLocaleString();
 
             // ✅ จัดการรายการบ้านในเดือนนั้น
                 let listNc = [];
@@ -5850,22 +5862,29 @@ function updateReportOverdueCollectedSummary(dataList, displayMonth) {
     summaryEl.innerText = `${monthLabel}${houseCount.toLocaleString()} หลัง · ${totalAmount.toLocaleString()} บาท`;
 }
 
-// 🔍 2. ฟังก์ชันเปิด Modal ค้างเก่า (รับข้อมูลจากหน้าจอโดยตรง)
+// 🔍 รายละเอียดบิลที่รับชำระในเดือนที่เลือก
 // ==========================================
-        function openReportOverdueCollected() {
-            const modal = document.getElementById('report-overdue-collected-modal');
-            const box = document.getElementById('report-overdue-collected-box');
-            const contentArea = document.getElementById('report-overdue-collected-list');
+function openReportOverdueCollected(isOverdue) {
+    const modal = document.getElementById('report-overdue-collected-modal');
+    const box = document.getElementById('report-overdue-collected-box');
+    const contentArea = document.getElementById('report-overdue-collected-list');
+    const showOverdue = typeof isOverdue === 'boolean'
+        ? isOverdue
+        : window.lastCollectedBillsType !== 'withinDue';
+    window.lastCollectedBillsType = showOverdue ? 'overdue' : 'withinDue';
+    const title = document.getElementById('report-collected-modal-title');
+    if (title) title.innerText = showOverdue
+        ? 'รายการค้างชำระ (เกินวันสิ้นสุดรอบบิล)'
+        : 'รายการรับชำระไม่เกินวันสิ้นสุดรอบบิล';
 
-            // 🌟 แก้ไขให้เรียกใช้ตัวแปร window.lastOverdueData ให้ถูกต้องตรงกับตอนโหลดข้อมูล
-            const dataList = window.lastOverdueData;
-            updateReportOverdueCollectedSummary(dataList, window.lastOverdueDisplayMonth);
+    const dataList = showOverdue ? window.lastOverdueData : window.lastWithinDueData;
+    updateReportOverdueCollectedSummary(dataList, window.lastOverdueDisplayMonth);
 
             if (!Array.isArray(dataList)) {
                 const message = window.lastOverdueLoadError || 'กำลังโหลดข้อมูล...';
                 contentArea.innerHTML = `<div class="text-center py-10 text-slate-400">${message}</div>`;
             } else if (dataList.length === 0) {
-                contentArea.innerHTML = '<div class="text-center py-10 text-slate-400 border border-dashed border-slate-200 rounded-3xl m-2 bg-white">ไม่มีรายการเก็บยอดค้างเก่า</div>';
+                contentArea.innerHTML = `<div class="text-center py-10 text-slate-400 border border-dashed border-slate-200 rounded-3xl m-2 bg-white">${showOverdue ? 'ไม่มีรายการค้างชำระเกินกำหนด' : 'ไม่มีรายการที่รับชำระไม่เกินกำหนด'}</div>`;
             } else {
                 let html = '<div class="space-y-3">';
                 dataList.forEach(item => {
@@ -5886,6 +5905,7 @@ function updateReportOverdueCollectedSummary(dataList, displayMonth) {
                                 <div class="font-bold text-slate-700 text-[13px]">${item.houseNo} - ${item.name}</div>
                                 <div class="text-[11px] text-slate-500 mt-1">
                                     <div>รอบบิล: <span class="text-rose-500 font-bold">${displayMonth}</span></div>
+                                    <div class="mt-0.5">วันสิ้นสุดรอบบิล: ${item.dueDate || '-'}</div>
                                     <div class="mt-0.5">รับเงินจริง: ${item.paidDate || '-'}</div>
                                     <div class="mt-0.5">ผู้รับเงิน: ${collectorName}</div>
                                 </div>
@@ -7383,6 +7403,7 @@ function printSelectedNotices() {
                 const countNc = safeGet('badge-nc');
 
                 const incOverdue = safeGet('report-income-overdue');
+                const incWithinDue = safeGet('report-income-within-due');
                 const incCurrent = safeGet('report-income-current');
                 const incCash = safeGet('report-income-current-cash');
                 const incTransfer = safeGet('report-income-current-transfer');
@@ -7442,7 +7463,8 @@ function printSelectedNotices() {
                             <div style="font-weight: bold; color: #065f46; font-size: 13pt; border-bottom: 1px solid #10b981; padding-bottom: 5px; margin-bottom: 10px;">รายรับประจำเดือน</div>
                             <div style="font-size: 24pt; font-weight: bold; color: #059669; margin: 10px 0;">${incomeTotal} <span style="font-size:13pt; font-weight: normal;">บาท</span></div>
                             <div style="font-size: 11pt; line-height: 1.7;">
-                                • จากบิลค้างเก่า: <b>${incOverdue}</b> บาท<br>
+                                • จากบิลเก่าที่ยังไม่เกินกำหนด: <b>${incWithinDue}</b> บาท<br>
+                                • จากบิลที่เกินกำหนด: <b>${incOverdue}</b> บาท<br>
                                 • จากบิลเดือนนี้: <b>${incCurrent}</b> บาท<br>
                                 <span style="color:#666; font-size: 10pt;">&nbsp;&nbsp;&nbsp;(โอน: ${incTransfer} / เงินสด: ${incCash})</span>
                             </div>
