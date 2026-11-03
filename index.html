@@ -147,7 +147,7 @@
 
         <p class="text-[10px] font-bold tracking-[0.22em] text-cyan-700 uppercase mb-1">Water Service Management</p>
         <h1 class="text-[23px] leading-tight font-bold text-slate-800">ระบบบริหารจัดการน้ำประปา</h1>
-        <p class="text-sm text-slate-400 mt-1">จัดการข้อมูลและบริหารน้ำประปาหมู่บ้าน</p>
+        <p class="text-sm text-slate-500 mt-1">จัดการข้อมูลและบริการน้ำประปาหมู่บ้าน</p>
         <div class="mt-4 mb-6 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-cyan-50 border border-cyan-100 text-cyan-800 text-xs font-semibold">
           <i class="fas fa-location-dot text-cyan-600"></i> หมู่ที่ 5 บ้านทับพรุ (สระน้ำ)
         </div>
@@ -177,7 +177,7 @@
         </div>
       </div>
     </div>
-    <p class="relative z-10 text-[12px] text-cyan-50/60 mt-4 text-center">ระบบบริหารจัดการน้ำประปา เพื่อชุมชนบ้านทับพรุ</p>
+    <p class="relative z-10 text-[11px] text-cyan-50/60 mt-4 text-center">ระบบบริหารจัดการน้ำประปา เพื่อชุมชนบ้านทับพรุ</p>
   </div>
 
   <div id="main-screen"
@@ -495,7 +495,7 @@
               </div>
             </div>
             <p class="text-[10px] leading-snug text-slate-500 bg-blue-50 rounded-lg px-2 py-1.5">
-              กำหนดช่วงวันจดมิเตอร์ (1–31) หากวันสิ้นสุดน้อยกว่าวันเริ่ม ระบบจะนับต่อถึงเดือนถัดไป
+              กำหนดช่วงวันจดมิเตอร์ (1–31) หากวันสิ้นสุดน้อยกว่าวันเริ่ม วันที่ 1 ถึงวันสิ้นสุดของเดือนถัดไปยังถือเป็นรอบบิลของเดือนที่เริ่มจด
             </p>
           </div>
 
@@ -1503,11 +1503,7 @@ function applyRolePermissions() {
             let criticalOverdueCount = 0;
             const isAdmin = (window.currentUserRole === 'admin');
 
-            const now = new Date();
-            const currM = now.getMonth() + 1;
-            const currY = now.getFullYear() + 543;
-            const currMonthFull = `${String(currM).padStart(2, '0')}/${currY}`; 
-            const currMonthShort = `${currM}/${currY}`; 
+            const [currMonthFull, currMonthShort] = getCurrentBillingMonthStrings();
 
             // 🔄 2. เริ่มวนลูปประมวลผลข้อมูลบ้าน
             users.forEach(user => {
@@ -1689,11 +1685,7 @@ function applyRolePermissions() {
             if (!user) return;
 
             // ✨ 1. หาวันที่ปัจจุบันเพื่อนำมากรอง "บิลเดือนนี้" ออกจากหน้าสรุปยอดค้าง
-            const now = new Date();
-            const currentM = now.getMonth() + 1;
-            const currentY = now.getFullYear() + 543;
-            const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
-            const currentMonthStr2 = `${currentM}/${currentY}`; 
+            const [currentMonthStr1, currentMonthStr2] = getCurrentBillingMonthStrings();
 
             // ✨ 2. คัดกรองเอาเฉพาะ "บิลค้างชำระเก่า" จริงๆ
             const actualOverdueList = (user.overdueList || []).filter(bill => 
@@ -2228,11 +2220,32 @@ function handleSearch(keyword) {
         // ==========================================
         // อัปเดตเดือนปัจจุบันในหน้า Dashboard
         // ==========================================
+        function getCurrentBillingMonthStrings(date = new Date()) {
+            const startDay = parseInt(document.getElementById('set-start-day').value, 10) || 1;
+            const endDay = parseInt(document.getElementById('set-end-day').value, 10) || 31;
+            let month = date.getMonth() + 1;
+            let year = date.getFullYear();
+
+            if (startDay > endDay && date.getDate() <= endDay) {
+                month--;
+                if (month < 1) {
+                    month = 12;
+                    year--;
+                }
+            }
+
+            const yearTH = year + 543;
+            return [
+                `${String(month).padStart(2, '0')}/${yearTH}`,
+                `${month}/${yearTH}`
+            ];
+        }
+
         function updateCurrentMonth() {
             const monthsTH = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-            const date = new Date();
-            const monthName = monthsTH[date.getMonth()];
-            const yearTH = date.getFullYear() + 543; // แปลงเป็น พ.ศ.
+            const [monthYear] = getCurrentBillingMonthStrings();
+            const [month, yearTH] = monthYear.split('/');
+            const monthName = monthsTH[Number(month) - 1];
 
             const displayEl = document.getElementById('home-display-month');
             if (displayEl) {
@@ -2654,6 +2667,7 @@ function toggleOption(elementId, isChecked) {
             if(document.getElementById('set-max-overdue')) document.getElementById('set-max-overdue').value = d.MAX_OVERDUE || "";
             if(document.getElementById('set-start-day')) document.getElementById('set-start-day').value = d.START_DAY || "";
             if(document.getElementById('set-end-day')) document.getElementById('set-end-day').value = d.END_DAY || "";
+            updateCurrentMonth();
 
             if(document.getElementById('bank-name')) document.getElementById('bank-name').value = d.BANK_NAME || "";
             if(document.getElementById('bank-acc-name')) document.getElementById('bank-acc-name').value = d.ACC_NAME || "";
@@ -2781,6 +2795,8 @@ function toggleOption(elementId, isChecked) {
                 
                 if (result.success) {
                     originalSettingsSnapshot = getSettingsFormSnapshot();
+                    updateCurrentMonth();
+                    loadDashboardData();
                     showToast("บันทึกการตั้งค่าเรียบร้อยแล้ว", "success");
                     updateSettingsSaveVisibility();
                 } else {
@@ -2950,11 +2966,7 @@ function openBillingModal(houseNo) {
     const priceInput = document.getElementById('set-price');
     let priceVal = parseFloat(priceInput && priceInput.value !== "" ? priceInput.value : 0) || 0;
 
-    const now = new Date();
-    const currentM = now.getMonth() + 1;
-    const currentY = now.getFullYear() + 543;
-    const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`;
-    const currentMonthStr2 = `${currentM}/${currentY}`; 
+    const [currentMonthStr1, currentMonthStr2] = getCurrentBillingMonthStrings();
 
     const actualOverdueList = (user.overdueList || []).filter(bill => 
         bill.month !== currentMonthStr1 && bill.month !== currentMonthStr2
@@ -7034,11 +7046,7 @@ function openSuspensionModal() {
         return;
     }
 
-    const now = new Date();
-    const currentM = now.getMonth() + 1;
-    const currentY = now.getFullYear() + 543;
-    const currentMonthStr1 = `${String(currentM).padStart(2, '0')}/${currentY}`; 
-    const currentMonthStr2 = `${currentM}/${currentY}`;
+    const [currentMonthStr1, currentMonthStr2] = getCurrentBillingMonthStrings();
 
     const targetUsers = [];
     window.globalUsersList.forEach(u => {
