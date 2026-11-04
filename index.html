@@ -5646,6 +5646,19 @@ async function loadMonthlyReport(monthStr = null) {
         const response = await fetch(API_URL + "?action=getMonthlyReportFull&monthStr=" + encodeURIComponent(targetMonthStr));
         const res = await response.json();
 
+        if (res.sessionExpired) {
+            window.lastOverdueData = null;
+            window.lastWithinDueData = null;
+            window.lastOverdueLoadError = res.message || 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่';
+            if (headerEl) headerEl.innerText = window.lastOverdueLoadError;
+            fadeElements.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.opacity = "1";
+            });
+            handleSessionExpired(window.lastOverdueLoadError);
+            return;
+        }
+
         if (res.success) {
             const cur = res.current;
             const overdue = res.overdue;
