@@ -2614,6 +2614,7 @@ function toggleOption(elementId, isChecked) {
             'set-auto-bill', 'set-bill-day', 'set-bill-time', 'set-free-enabled', 'set-free-limit',
             'set-bank-transfer-enabled'
         ];
+        const SETTINGS_SAVE_BUTTON_HTML = '<i class="fas fa-save"></i> บันทึกการตั้งค่าทั้งหมด';
         let originalSettingsSnapshot = null;
         let settingsLoadedSuccessfully = false;
 
@@ -2692,6 +2693,7 @@ function toggleOption(elementId, isChecked) {
 
         async function loadSettingsData() {
             const btn = document.getElementById('btn-save-settings');
+            if (btn) btn.innerHTML = SETTINGS_SAVE_BUTTON_HTML;
             settingsLoadedSuccessfully = false;
             originalSettingsSnapshot = null;
             updateSettingsSaveVisibility();
@@ -2790,6 +2792,7 @@ function toggleOption(elementId, isChecked) {
                 showToast("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", "error");
             } finally {
                 btn.disabled = false;
+                btn.innerHTML = SETTINGS_SAVE_BUTTON_HTML;
                 updateSettingsSaveVisibility();
             }
         }
