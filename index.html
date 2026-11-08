@@ -451,6 +451,11 @@
       </div>
 
       <div id="page-settings" class="hidden space-y-2 animate-fade-in pb-0">
+        <div id="settings-loading" role="status" aria-live="polite" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center gap-3 text-slate-500">
+          <i class="fas fa-circle-notch fa-spin text-3xl text-cyan-600"></i>
+          <p class="text-sm font-medium">กำลังโหลดข้อมูลการตั้งค่า...</p>
+        </div>
+        <div id="settings-content" class="hidden">
         <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-100 space-y-2">
           
           <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-1">
@@ -563,6 +568,7 @@
             <input type="text" id="set-bill-time">
         </div>
         </div>
+      </div>
 
       <div id="page-reports" class="hidden space-y-5 anim-slide-up pb-20">
 
@@ -2622,6 +2628,14 @@ function toggleSettingsVisibility(elementId, isChecked) {
         const SETTINGS_SAVE_BUTTON_HTML = '<i class="fas fa-save"></i> บันทึกการตั้งค่าทั้งหมด';
         let originalSettingsSnapshot = null;
         let settingsLoadedSuccessfully = false;
+        let settingsLoadCount = 0;
+
+        function setSettingsLoading(isLoading) {
+            const loading = document.getElementById('settings-loading');
+            const content = document.getElementById('settings-content');
+            if (loading) loading.classList.toggle('hidden', !isLoading);
+            if (content) content.classList.toggle('hidden', isLoading);
+        }
 
         function getSettingsFormSnapshot() {
             return JSON.stringify(SETTINGS_CONTROL_IDS.map(id => {
@@ -2703,6 +2717,8 @@ function toggleSettingsVisibility(elementId, isChecked) {
 
         async function loadSettingsData() {
             const btn = document.getElementById('btn-save-settings');
+            settingsLoadCount++;
+            setSettingsLoading(true);
             if (btn) btn.innerHTML = SETTINGS_SAVE_BUTTON_HTML;
             settingsLoadedSuccessfully = false;
             originalSettingsSnapshot = null;
@@ -2730,6 +2746,8 @@ function toggleSettingsVisibility(elementId, isChecked) {
             } finally {
                 if (btn) btn.disabled = false;
                 updateSettingsSaveVisibility();
+                settingsLoadCount--;
+                setSettingsLoading(settingsLoadCount > 0);
             }
         }
 
