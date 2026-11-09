@@ -1627,7 +1627,7 @@ function applyRolePermissions() {
 
                 // 🏗️ ประกอบร่าง HTML Card
                     htmlContent += `
-                      <div id="card-${houseNo}" class="user-card bg-white rounded-2xl p-2 mb-1 border ${borderColor} transition-all active:scale-[0.98]" onclick="openBillingModal('${houseNo}')">
+                      <div id="card-${houseNo}" data-overdue-count="${overdueCount}" class="user-card bg-white rounded-2xl p-2 mb-1 border ${borderColor} transition-all active:scale-[0.98]" onclick="openBillingModal('${houseNo}')">
                         <div class="flex items-start gap-3">
                             <div class="w-12 h-12 rounded-xl ${sBg} flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-100">
                                 ${avatarHtml}
@@ -2131,7 +2131,6 @@ function handleSearch(keyword) {
     // 1. คัดกรองการ์ดตามคำค้นหาและสถานะ
     cards.forEach(card => {
         const cardText = card.innerText.toLowerCase();
-        const cardHtml = card.innerHTML.toLowerCase();
         
         const isMatchText = cardText.includes(searchText);
 
@@ -2144,7 +2143,7 @@ function handleSearch(keyword) {
             } else if (statusFilter === 'paid') {
                 isMatchStatus = cardText.includes('ชำระแล้ว') || cardText.includes('โอนเงิน') || cardText.includes('ใช้น้ำฟรี');
             } else if (statusFilter === 'overdue') {
-                isMatchStatus = cardHtml.includes('ค้าง') || cardText.includes('ค้าง');
+                isMatchStatus = Number(card.dataset.overdueCount || 0) > 0;
             }
         }
 
