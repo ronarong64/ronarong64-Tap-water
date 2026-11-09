@@ -3670,6 +3670,16 @@ function openBillingModal(houseNo) {
                 heading.textContent = label;
                 list.append(heading);
               };
+              const formatHistoryPaidDate = dateValue => {
+                const date = String(dateValue || '').trim();
+                const match = date.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(.*)$/);
+                if (!match) return date;
+                const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+                const monthIndex = Number(match[2]) - 1;
+                if (monthIndex < 0 || monthIndex >= thaiMonths.length) return date;
+                const time = match[4].trim();
+                return `${match[1].padStart(2, '0')}/ ${thaiMonths[monthIndex]} /${match[3]}${time ? `  ${time}` : ''}`;
+              };
 
               if (outstandingBills.length > 0) {
                 appendSectionHeading('ยอดค้างชำระ', 'px-1 pt-1 text-xs font-extrabold text-rose-700');
@@ -3736,19 +3746,25 @@ function openBillingModal(houseNo) {
                 if (receipt.paidDate && paidMonths.length === 0) {
                   const paidDate = document.createElement('p');
                   paidDate.className = 'mt-0.5 text-[11px] text-slate-400';
-                  paidDate.textContent = `ชำระเมื่อ ${receipt.paidDate}`;
+                  paidDate.textContent = `- ชำระเมื่อ ${formatHistoryPaidDate(receipt.paidDate)}`;
                   summary.append(paidDate);
                 }
                 if (paidMonths.length > 0) {
                   const debtDetails = document.createElement('p');
-                  debtDetails.className = 'mt-1 text-[11px] font-semibold text-amber-700';
+                  debtDetails.className = 'mt-1 text-[11px] font-semibold leading-relaxed text-amber-700';
                   debtDetails.textContent = `ชำระยอดค้างเดือน ${paidMonths.map(debt => {
                     const amount = Number(debt.amount);
                     return debt.amount && Number.isFinite(amount)
                       ? `${debt.month} (${amount.toLocaleString()} บาท)`
                       : debt.month;
-                  }).join(', ')}${receipt.paidDate ? ` · ชำระเมื่อ ${receipt.paidDate}` : ''}`;
+                  }).join(', ')}`;
                   summary.append(debtDetails);
+                  if (receipt.paidDate) {
+                    const paidDate = document.createElement('p');
+                    paidDate.className = 'text-[11px] leading-relaxed text-slate-400';
+                    paidDate.textContent = `- ชำระเมื่อ ${formatHistoryPaidDate(receipt.paidDate)}`;
+                    summary.append(paidDate);
+                  }
                 }
                 const openButton = document.createElement('button');
                 openButton.type = 'button';
