@@ -341,16 +341,6 @@
 
       <div id="page-home" class="space-y-4 animate-fade-in">
 
-        <div class="relative w-full">
-          <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-          <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="ค้นหาบ้านเลขที่ หรือ ชื่อ..."
-                           class="w-full bg-white border border-slate-200 rounded-xl h-12 pl-11 pr-24 text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-sm shadow-sm">
-          <div
-            class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-slate-50 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-500 border border-slate-100">
-            <span id="search-count">...</span>
-          </div>
-        </div>
-
         <div id="overdue-warning-banner"
           class="hidden bg-gradient-to-r from-red-500 to-rose-600 rounded-2xl px-3 py-2 shadow-lg shadow-red-500/30 text-white flex items-center justify-between cursor-pointer active:scale-95 transition-transform"
           onclick="openSuspensionModal()">
@@ -389,6 +379,16 @@
           <button id="btn-add-member" onclick="openAddMemberModal()" aria-label="เพิ่มสมาชิก" class="admin-only relative z-10 shrink-0 h-11 px-3 bg-white text-blue-800 hover:bg-cyan-50 active:scale-95 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all shadow-md">
             <i class="fas fa-user-plus"></i><span>เพิ่มสมาชิก</span>
           </button>
+        </div>
+
+        <div class="relative w-full">
+          <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+          <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="ค้นหาบ้านเลขที่ หรือ ชื่อ..."
+                           class="w-full bg-white border border-slate-200 rounded-xl h-12 pl-11 pr-24 text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-sm shadow-sm">
+          <div
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-slate-50 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-500 border border-slate-100">
+            <span id="search-count">...</span>
+          </div>
         </div>
 
         <div class="flex items-center gap-2 px-1 pt-1">
