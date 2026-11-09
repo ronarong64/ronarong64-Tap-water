@@ -1619,8 +1619,9 @@ function applyRolePermissions() {
                     <button onclick="event.stopPropagation(); openEditMember('${houseNo}')" class="text-slate-300 hover:text-blue-500 transition-colors p-1">
                         <i class="fas fa-edit"></i>
                     </button>` : "";
-                const receiptHistoryBtn = user.hasReceipts ? `
-                  <button onclick="event.stopPropagation(); openReceiptHistory('${houseNo}')" aria-label="ดูประวัติใบเสร็จบ้าน ${houseNo}" title="ดูประวัติใบเสร็จ" class="text-cyan-700 hover:text-cyan-900 transition-colors p-1">
+                const hasOutstandingBills = Array.isArray(user.overdueList) && user.overdueList.length > 0;
+                const receiptHistoryBtn = user.hasReceipts || hasOutstandingBills ? `
+                  <button onclick="event.stopPropagation(); openReceiptHistory('${houseNo}')" aria-label="ดูประวัติใบเสร็จและยอดค้างบ้าน ${houseNo}" title="ดูประวัติใบเสร็จและยอดค้าง" class="text-cyan-700 hover:text-cyan-900 transition-colors p-1">
                     <i class="fas fa-receipt"></i>
                   </button>` : "";
 
@@ -3653,24 +3654,102 @@ function openBillingModal(houseNo) {
 
               list.className = 'flex-1 min-h-0 space-y-2 overflow-y-auto p-3 bg-slate-50';
               list.replaceChildren();
-              if (!result.receipts || result.receipts.length === 0) {
-                list.innerHTML = '<p class="py-6 text-center text-sm text-slate-500">ยังไม่มีใบเสร็จย้อนหลัง</p>';
+
+              const now = new Date();
+              const currentMonth = now.getMonth() + 1;
+              const currentYear = now.getFullYear() + 543;
+              const currentMonthValues = new Set([
+                `${String(currentMonth).padStart(2, '0')}/${currentYear}`,
+                `${currentMonth}/${currentYear}`
+              ]);
+              const outstandingBills = (Array.isArray(user && user.overdueList) ? user.overdueList : [])
+                .filter(bill => bill && bill.month && !currentMonthValues.has(String(bill.month).trim()));
+              const appendSectionHeading = (label, className) => {
+                const heading = document.createElement('p');
+                heading.className = className;
+                heading.textContent = label;
+                list.append(heading);
+              };
+
+              if (outstandingBills.length > 0) {
+                appendSectionHeading('ยอดค้างชำระ', 'px-1 pt-1 text-xs font-extrabold text-rose-700');
+                outstandingBills.forEach(bill => {
+                  const item = document.createElement('div');
+                  item.className = 'flex items-center justify-between gap-3 rounded-xl border border-rose-100 bg-rose-50 p-3';
+                  const month = document.createElement('p');
+                  month.className = 'font-bold text-slate-800';
+                  month.textContent = formatThaiMonth(String(bill.month));
+                  const amount = document.createElement('p');
+                  amount.className = 'shrink-0 text-sm font-extrabold text-rose-700';
+                  amount.textContent = `${Number(bill.amount || 0).toLocaleString()} บาท`;
+                  const status = document.createElement('p');
+                  status.className = 'mt-0.5 text-[11px] font-semibold text-rose-600';
+                  status.textContent = 'ยังไม่ได้ชำระ · ไม่มีใบเสร็จ';
+                  const summary = document.createElement('div');
+                  summary.className = 'min-w-0';
+                  summary.append(month, status);
+                  item.append(summary, amount);
+                  list.append(item);
+                });
+              }
+
+              const receipts = Array.isArray(result.receipts)
+                ? result.receipts.filter(receipt => !['waiting', 'unpaid', 'pending', 'overdue', 'ยังไม่ชำระ', 'ค้างชำระ', 'รอชำระ'].includes(String(receipt.status || '').trim().toLowerCase()))
+                : [];
+              appendSectionHeading('ใบเสร็จที่ชำระแล้ว', 'px-1 pt-2 text-xs font-extrabold text-cyan-800');
+
+              if (receipts.length === 0) {
+                const emptyMessage = document.createElement('p');
+                emptyMessage.className = 'py-4 text-center text-sm text-slate-500';
+                emptyMessage.textContent = outstandingBills.length > 0
+                  ? 'ยังไม่มีใบเสร็จที่ชำระแล้ว'
+                  : 'ยังไม่มีใบเสร็จย้อนหลัง';
+                list.append(emptyMessage);
                 return;
               }
 
-              result.receipts.forEach(receipt => {
+              receipts.forEach(receipt => {
                 const isFree = String(receipt.status || '').toLowerCase() === 'free' || String(receipt.paymentMethod || '').includes('ฟรี');
+                const paidMonths = String(receipt.paidMonthsText || '')
+                  .split(',')
+                  .map(item => item.trim())
+                  .filter(Boolean)
+                  .map(item => {
+                    const separatorIndex = item.lastIndexOf('|');
+                    return separatorIndex === -1
+                      ? { month: item, amount: '' }
+                      : { month: item.slice(0, separatorIndex).trim(), amount: item.slice(separatorIndex + 1).trim() };
+                  });
                 const item = document.createElement('div');
                 item.className = 'flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white p-3 shadow-sm';
                 const summary = document.createElement('div');
                 summary.className = 'min-w-0';
                 const month = document.createElement('p');
                 month.className = 'font-bold text-slate-800';
-                month.textContent = formatThaiMonth(receipt.month);
+                month.textContent = receipt.month
+                  ? formatThaiMonth(String(receipt.month))
+                  : paidMonths.length > 0 ? 'ชำระยอดค้าง' : 'รายการชำระเงิน';
                 const detail = document.createElement('p');
                 detail.className = `text-xs ${isFree ? 'font-bold text-emerald-700' : 'text-slate-500'}`;
                 detail.textContent = isFree ? 'สิทธิใช้น้ำฟรี · 0 บาท' : `รวม ${Number(receipt.grandTotal || receipt.currentAmount || 0).toLocaleString()} บาท`;
                 summary.append(month, detail);
+                if (receipt.paidDate && paidMonths.length === 0) {
+                  const paidDate = document.createElement('p');
+                  paidDate.className = 'mt-0.5 text-[11px] text-slate-400';
+                  paidDate.textContent = `ชำระเมื่อ ${receipt.paidDate}`;
+                  summary.append(paidDate);
+                }
+                if (paidMonths.length > 0) {
+                  const debtDetails = document.createElement('p');
+                  debtDetails.className = 'mt-1 text-[11px] font-semibold text-amber-700';
+                  debtDetails.textContent = `ชำระยอดค้างเดือน ${paidMonths.map(debt => {
+                    const amount = Number(debt.amount);
+                    return debt.amount && Number.isFinite(amount)
+                      ? `${debt.month} (${amount.toLocaleString()} บาท)`
+                      : debt.month;
+                  }).join(', ')}${receipt.paidDate ? ` · ชำระเมื่อ ${receipt.paidDate}` : ''}`;
+                  summary.append(debtDetails);
+                }
                 const openButton = document.createElement('button');
                 openButton.type = 'button';
                 openButton.className = 'shrink-0 rounded-lg bg-cyan-700 px-3 py-2 text-xs font-bold text-white hover:bg-cyan-800';
@@ -3682,6 +3761,7 @@ function openBillingModal(houseNo) {
                 list.append(item);
               });
             } catch (error) {
+              console.error('Receipt history error:', error);
               list.textContent = 'เกิดข้อผิดพลาดในการโหลดประวัติใบเสร็จ';
               list.className = 'flex-1 min-h-0 overflow-y-auto p-4 text-center text-sm text-rose-600';
             }
