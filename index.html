@@ -67,6 +67,7 @@
       opacity: 0;
       pointer-events: none;
       padding-left: 0;
+      text-align: center;
     }
 
     #home-search-panel .home-search-toggle {
@@ -86,7 +87,8 @@
       width: 100%;
       opacity: 1;
       pointer-events: auto;
-      padding-left: 2.75rem;
+      padding-left: 3rem;
+      padding-right: 3rem;
     }
 
     #home-search-panel.is-expanded .home-search-toggle {
@@ -420,7 +422,7 @@
           </button>
         </div>
 
-        <div id="home-search-panel" class="sticky top-0 z-40 w-full h-12">
+        <div id="home-search-panel" class="sticky top-0 z-40 w-full h-12" style="touch-action: pan-x;">
           <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="ค้นหาบ้านเลขที่ หรือ ชื่อ..."
             aria-label="ค้นหาบ้านเลขที่หรือชื่อสมาชิก" aria-hidden="true" tabindex="-1"
             class="home-search-input absolute inset-y-0 left-0 rounded-xl border border-slate-200 bg-white pr-24 text-sm font-medium text-slate-700 shadow-sm outline-none transition-all duration-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
@@ -2280,23 +2282,27 @@ homeSearchPanel.addEventListener('touchstart', event => {
     if (event.touches.length === 1) {
         homeSearchTouchStart = {
             x: event.touches[0].clientX,
-            y: event.touches[0].clientY
+            y: event.touches[0].clientY,
+            expanded: false
         };
     }
 }, { passive: true });
-homeSearchPanel.addEventListener('touchend', event => {
-    if (!homeSearchTouchStart || homeSearchPanel.classList.contains('is-expanded') || !event.changedTouches.length) {
-        homeSearchTouchStart = null;
-        return;
-    }
+homeSearchPanel.addEventListener('touchmove', event => {
+    if (!homeSearchTouchStart || homeSearchTouchStart.expanded || event.touches.length !== 1) return;
 
-    const deltaX = event.changedTouches[0].clientX - homeSearchTouchStart.x;
-    const deltaY = event.changedTouches[0].clientY - homeSearchTouchStart.y;
-    if (deltaY < -40 && Math.abs(deltaX) < 60) {
-        setHomeSearchExpanded(true);
+    const deltaX = event.touches[0].clientX - homeSearchTouchStart.x;
+    const deltaY = event.touches[0].clientY - homeSearchTouchStart.y;
+    if (deltaY < -25 && Math.abs(deltaX) < 60) {
+        event.preventDefault();
+        homeSearchTouchStart.expanded = true;
+        setHomeSearchExpanded(true, true);
     }
+}, { passive: false });
+const resetHomeSearchTouch = () => {
     homeSearchTouchStart = null;
-}, { passive: true });
+};
+homeSearchPanel.addEventListener('touchend', resetHomeSearchTouch, { passive: true });
+homeSearchPanel.addEventListener('touchcancel', resetHomeSearchTouch, { passive: true });
 
 document.getElementById('search-input').addEventListener('keydown', event => {
     if (event.key === 'Escape') {
