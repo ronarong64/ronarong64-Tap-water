@@ -61,6 +61,45 @@
       display: none !important;
     }
 
+    #home-search-panel .home-search-input {
+      box-sizing: border-box;
+      width: 0;
+      opacity: 0;
+      pointer-events: none;
+      padding-left: 0;
+    }
+
+    #home-search-panel .home-search-toggle {
+      left: auto;
+      right: 0;
+    }
+
+    #home-search-panel .home-search-count {
+      opacity: 0;
+      right: 0.5rem;
+      top: 50%;
+      transform: translate(8px, -50%);
+      pointer-events: none;
+    }
+
+    #home-search-panel.is-expanded .home-search-input {
+      width: 100%;
+      opacity: 1;
+      pointer-events: auto;
+      padding-left: 2.75rem;
+    }
+
+    #home-search-panel.is-expanded .home-search-toggle {
+      left: 0;
+      right: auto;
+    }
+
+    #home-search-panel.is-expanded .home-search-count {
+      opacity: 1;
+      transform: translate(0, -50%);
+      pointer-events: auto;
+    }
+
     .animate-fade-in {
       animation: fadeIn 0.3s ease-in-out;
     }
@@ -381,12 +420,16 @@
           </button>
         </div>
 
-        <div class="sticky top-0 z-40 w-full bg-slate-50">
-          <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+        <div id="home-search-panel" class="sticky top-0 z-40 w-full h-12">
           <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="ค้นหาบ้านเลขที่ หรือ ชื่อ..."
-                           class="w-full bg-white border border-slate-200 rounded-xl h-12 pl-11 pr-24 text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-sm shadow-sm">
-          <div
-            class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-slate-50 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-500 border border-slate-100">
+            aria-label="ค้นหาบ้านเลขที่หรือชื่อสมาชิก" aria-hidden="true" tabindex="-1"
+            class="home-search-input absolute inset-y-0 left-0 rounded-xl border border-slate-200 bg-white pr-24 text-sm font-medium text-slate-700 shadow-sm outline-none transition-all duration-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+          <button type="button" id="home-search-toggle" onclick="toggleHomeSearch()" aria-label="เปิดช่องค้นหา" aria-expanded="false"
+            class="home-search-toggle absolute top-0 z-10 flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-all duration-300 hover:text-blue-600 active:scale-95">
+            <i class="fas fa-search" aria-hidden="true"></i>
+          </button>
+          <div id="home-search-count" aria-live="polite"
+            class="home-search-count absolute rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-500 transition-all duration-300">
             <span id="search-count">...</span>
           </div>
         </div>
@@ -2207,6 +2250,59 @@ function handleSearch(keyword) {
     const countEl = document.getElementById('search-count');
     if (countEl) countEl.innerText = visibleCards.length + " หลัง";
 }
+
+function setHomeSearchExpanded(expanded, focusInput = false) {
+    const panel = document.getElementById('home-search-panel');
+    const searchInput = document.getElementById('search-input');
+    const toggleButton = document.getElementById('home-search-toggle');
+
+    panel.classList.toggle('is-expanded', expanded);
+    searchInput.tabIndex = expanded ? 0 : -1;
+    searchInput.setAttribute('aria-hidden', String(!expanded));
+    toggleButton.setAttribute('aria-expanded', String(expanded));
+    toggleButton.setAttribute('aria-label', expanded ? 'ย่อช่องค้นหา' : 'เปิดช่องค้นหา');
+    if (expanded && focusInput) searchInput.focus();
+}
+
+function toggleHomeSearch() {
+    const searchInput = document.getElementById('search-input');
+    const isExpanded = document.getElementById('home-search-panel').classList.contains('is-expanded');
+    setHomeSearchExpanded(!isExpanded, !isExpanded);
+    if (isExpanded) {
+        searchInput.value = '';
+        handleSearch('');
+    }
+}
+
+const homeSearchPanel = document.getElementById('home-search-panel');
+let homeSearchTouchStart = null;
+homeSearchPanel.addEventListener('touchstart', event => {
+    if (event.touches.length === 1) {
+        homeSearchTouchStart = {
+            x: event.touches[0].clientX,
+            y: event.touches[0].clientY
+        };
+    }
+}, { passive: true });
+homeSearchPanel.addEventListener('touchend', event => {
+    if (!homeSearchTouchStart || homeSearchPanel.classList.contains('is-expanded') || !event.changedTouches.length) {
+        homeSearchTouchStart = null;
+        return;
+    }
+
+    const deltaX = event.changedTouches[0].clientX - homeSearchTouchStart.x;
+    const deltaY = event.changedTouches[0].clientY - homeSearchTouchStart.y;
+    if (deltaY < -40 && Math.abs(deltaX) < 60) {
+        setHomeSearchExpanded(true);
+    }
+    homeSearchTouchStart = null;
+}, { passive: true });
+
+document.getElementById('search-input').addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+        document.getElementById('home-search-toggle').click();
+    }
+});
 
         // ==========================================
         // ระบบเมนูด้านข้าง (Sidebar Menu)
