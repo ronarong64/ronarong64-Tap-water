@@ -426,7 +426,7 @@
           </button>
         </div>
 
-        <div id="home-search-panel" class="sticky top-1 z-40 relative mx-1 h-[45px]" style="touch-action: pan-x;">
+        <div id="home-search-panel" class="sticky top-1 z-40 relative mx-1 h-[45px]">
           <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="ค้นหาบ้านเลขที่ หรือ ชื่อ..."
             aria-label="ค้นหาบ้านเลขที่หรือชื่อสมาชิก" aria-hidden="true" tabindex="-1"
             class="home-search-input absolute inset-y-0 left-0 rounded-xl border border-slate-200 bg-white pr-24 text-base font-medium text-slate-700 shadow-sm outline-none transition-all duration-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
@@ -2268,6 +2268,7 @@ function setHomeSearchExpanded(expanded, focusInput = false) {
     toggleButton.setAttribute('aria-expanded', String(expanded));
     toggleButton.setAttribute('aria-label', expanded ? 'ย่อช่องค้นหา' : 'เปิดช่องค้นหา');
     if (expanded && focusInput) searchInput.focus();
+    else if (!expanded) searchInput.blur();
 }
 
 function toggleHomeSearch() {
@@ -2279,34 +2280,6 @@ function toggleHomeSearch() {
         handleSearch('');
     }
 }
-
-const homeSearchPanel = document.getElementById('home-search-panel');
-let homeSearchTouchStart = null;
-homeSearchPanel.addEventListener('touchstart', event => {
-    if (event.touches.length === 1) {
-        homeSearchTouchStart = {
-            x: event.touches[0].clientX,
-            y: event.touches[0].clientY,
-            expanded: false
-        };
-    }
-}, { passive: true });
-homeSearchPanel.addEventListener('touchmove', event => {
-    if (!homeSearchTouchStart || homeSearchTouchStart.expanded || event.touches.length !== 1) return;
-
-    const deltaX = event.touches[0].clientX - homeSearchTouchStart.x;
-    const deltaY = event.touches[0].clientY - homeSearchTouchStart.y;
-    if (deltaY < -25 && Math.abs(deltaX) < 60) {
-        event.preventDefault();
-        homeSearchTouchStart.expanded = true;
-        setHomeSearchExpanded(true, true);
-    }
-}, { passive: false });
-const resetHomeSearchTouch = () => {
-    homeSearchTouchStart = null;
-};
-homeSearchPanel.addEventListener('touchend', resetHomeSearchTouch, { passive: true });
-homeSearchPanel.addEventListener('touchcancel', resetHomeSearchTouch, { passive: true });
 
 document.getElementById('search-input').addEventListener('keydown', event => {
     if (event.key === 'Escape') {
