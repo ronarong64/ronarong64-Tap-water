@@ -1785,6 +1785,8 @@ function applyRolePermissions() {
             // ✨ 3. ตั้งค่า State สำหรับการชำระหนี้เก่าอย่างเดียว
             currentBillState = {
                 houseNo: user.houseNo,
+                profilePic: user.profilePic,
+                ownerName: user.name,
                 overdueDetails: actualOverdueList,
                 selectedOverdueIds: actualOverdueList.map(b => b.billingId),
                 selectedOverdueAmount: actualOverdueList.reduce((sum, b) => sum + Number(b.amount), 0),
@@ -3112,6 +3114,8 @@ function openBillingModal(houseNo) {
     currentBillState = {
         billingId: user.statusCode === 'waiting' ? (user.billingId || "") : "",
         houseNo: user.houseNo,
+        profilePic: user.profilePic,
+        ownerName: user.name,
         prevUnit: user.statusCode === 'waiting' ? (parseInt(user.oldUnit) || 0) : (parseInt(user.prevUnit) || 0),
         overdueDetails: actualOverdueList,
         selectedOverdueIds: actualOverdueList.map(b => b.billingId),
@@ -3515,6 +3519,11 @@ function openBillingModal(houseNo) {
             }
             
             renderOverdueDetailsInModal();
+            document.getElementById('overdue-modal-house-no').textContent =
+                `บ้านเลขที่ ${currentBillState.houseNo || '-'}`;
+            document.getElementById('overdue-modal-owner-name').textContent =
+                currentBillState.ownerName || 'ไม่ระบุชื่อเจ้าบ้าน';
+            setHousePhoto(currentBillState.profilePic, 'overdue-modal-house-photo', 'overdue-modal-house-photo-placeholder');
 
             // ✨ [ส่วนที่เพิ่มใหม่] ตรวจสอบว่าจะโชว์หรือซ่อนปุ่ม "ยืนยันชำระยอดค้าง"
             const payOverdueBtn = document.getElementById('btn-pay-overdue-only');
@@ -5220,6 +5229,17 @@ function renderFinanceHistory(history) {
       <div class="bg-gradient-to-r from-red-500 to-rose-500 p-4 text-center rounded-t-[1.5rem] relative">
         <h3 class="text-lg font-bold text-white"><i class="fas fa-file-invoice-dollar mr-2"></i>รายละเอียดค้างชำระ</h3>
         <button onclick="closeOverdueModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/10 text-white flex items-center justify-center hover:bg-black/20 transition-colors"><i class="fas fa-times"></i></button>
+      </div>
+
+      <div class="flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-100">
+        <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-400 flex items-center justify-center shrink-0 overflow-hidden border border-rose-100">
+          <img id="overdue-modal-house-photo" class="hidden w-full h-full object-cover" alt="รูปเจ้าบ้าน">
+          <i id="overdue-modal-house-photo-placeholder" class="fas fa-user text-lg"></i>
+        </div>
+        <div class="min-w-0">
+          <p id="overdue-modal-house-no" class="text-sm font-extrabold text-slate-800">บ้านเลขที่ -</p>
+          <p id="overdue-modal-owner-name" class="text-xs text-slate-500 truncate">ไม่ระบุชื่อเจ้าบ้าน</p>
+        </div>
       </div>
 
       <div class="p-4 max-h-[50vh] overflow-y-auto bg-slate-50" id="overdue-modal-content"></div>
