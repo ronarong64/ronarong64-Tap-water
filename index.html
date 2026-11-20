@@ -4879,11 +4879,11 @@ function renderFinanceHistory(history) {
 
                 <div class="grid grid-cols-2 gap-2 mt-2 relative z-10">
                     <div class="bg-white/10 rounded-lg px-2 py-1.5 min-w-0">
-                        <div class="text-[10px] font-medium opacity-80">เก็บยอดค้าง</div>
+                        <div class="text-[10px] font-medium opacity-80">ยอดค้าง</div>
                         <div class="text-[11px] font-semibold whitespace-nowrap">${overdueHouses.length} รายการ · ${overdueTotal.toLocaleString()} บาท</div>
                     </div>
                     <div class="bg-white/10 rounded-lg px-2 py-1.5 min-w-0">
-                        <div class="text-[10px] font-medium opacity-80">เก็บยอดเดือนปัจจุบัน</div>
+                        <div class="text-[10px] font-medium opacity-80">ยอดเดือนปัจจุบัน</div>
                         <div class="text-[11px] font-semibold whitespace-nowrap">${currentMonthHouses.length} รายการ · ${currentMonthTotal.toLocaleString()} บาท</div>
                     </div>
                 </div>
@@ -6110,22 +6110,27 @@ function updateReportOverdueCollectedSummary(dataList, displayMonth) {
                 contentArea.innerHTML = '<div class="text-center py-10 text-slate-400 border border-dashed border-slate-200 rounded-3xl m-2 bg-white">ไม่มีรายการเก็บยอดค้างเก่า</div>';
             } else {
                 let html = '<div class="space-y-3">';
-                dataList.forEach(item => {
+                dataList.forEach((item, index) => {
                     let icon = item.isTransfer ? "fa-university text-blue-500 bg-blue-50" : "fa-hand-holding-usd text-emerald-500 bg-emerald-50";
 
                     // 🌟 แปลงรูปแบบเดือน "03/2569" เป็น "มี.ค. / 2569"
-                    let displayMonth = typeof formatThaiMonth === 'function' ? formatThaiMonth(item.month) : item.month;
+                    let displayMonth = escapeHTML(typeof formatThaiMonth === 'function' ? formatThaiMonth(item.month) : item.month || "-");
                     // ป้องกันกรณีไม่มีชื่อคนเก็บ
-                    let collectorName = item.collector || "ไม่ระบุชื่อ";
+                    let collectorName = escapeHTML(item.collector || "ไม่ระบุชื่อ");
+                    let houseNo = escapeHTML(item.houseNo || "-");
+                    let ownerName = escapeHTML(item.name || "ไม่ระบุ");
 
                     html += `
                     <div class="bg-white p-3 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm hover:bg-slate-50 transition">
                         <div class="flex items-start gap-3">
-                            <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner mt-0.5 ${icon}">
-                                <i class="fas ${item.isTransfer ? 'fa-university' : 'fa-hand-holding-usd'}"></i>
+                            <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border border-slate-200 mt-0.5">
+                                <img id="report-overdue-collected-photo-${index}" class="hidden w-full h-full object-cover" alt="รูปเจ้าบ้าน">
+                                <div id="report-overdue-collected-photo-placeholder-${index}" class="w-full h-full flex items-center justify-center ${icon}">
+                                    <i class="fas ${item.isTransfer ? 'fa-university' : 'fa-hand-holding-usd'}"></i>
+                                </div>
                             </div>
                             <div>
-                                <div class="font-bold text-slate-700 text-[13px]">${item.houseNo} - ${item.name}</div>
+                                <div class="font-bold text-slate-700 text-[13px]">${houseNo} - ${ownerName}</div>
                                 <div class="text-[11px] text-slate-500 mt-1">
                                     <div>บิล: <span class="text-rose-500 font-bold">${displayMonth}</span></div>
                                     <div class="mt-0.5">รับเงิน : ${collectorName}</div>
@@ -6133,11 +6138,18 @@ function updateReportOverdueCollectedSummary(dataList, displayMonth) {
                             </div>
                         </div>
                         <div class="font-black text-slate-700 text-sm bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 shrink-0">
-                            ${Number(item.amount).toLocaleString()} บ.
+                            ${(Number(item.amount) || 0).toLocaleString()} บ.
                         </div>
                     </div>`;
                 });
                 contentArea.innerHTML = html + '</div>';
+                dataList.forEach((item, index) => {
+                    setHousePhoto(
+                        item.profilePic,
+                        `report-overdue-collected-photo-${index}`,
+                        `report-overdue-collected-photo-placeholder-${index}`
+                    );
+                });
             }
 
             modal.classList.remove('hidden');
