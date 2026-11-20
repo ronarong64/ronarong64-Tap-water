@@ -6111,8 +6111,6 @@ function updateReportOverdueCollectedSummary(dataList, displayMonth) {
             } else {
                 let html = '<div class="space-y-3">';
                 dataList.forEach((item, index) => {
-                    let icon = item.isTransfer ? "fa-university text-blue-500 bg-blue-50" : "fa-hand-holding-usd text-emerald-500 bg-emerald-50";
-
                     // 🌟 แปลงรูปแบบเดือน "03/2569" เป็น "มี.ค. / 2569"
                     let displayMonth = escapeHTML(typeof formatThaiMonth === 'function' ? formatThaiMonth(item.month) : item.month || "-");
                     // ป้องกันกรณีไม่มีชื่อคนเก็บ
@@ -6123,10 +6121,10 @@ function updateReportOverdueCollectedSummary(dataList, displayMonth) {
                     html += `
                     <div class="bg-white p-3 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm hover:bg-slate-50 transition">
                         <div class="flex items-start gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border border-slate-200 mt-0.5">
-                                <img id="report-overdue-collected-photo-${index}" class="hidden w-full h-full object-cover" alt="รูปเจ้าบ้าน">
-                                <div id="report-overdue-collected-photo-placeholder-${index}" class="w-full h-full flex items-center justify-center ${icon}">
-                                    <i class="fas ${item.isTransfer ? 'fa-university' : 'fa-hand-holding-usd'}"></i>
+                            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border border-slate-200 mt-0.5">
+                                <img id="report-overdue-collected-photo-${index}" class="hidden w-full h-full object-cover rounded-full" alt="รูปเจ้าบ้าน">
+                                <div id="report-overdue-collected-photo-placeholder-${index}" class="w-full h-full flex items-center justify-center text-slate-400">
+                                    <i class="fas fa-user"></i>
                                 </div>
                             </div>
                             <div>
